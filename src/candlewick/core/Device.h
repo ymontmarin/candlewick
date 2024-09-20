@@ -12,6 +12,8 @@ struct Device {
   operator SDL_GPUDevice *() { return _device; }
   operator bool() const { return _device; }
 
+  const char *driverName() { return driver; }
+
   void destroy() {
     SDL_DestroyGPUDevice(_device);
     _device = nullptr;
