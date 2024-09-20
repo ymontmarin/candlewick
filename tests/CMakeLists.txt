@@ -1,9 +1,9 @@
 enable_testing()
 
-function(create_test name filename)
+function(create_test filename)
+  get_filename_component(name ${filename} NAME_WE)
   add_executable(${name} ${filename})
-  target_link_libraries(${name} PRIVATE ${PROJECT_NAME})
+  target_link_libraries(${name} PRIVATE candlewick_core)
 endfunction()
 
-
-create_test(sdl_window sdl_window.cpp)
+create_test(Triangle.cpp)
