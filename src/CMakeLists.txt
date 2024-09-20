@@ -1,8 +1,8 @@
 find_package(SDL3 REQUIRED)
 add_library(
   ${PROJECT_NAME}_core SHARED
-  candlewick/core/Mesh.cpp candlewick/core/Shader.cpp
-  candlewick/core/Texture.cpp)
+  candlewick/core/Device.cpp candlewick/core/Mesh.cpp
+  candlewick/core/Shader.cpp candlewick/core/Texture.cpp)
 
 target_link_libraries(${PROJECT_NAME}_core PUBLIC SDL3::SDL3 SDL3::Headers)
 target_include_directories(${PROJECT_NAME}_core PUBLIC ./)
