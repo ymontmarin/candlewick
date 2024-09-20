@@ -5,8 +5,6 @@
 
 namespace candlewick {
 
-struct Device;
-
 inline SDL_GPUShaderStage detect_shader_stage(const char *filename) {
   SDL_GPUShaderStage stage;
   if (SDL_strstr(filename, ".vert"))
@@ -21,13 +19,14 @@ inline SDL_GPUShaderStage detect_shader_stage(const char *filename) {
 }
 
 struct Shader {
-  Shader(Device &device, const char *filename);
+  Shader(SDL_GPUDevice *device, const char *filename);
+  Shader(const Shader &) = delete;
   operator SDL_GPUShader *() { return _shader; }
   void release();
 
 private:
   SDL_GPUShader *_shader;
-  Device &device;
+  SDL_GPUDevice *_device;
 };
 
 } // namespace candlewick

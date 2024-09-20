@@ -7,6 +7,7 @@ namespace candlewick {
 struct Device {
 
   Device(SDL_GPUShaderFormat format_flags, bool debug_mode = false);
+  Device(const Device &) = delete;
 
   operator SDL_GPUDevice *() { return _device; }
   operator bool() const { return _device; }
