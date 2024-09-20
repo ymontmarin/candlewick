@@ -1,7 +1,13 @@
-#define SDL_GPU_SHADERCROSS_IMPLEMENTATION
-#include <SDL3/SDL_gpu.h>
+#include "candlewick/core/Shader.h"
 #include "SDL_gpu_shadercross.h"
+#include <SDL3/SDL_gpu.h>
 
+void quit(SDL_GPUDevice *device, SDL_Window *window) {
+
+  SDL_ReleaseWindowFromGPUDevice(device, window);
+  SDL_DestroyWindow(window);
+  SDL_DestroyGPUDevice(device);
+}
 
 int main() {
 
