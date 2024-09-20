@@ -1,11 +1,23 @@
 #include "Shader.h"
-#include "Device.h"
+#include <SDL3/SDL_log.h>
 #include <SDL3/SDL_filesystem.h>
 // #include "SDL_gpu_shadercross.h"
 
 namespace candlewick {
+SDL_GPUShaderStage detect_shader_stage(const char *filename) {
+  SDL_GPUShaderStage stage;
+  if (SDL_strstr(filename, ".vert"))
+    stage = SDL_GPU_SHADERSTAGE_VERTEX;
+  else if (SDL_strstr(filename, ".frag"))
+    stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
+  else {
+    SDL_Log("Failed to detect Shader stage.");
+    stage = SDL_GPUShaderStage(-1);
+  }
+  return stage;
+}
 
-Shader::Shader(Device &device, const char *filename) : device(device) {
+Shader::Shader(SDL_GPUDevice *device, const char *filename) : _device(device) {
   const char *currentPath = SDL_GetBasePath();
   SDL_GPUShaderStage stage = detect_shader_stage(filename);
   char path[256];
@@ -28,10 +40,10 @@ Shader::Shader(Device &device, const char *filename) : device(device) {
                                .num_storage_buffers = 0,
                                .num_uniform_buffers = 0,
                                .props = 0U};
-  _shader =
-      // (SDL_GPUShader *)SDL_ShaderCross_CompileFromSPIRV(device, &info,
-      // false);
-      SDL_CreateGPUShader(device, &info);
+  // _shader =
+  //     (SDL_GPUShader *)SDL_ShaderCross_CompileFromSPIRV(device, &info,
+  //     false);
+  _shader = SDL_CreateGPUShader(device, &info);
   if (!_shader) {
     SDL_Log("Failed to create shader, %s", SDL_GetError());
   }
@@ -39,8 +51,8 @@ Shader::Shader(Device &device, const char *filename) : device(device) {
 }
 
 void Shader::release() {
-  if (device)
-    SDL_ReleaseGPUShader(device, _shader);
+  if (_device)
+    SDL_ReleaseGPUShader(_device, _shader);
 }
 
 } // namespace candlewick
