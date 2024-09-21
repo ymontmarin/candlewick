@@ -12,4 +12,10 @@ Device::Device(SDL_GPUShaderFormat format_flags, bool debug_mode)
   SDL_Log("Device driver: %s", driver);
 }
 
+void Device::destroy() {
+  if (_device)
+    SDL_DestroyGPUDevice(_device);
+  _device = nullptr;
+}
+
 } // namespace candlewick

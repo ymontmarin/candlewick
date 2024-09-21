@@ -6,7 +6,7 @@ namespace candlewick {
 
 struct Device {
 
-  Device(SDL_GPUShaderFormat format_flags, bool debug_mode = false);
+  explicit Device(SDL_GPUShaderFormat format_flags, bool debug_mode = false);
   Device(const Device &) = delete;
 
   operator SDL_GPUDevice *() { return _device; }
@@ -14,10 +14,7 @@ struct Device {
 
   const char *driverName() { return driver; }
 
-  void destroy() {
-    SDL_DestroyGPUDevice(_device);
-    _device = nullptr;
-  }
+  void destroy();
 
 private:
   SDL_GPUDevice *_device;
