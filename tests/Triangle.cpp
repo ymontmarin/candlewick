@@ -2,8 +2,8 @@
 #include "candlewick/core/Device.h"
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
-// #define SDL_GPU_SHADERCROSS_IMPLEMENTATION
-// #include "SDL_gpu_shadercross.h"
+#define SDL_GPU_SHADERCROSS_IMPLEMENTATION
+#include "SDL_gpu_shadercross.h"
 
 using namespace candlewick;
 
@@ -14,11 +14,11 @@ int main() {
     SDL_Log("Failed to init SDL: %s", SDL_GetError());
     return 1;
   }
-  // SDL_ShaderCross_Init();
+  SDL_ShaderCross_Init();
   const int numGpus = SDL_GetNumGPUDrivers();
   SDL_Log("Found %d GPU drivers.", numGpus);
 
-  SDL_GPUShaderFormat format_flags = SDL_GPU_SHADERFORMAT_SPIRV;
+  SDL_GPUShaderFormat format_flags = SDL_ShaderCross_GetSPIRVShaderFormats();
   const char *title = __FILE_NAME__;
   Device device{format_flags, true};
   if (!device)
@@ -117,6 +117,7 @@ int main() {
   SDL_ReleaseWindowFromGPUDevice(device, window);
   SDL_DestroyWindow(window);
   device.destroy();
+  SDL_ShaderCross_Quit();
   SDL_Quit();
 
   return 0;

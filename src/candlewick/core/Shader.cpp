@@ -1,7 +1,7 @@
 #include "Shader.h"
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_filesystem.h>
-// #include "SDL_gpu_shadercross.h"
+#include "SDL_gpu_shadercross.h"
 
 namespace candlewick {
 SDL_GPUShaderStage detect_shader_stage(const char *filename) {
@@ -40,10 +40,9 @@ Shader::Shader(SDL_GPUDevice *device, const char *filename) : _device(device) {
                                .num_storage_buffers = 0,
                                .num_uniform_buffers = 0,
                                .props = 0U};
-  // _shader =
-  //     (SDL_GPUShader *)SDL_ShaderCross_CompileFromSPIRV(device, &info,
-  //     false);
-  _shader = SDL_CreateGPUShader(device, &info);
+  _shader =
+      (SDL_GPUShader *)SDL_ShaderCross_CompileFromSPIRV(device, &info, false);
+  // _shader = SDL_CreateGPUShader(device, &info);
   if (!_shader) {
     SDL_Log("Failed to create shader, %s", SDL_GetError());
   }
