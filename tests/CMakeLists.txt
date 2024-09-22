@@ -7,3 +7,4 @@ function(create_test filename)
 endfunction()
 
 create_test(Triangle.cpp)
+create_test(Cube.cpp)

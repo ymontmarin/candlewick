@@ -73,6 +73,36 @@ int main() {
   }
   SDL_SetGPUBufferName(device, state.buf_vertex, "vertex_buf");
 
+  SDL_GPUTransferBufferCreateInfo transfer_buffer_desc{
+      .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+      .size = sizeof(vertexData),
+      .props = 0,
+  };
+  SDL_GPUTransferBuffer *trans_buffer =
+      SDL_CreateGPUTransferBuffer(device, &transfer_buffer_desc);
+  void *_map = SDL_MapGPUTransferBuffer(device, trans_buffer, false);
+  SDL_memcpy(_map, vertexData, sizeof(vertexData));
+  SDL_UnmapGPUTransferBuffer(device, trans_buffer);
+
+  SDL_GPUCommandBuffer *cmdbuf;
+  // Upload data to buffer
+  {
+    cmdbuf = SDL_AcquireGPUCommandBuffer(device);
+    SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(cmdbuf);
+    SDL_GPUTransferBufferLocation src_location;
+    src_location.transfer_buffer = trans_buffer;
+    src_location.offset = 0;
+
+    SDL_GPUBufferRegion dst_location;
+    dst_location.buffer = state.buf_vertex;
+    dst_location.offset = 0;
+    dst_location.size = sizeof(vertexData);
+
+    SDL_UploadToGPUBuffer(copy_pass, &src_location, &dst_location, false);
+    SDL_EndGPUCopyPass(copy_pass);
+    SDL_SubmitGPUCommandBuffer(cmdbuf);
+  }
+  SDL_ReleaseGPUTransferBuffer(device, trans_buffer);
   // Pipeline
 
   SDL_GPUColorTargetDescription color_desc;
@@ -112,7 +142,7 @@ int main() {
     Uint32 w, h;
     SDL_GPURenderPass *render_pass;
     SDL_GPUBufferBinding vertex_binding;
-    SDL_GPUCommandBuffer *cmdbuf = SDL_AcquireGPUCommandBuffer(device);
+    cmdbuf = SDL_AcquireGPUCommandBuffer(device);
     SDL_GPUTexture *swapchain;
     vertex_binding.buffer = state.buf_vertex;
     vertex_binding.offset = 0;
