@@ -3,7 +3,8 @@ find_package(assimp REQUIRED)
 add_library(
   ${PROJECT_NAME}_core SHARED
   candlewick/core/Device.cpp candlewick/core/Mesh.cpp
-  candlewick/core/Shader.cpp candlewick/core/Texture.cpp)
+  candlewick/core/MeshLayout.cpp candlewick/core/MeshLoader.cpp
+  candlewick/core/Shader.cpp candlewick/core/Texture2D.cpp)
 
 target_link_libraries(${PROJECT_NAME}_core PUBLIC SDL3::SDL3 SDL3::Headers)
 target_link_libraries(${PROJECT_NAME}_core PUBLIC assimp::assimp)
