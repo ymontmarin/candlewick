@@ -14,8 +14,8 @@ struct MeshLayout {
   /// @p size - equivalent of pitch in SDL_gpu, size of consecutive elements of
   /// the vertex buffer, i.e. sizeof(Vertex) if your vertices are of some type
   /// Vertex.
-  MeshLayout &addBinding(Uint32 slot, Uint32 size) &;
-  MeshLayout &&addBinding(Uint32 slot, Uint32 size) &&;
+  MeshLayout &addBinding(Uint32 slot, Uint32 pitch) &;
+  MeshLayout &&addBinding(Uint32 slot, Uint32 pitch) &&;
 
   MeshLayout &addAttribute(Uint32 loc, Uint32 binding,
                            SDL_GPUVertexElementFormat format, Uint32 offset) &;

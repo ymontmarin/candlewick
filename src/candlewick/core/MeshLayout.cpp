@@ -3,18 +3,18 @@
 
 namespace candlewick {
 
-MeshLayout &MeshLayout::addBinding(Uint32 slot, Uint32 size) & {
+MeshLayout &MeshLayout::addBinding(Uint32 slot, Uint32 pitch) & {
   vertex_buffer_desc.push_back({
       .slot = slot,
-      .pitch = size,
+      .pitch = pitch,
       .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
       .instance_step_rate = 0,
   });
   return *this;
 }
 
-MeshLayout &&MeshLayout::addBinding(Uint32 slot, Uint32 size) && {
-  return std::move(addBinding(slot, size));
+MeshLayout &&MeshLayout::addBinding(Uint32 slot, Uint32 pitch) && {
+  return std::move(addBinding(slot, pitch));
 }
 
 MeshLayout &MeshLayout::addAttribute(Uint32 loc, Uint32 binding,
