@@ -15,17 +15,13 @@ struct MeshLayout {
   /// the vertex buffer, i.e. sizeof(Vertex) if your vertices are of some type
   /// Vertex.
   MeshLayout &addBinding(Uint32 slot, Uint32 size) &;
-  MeshLayout &&addBinding(Uint32 slot, Uint32 size) && {
-    return std::move(addBinding(slot, size));
-  }
+  MeshLayout &&addBinding(Uint32 slot, Uint32 size) &&;
 
   MeshLayout &addAttribute(Uint32 loc, Uint32 binding,
                            SDL_GPUVertexElementFormat format, Uint32 offset) &;
   MeshLayout &&addAttribute(Uint32 loc, Uint32 binding,
                             SDL_GPUVertexElementFormat format,
-                            Uint32 offset) && {
-    return std::move(addAttribute(loc, binding, format, offset));
-  }
+                            Uint32 offset) &&;
 
   SDL_GPUVertexInputState toVertexInputState();
 
