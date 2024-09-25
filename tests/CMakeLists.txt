@@ -1,4 +1,5 @@
 enable_testing()
+find_package(Eigen3 REQUIRED)
 
 function(create_test filename)
   get_filename_component(name ${filename} NAME_WE)
@@ -8,3 +9,4 @@ endfunction()
 
 create_test(Triangle.cpp)
 create_test(Cube.cpp)
+target_link_libraries(Cube PRIVATE Eigen3::Eigen)
