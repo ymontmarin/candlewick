@@ -73,8 +73,6 @@ int main() {
         break;
       }
     }
-    Uint32 width;
-    Uint32 height;
     // get command buffer
     SDL_GPUCommandBuffer *cmdbuf = SDL_AcquireGPUCommandBuffer(device);
     if (!cmdbuf) {
@@ -82,9 +80,8 @@ int main() {
       return 1;
     }
 
-    SDL_GPUTexture *swapchainTexture =
-        SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &width, &height);
-    if (!swapchainTexture) {
+    SDL_GPUTexture *swapchainTexture;
+    if (!SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchainTexture)) {
       SDL_SubmitGPUCommandBuffer(cmdbuf);
       break;
     }

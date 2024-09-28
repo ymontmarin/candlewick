@@ -169,15 +169,14 @@ int main() {
 
   // Main loop
   auto Render = [&]() {
-    Uint32 w, h;
     SDL_GPURenderPass *render_pass;
     SDL_GPUBufferBinding vertex_binding;
     cmdbuf = SDL_AcquireGPUCommandBuffer(device);
     SDL_GPUTexture *swapchain;
     vertex_binding.buffer = state.buf_vertex;
     vertex_binding.offset = 0;
-    swapchain = SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &w, &h);
-    if (swapchain) {
+
+    if (SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchain)) {
       SDL_GPUColorTargetInfo ctinfo{.texture = swapchain,
                                     .clear_color = SDL_FColor{},
                                     .load_op = SDL_GPU_LOADOP_CLEAR,
