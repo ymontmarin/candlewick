@@ -15,6 +15,8 @@ inline double operator""_rad(long double t) {
   return deg2rad(static_cast<double>(t));
 }
 
+/// Compute view matrix looking at \p center from \p eye, with
+/// the camera pointing up towards \p up.
 Eigen::Matrix4f lookAt(const Float3 &eye, const Float3 &center,
                        const Float3 &up);
 
