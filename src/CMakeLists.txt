@@ -1,5 +1,6 @@
 find_package(SDL3 REQUIRED)
 find_package(assimp REQUIRED)
+find_package(Eigen3 REQUIRED)
 add_library(
   ${PROJECT_NAME}_core SHARED
   candlewick/core/Device.cpp candlewick/core/Mesh.cpp
@@ -7,7 +8,7 @@ add_library(
   candlewick/core/Shader.cpp candlewick/core/Texture2D.cpp)
 
 target_link_libraries(${PROJECT_NAME}_core PUBLIC SDL3::SDL3 SDL3::Headers)
-target_link_libraries(${PROJECT_NAME}_core PUBLIC assimp::assimp)
+target_link_libraries(${PROJECT_NAME}_core PUBLIC assimp::assimp Eigen3::Eigen)
 target_include_directories(${PROJECT_NAME}_core PUBLIC ./)
 target_include_directories(
   ${PROJECT_NAME}_core PUBLIC ${PROJECT_SOURCE_DIR}/external/SDL_gpu_shadercross
