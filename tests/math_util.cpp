@@ -7,14 +7,15 @@ Eigen::Matrix4f lookAt(const Float3 &eye, const Float3 &center,
   Eigen::Matrix4f mat;
   mat.setIdentity();
   auto R = mat.block<3, 3>(0, 0);
-  Float3 fwd = center - eye;
-  fwd.normalize();
+  Float3 bwd = eye - center;
+  bwd.normalize();
   Float3 y = up;
-  Float3 x = fwd.cross(up).normalized();
-  y.normalize();
+  Float3 x = y.cross(bwd).normalized();
+  y = bwd.cross(x).normalized();
   R.col(0) = x;
   R.col(1) = y;
-  R.col(2) = -fwd;
+  R.col(2) = bwd;
+  // coords of eye in new reference frame
   mat.col(3).head<3>() = -R * eye;
   return mat;
 }
