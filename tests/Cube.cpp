@@ -92,7 +92,10 @@ int main() {
   SDL_ShaderCross_Init();
   Device device{SDL_ShaderCross_GetSPIRVShaderFormats()};
 
-  SDL_Window *window = SDL_CreateWindow(__FILE_NAME__, 1280, 720, 0);
+  const float wWidth = 1280;
+  const float wHeight = 720;
+  const float aspectRatio = wWidth / wHeight;
+  SDL_Window *window = SDL_CreateWindow(__FILE_NAME__, wWidth, wHeight, 0);
   if (!SDL_ClaimWindowForGPUDevice(device, window)) {
     SDL_Log("Error: %s", SDL_GetError());
     return 1;
