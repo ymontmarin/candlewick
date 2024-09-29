@@ -39,6 +39,8 @@ Eigen::Matrix4f perspectiveMatrix(float left, float right, float top,
 }
 
 Eigen::Matrix4f orthographicMatrix(const Float2 &size, float near, float far) {
+  assert(size.x() < 90._radf);
+  assert(size.y() < 90._radf);
   const Float2 xyScale = 2.0f * size.cwiseInverse();
   const float zScale = 2.0 / (near - far);
   const float m32 = near * zScale - 1.f;
