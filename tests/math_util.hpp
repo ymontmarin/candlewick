@@ -6,6 +6,15 @@ using Float2 = Eigen::Vector2f;
 using Float3 = Eigen::Vector3f;
 using Float4 = Eigen::Vector4f;
 
+inline double deg2rad(double t) { return t * M_PI / 180.0; }
+inline float deg2rad(float t) { return t * M_PIf / 180.0f; }
+inline float operator""_radf(long double t) {
+  return deg2rad(static_cast<float>(t));
+}
+inline double operator""_rad(long double t) {
+  return deg2rad(static_cast<double>(t));
+}
+
 Eigen::Matrix4f lookAt(const Float3 &eye, const Float3 &center,
                        const Float3 &up);
 
