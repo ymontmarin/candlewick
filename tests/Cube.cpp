@@ -72,8 +72,8 @@ int main() {
 
   // Shaders
 
-  Shader vertexShader{device, "VertexColor.vert"};
-  Shader fragmentShader{device, "VertexColor.frag"};
+  Shader vertexShader{device, "VertexColor.vert", 1};
+  Shader fragmentShader{device, "VertexColor.frag", 0};
 
   // Buffers
 

@@ -7,7 +7,8 @@ namespace candlewick {
 SDL_GPUShaderStage detect_shader_stage(const char *filename);
 
 struct Shader {
-  Shader(SDL_GPUDevice *device, const char *filename);
+  Shader(SDL_GPUDevice *device, const char *filename,
+         Uint32 uniformBufferCount);
   Shader(const Shader &) = delete;
   operator SDL_GPUShader *() { return _shader; }
   void release();
