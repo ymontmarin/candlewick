@@ -3,18 +3,16 @@
 #include "candlewick/core/MeshLayout.h"
 #define SDL_GPU_SHADERCROSS_IMPLEMENTATION
 #include "SDL_gpu_shadercross.h"
-#include <Eigen/Core>
+#include "math_util.hpp"
 
-using float3 = Eigen::Vector3f;
-using float4 = Eigen::Vector4f;
 struct Vertex {
-  float3 pos;
-  float4 col;
+  Float3 pos;
+  Float4 col;
 };
 
-float4 red = {1.f, 0., 0., 1.};
-float4 green = {0.f, 1., 0., 1.};
-float4 blue = {0.f, 0., 1., 1.};
+Float4 red = {1.f, 0., 0., 1.};
+Float4 green = {0.f, 1., 0., 1.};
+Float4 blue = {0.f, 0., 1., 1.};
 
 // clang-format off
 Vertex vertexData[] = {
@@ -26,35 +24,37 @@ Vertex vertexData[] = {
   {{1., 1., 0.}, blue},
   {{1., 0., 0.}, (blue + red) / 2},
   {{0., 0., 0.}, red},
-  // {{+1., -1., +1.}, red},
-  // {{-1., -1., +1.}, red},
-  // {{-1., +1., +1.}, red},
-  // {{+1., +1., +1.}, green},
+  // f3
+  {{0., 0., 0.}, red},
+  {{1., 0., 0.}, (blue + red) / 2},
+  {{1., 0., -1.}, red},
+  // f4
+  {{1., 0., -1.}, red},
+  {{0., 0., -1.}, blue},
+  {{0., 0., 0.}, green}
 };
 // clang-format on
-
-static Eigen::Matrix4f lookAt(const float3 &eye, const float3 &center,
-                              const float3 &up) {
-  Eigen::Matrix4f mat;
-  mat.setZero();
-  mat(3, 3) = 1.0;
-  float3 z = eye - center;
-  z.normalize();
-  float3 y = up;
-  float3 x = y.cross3(x);
-  y.normalize();
-  x.normalize();
-  mat.block<3, 1>(0, 0) = x;
-  mat.block<3, 1>(0, 1) = y;
-  mat.block<3, 1>(0, 2) = z;
-  return mat;
-}
 
 struct State {
   SDL_GPUBuffer *buf_vertex;
 };
 
 static State state;
+
+SDL_GPUTextureFormat getSupportedDepthFormat(const candlewick::Device &device) {
+  if (SDL_GPUTextureSupportsFormat(
+          device, SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT,
+          SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET)) {
+    return SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT;
+  } else if (SDL_GPUTextureSupportsFormat(
+                 device, SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT,
+                 SDL_GPU_TEXTURETYPE_2D,
+                 SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET)) {
+    return SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT;
+  } else {
+    return SDL_GPUTextureFormat(-1);
+  }
+};
 
 int main() {
   using namespace candlewick;
@@ -131,26 +131,30 @@ int main() {
   SDL_zero(color_desc);
   color_desc.format = SDL_GetGPUSwapchainTextureFormat(device, window);
 
+  SDL_GPUTextureFormat depth_stencil_format = getSupportedDepthFormat(device);
+  assert(int(depth_stencil_format) >= 0);
+
   SDL_GPUGraphicsPipelineCreateInfo pipeline_desc{
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
       .vertex_input_state = mesh_layout.toVertexInputState(),
       .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+      .rasterizer_state =
+          {
+              .fill_mode = SDL_GPU_FILLMODE_FILL,
+              .cull_mode = SDL_GPU_CULLMODE_FRONT,
+              .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
+          },
       // .depth_stencil_state{
       //     .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
       //     .enable_depth_test = true,
       //     .enable_depth_write = true,
       // },
-      .rasterizer_state =
-          {
-              .fill_mode = SDL_GPU_FILLMODE_FILL,
-              .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
-          },
       .target_info =
           {
               .color_target_descriptions = &color_desc, .num_color_targets = 1,
-              //  .depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM,
-              //  .has_depth_stencil_target = false,
+              // .depth_stencil_format = depth_stencil_format,
+              // .has_depth_stencil_target = true,
           },
       .props = 0};
   pipeline_desc.rasterizer_state.front_face =
@@ -166,15 +170,25 @@ int main() {
   SDL_Log("Releasing shaders...");
   vertexShader.release();
   fragmentShader.release();
+  using Eigen::Matrix4f;
+  const float fov_rad = 45.0_radf;
+  Matrix4f perp = orthographicMatrix({fov_rad, fov_rad}, 0.1, 10.);
+
+  Uint32 frame = 0;
 
   // Main loop
-  auto Render = [&]() {
+  for (Uint32 i = 0; i < 200; i++) {
     SDL_GPURenderPass *render_pass;
     SDL_GPUBufferBinding vertex_binding;
     cmdbuf = SDL_AcquireGPUCommandBuffer(device);
     SDL_GPUTexture *swapchain;
     vertex_binding.buffer = state.buf_vertex;
     vertex_binding.offset = 0;
+    Float3 center{0.5, 0.5, 0.};
+    Float3 eye{0., 0.5, 2.};
+    eye.x() = 0.5 + 0.05 * std::cos(0.05 * frame);
+    Matrix4f view = lookAt(eye, center, {0., 1., 0.});
+    Matrix4f projViewMat = perp * view;
 
     if (SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchain)) {
       SDL_GPUColorTargetInfo ctinfo{.texture = swapchain,
@@ -187,14 +201,17 @@ int main() {
       SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
       SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
       constexpr auto vertexCount = std::size(vertexData);
+      SDL_PushGPUVertexUniformData(cmdbuf, 0, projViewMat.data(),
+                                   sizeof(projViewMat));
       SDL_DrawGPUPrimitives(render_pass, vertexCount, 1, 0, 0);
       SDL_EndGPURenderPass(render_pass);
+    } else {
+      SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
+      break;
     }
     SDL_SubmitGPUCommandBuffer(cmdbuf);
-  };
-
-  for (int i = 0; i < 200; i++) {
-    Render();
+    SDL_Log("Frame [% 3d]", frame);
+    frame++;
   }
 
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
@@ -205,4 +222,5 @@ int main() {
   SDL_DestroyWindow(window);
   device.destroy();
   SDL_ShaderCross_Quit();
+  SDL_Quit();
 }
