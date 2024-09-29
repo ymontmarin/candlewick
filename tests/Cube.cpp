@@ -65,6 +65,7 @@ Vertex vertexData[] = {
 
 struct State {
   SDL_GPUBuffer *buf_vertex;
+  SDL_GPUSampleCount sample_count;
 };
 
 static State state;
@@ -83,6 +84,25 @@ SDL_GPUTextureFormat getSupportedDepthFormat(const candlewick::Device &device) {
     return SDL_GPUTextureFormat(-1);
   }
 };
+
+SDL_GPUTexture *createDepthTexture(candlewick::Device &device,
+                                   SDL_Window *window,
+                                   SDL_GPUTextureFormat depth_tex_format) {
+  Uint32 w, h;
+  SDL_GetWindowSizeInPixels(window, (int *)&w, (int *)&h);
+  SDL_GPUTextureCreateInfo texinfo{
+      .type = SDL_GPU_TEXTURETYPE_2D,
+      .format = depth_tex_format,
+      .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+      .width = w,
+      .height = h,
+      .layer_count_or_depth = 1,
+      .num_levels = 1,
+      .sample_count = state.sample_count,
+      .props = 0,
+  };
+  return SDL_CreateGPUTexture(device, &texinfo);
+}
 
 int main() {
   using namespace candlewick;
@@ -156,13 +176,18 @@ int main() {
     SDL_SubmitGPUCommandBuffer(cmdbuf);
   }
   SDL_ReleaseGPUTransferBuffer(device, transfer_buffer);
+
+  state.sample_count = SDL_GPU_SAMPLECOUNT_1;
+
   // Pipeline
 
   SDL_GPUColorTargetDescription color_desc;
   SDL_zero(color_desc);
   color_desc.format = SDL_GetGPUSwapchainTextureFormat(device, window);
 
-  SDL_GPUTextureFormat depth_stencil_format = getSupportedDepthFormat(device);
+  // SDL_GPUTextureFormat depth_stencil_format =
+  // getSupportedDepthFormat(device);
+  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
   assert(int(depth_stencil_format) >= 0);
 
   SDL_GPUGraphicsPipelineCreateInfo pipeline_desc{
@@ -173,19 +198,20 @@ int main() {
       .rasterizer_state =
           {
               .fill_mode = SDL_GPU_FILLMODE_FILL,
-              .cull_mode = SDL_GPU_CULLMODE_FRONT,
+              .cull_mode = SDL_GPU_CULLMODE_NONE,
               .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
           },
-      // .depth_stencil_state{
-      //     .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
-      //     .enable_depth_test = true,
-      //     .enable_depth_write = true,
-      // },
+      .depth_stencil_state{
+          .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
+          .enable_depth_test = true,
+          .enable_depth_write = true,
+      },
       .target_info =
           {
-              .color_target_descriptions = &color_desc, .num_color_targets = 1,
-              // .depth_stencil_format = depth_stencil_format,
-              // .has_depth_stencil_target = true,
+              .color_target_descriptions = &color_desc,
+              .num_color_targets = 1,
+              .depth_stencil_format = depth_stencil_format,
+              .has_depth_stencil_target = true,
           },
       .props = 0};
   pipeline_desc.rasterizer_state.front_face =
@@ -201,9 +227,17 @@ int main() {
   SDL_Log("Releasing shaders...");
   vertexShader.release();
   fragmentShader.release();
+
+  // Depth texture
+  SDL_GPUTexture *texture_depth =
+      createDepthTexture(device, window, depth_stencil_format);
+
   using Eigen::Matrix4f;
   const float fov_rad = 45.0_radf;
-  Matrix4f perp = orthographicMatrix({fov_rad, fov_rad}, 0.1, 10.);
+  Matrix4f perp =
+      orthographicMatrix({aspectRatio * fov_rad, fov_rad}, 0.1, 10.);
+  Matrix4f view;
+  Matrix4f projViewMat;
 
   Uint32 frame = 0;
 
@@ -215,20 +249,29 @@ int main() {
     SDL_GPUTexture *swapchain;
     vertex_binding.buffer = state.buf_vertex;
     vertex_binding.offset = 0;
-    Float3 center{0.5, 0.5, 0.};
-    Float3 eye{0., 0.5, 2.};
-    eye.x() = 0.5 + 0.05 * std::cos(0.05 * frame);
-    Matrix4f view = lookAt(eye, center, {0., 1., 0.});
-    Matrix4f projViewMat = perp * view;
+    const Float3 center{0.5, 0.5, -0.5};
+    Float3 eye{0.5, 0.5, 0.};
+    const float phi = 0.05 * frame;
+    eye.x() += 2.0 * std::cos(phi);
+    eye.z() += 2.0 * std::sin(phi);
+    view = lookAt(eye, center, {0., 1., 0.});
+    projViewMat = perp * view;
 
     if (SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchain)) {
       SDL_GPUColorTargetInfo ctinfo{.texture = swapchain,
                                     .clear_color = SDL_FColor{},
                                     .load_op = SDL_GPU_LOADOP_CLEAR,
                                     .store_op = SDL_GPU_STOREOP_STORE};
-      // SDL_GPUDepthStencilTargetInfo dstinfo;
-      // dstinfo.texture = swapchain;
-      render_pass = SDL_BeginGPURenderPass(cmdbuf, &ctinfo, 1, NULL);
+      SDL_GPUDepthStencilTargetInfo depth_target;
+      SDL_zero(depth_target);
+      depth_target.clear_depth = 1.0f;
+      depth_target.load_op = SDL_GPU_LOADOP_CLEAR;
+      depth_target.store_op = SDL_GPU_STOREOP_DONT_CARE;
+      depth_target.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
+      depth_target.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
+      depth_target.texture = texture_depth;
+      depth_target.cycle = true;
+      render_pass = SDL_BeginGPURenderPass(cmdbuf, &ctinfo, 1, &depth_target);
       SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
       SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
       constexpr auto vertexCount = std::size(vertexData);
@@ -246,6 +289,8 @@ int main() {
   }
 
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
+
+  SDL_ReleaseGPUTexture(device, texture_depth);
 
   SDL_ReleaseGPUBuffer(device, state.buf_vertex);
 
