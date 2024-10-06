@@ -15,51 +15,51 @@ Float4 green = {0.f, 1., 0., 1.};
 Float4 blue = {0.f, 0., 1., 1.};
 
 // clang-format off
-Vertex vertexData[] = {
+const Vertex vertexData[] = {
   // f1
-  {{0., 0., 0.}, red},
-  {{1., 0., 0.}, (blue + red) / 2},
-  {{1., 1., 0.}, blue},
+  {{0., 0., 1.}, red},
+  {{1., 0., 1.}, (blue + red) / 2},
+  {{1., 1., 1.}, blue},
   // f2
-  {{1., 1., 0.}, blue},
-  {{0., 1., 0.}, green},
-  {{0., 0., 0.}, red},
+  {{1., 1., 1.}, blue},
+  {{0., 1., 1.}, green},
+  {{0., 0., 1.}, red},
   // bottom
   // f3
-  {{0., 0., 0.}, red},
-  {{0., 0., -1.}, blue},
-  {{1., 0., -1.}, red},
+  {{0., 0., 1.}, red},
+  {{0., 0., 0.}, blue},
+  {{1., 0., 0.}, red},
   // f4
-  {{1., 0., -1.}, red},
-  {{1., 0., 0.}, (blue + red) / 2},
-  {{0., 0., 0.}, red},
+  {{1., 0., 0.}, red},
+  {{1., 0., 1.}, (blue + red) / 2},
+  {{0., 0., 1.}, red},
   // left
   // f5
-  {{0., 0., 0.}, red},
-  {{0., 1., 0.}, green},
-  {{0., 1., -1.}, blue},
+  {{0., 0., 1.}, red},
+  {{0., 1., 1.}, green},
+  {{0., 1., 0.}, blue},
   // f6
-  {{0., 1., -1.}, blue},
-  {{0., 0., -1.}, green},
-  {{0., 0., 0.}, red},
+  {{0., 1., 0.}, blue},
+  {{0., 0., 0.}, green},
+  {{0., 0., 1.}, red},
   // back
   // f7
-  {{1., 1., -1.}, blue},
-  {{1., 0., -1.}, (blue + red) / 2},
-  {{0., 0., -1.}, red},
+  {{1., 1., 0.}, blue},
+  {{1., 0., 0.}, (blue + red) / 2},
+  {{0., 0., 0.}, red},
   // f8
-  {{0., 0., -1.}, red},
-  {{0., 1., -1.}, (blue + red) / 2},
-  {{1., 1., -1.}, blue},
+  {{0., 0., 0.}, red},
+  {{0., 1., 0.}, (blue + red) / 2},
+  {{1., 1., 0.}, blue},
   // right
   // f9
-  {{1., 0., -1.}, red},
-  {{1., 1., -1.}, green},
-  {{1., 1., 0.}, blue},
+  {{1., 0., 0.}, red},
+  {{1., 1., 0.}, green},
+  {{1., 1., 1.}, blue},
   // f10
-  {{1., 1., 0.}, blue},
-  {{1., 0., 0.}, green},
-  {{1., 0., -1.}, red}
+  {{1., 1., 1.}, blue},
+  {{1., 0., 1.}, green},
+  {{1., 0., 0.}, red}
 };
 // clang-format on
 
@@ -249,8 +249,8 @@ int main() {
     SDL_GPUTexture *swapchain;
     vertex_binding.buffer = state.buf_vertex;
     vertex_binding.offset = 0;
-    const Float3 center{0.5, 0.5, -0.5};
-    Float3 eye{0.5, 0.5, 0.};
+    const Float3 center{0.5, 0.5, 0.5};
+    Float3 eye{0.5, 0.5, 0.5};
     const float phi = 0.05 * frame;
     eye.x() += 2.0 * std::cos(phi);
     eye.z() += 2.0 * std::sin(phi);
