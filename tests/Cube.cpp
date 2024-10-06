@@ -257,7 +257,8 @@ int main() {
     view = lookAt(eye, center, {0., 1., 0.});
     projViewMat = perp * view;
 
-    if (SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchain)) {
+    if (SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchain, NULL,
+                                       NULL)) {
       SDL_GPUColorTargetInfo ctinfo{.texture = swapchain,
                                     .clear_color = SDL_FColor{},
                                     .load_op = SDL_GPU_LOADOP_CLEAR,

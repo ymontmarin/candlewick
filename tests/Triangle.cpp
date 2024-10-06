@@ -81,7 +81,8 @@ int main() {
     }
 
     SDL_GPUTexture *swapchainTexture;
-    if (!SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchainTexture)) {
+    if (!SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchainTexture, NULL,
+                                        NULL)) {
       SDL_SubmitGPUCommandBuffer(cmdbuf);
       break;
     }
