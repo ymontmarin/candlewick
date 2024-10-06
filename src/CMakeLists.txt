@@ -1,4 +1,4 @@
-find_package(SDL3 REQUIRED)
+find_package(SDL3 3.1.3 REQUIRED)
 find_package(assimp REQUIRED)
 find_package(Eigen3 REQUIRED)
 add_library(
