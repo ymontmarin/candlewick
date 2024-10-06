@@ -15,7 +15,7 @@ Device::Device(SDL_GPUShaderFormat format_flags, bool debug_mode)
 void Device::destroy() {
   if (_device)
     SDL_DestroyGPUDevice(_device);
-  _device = nullptr;
+  _device = NULL;
 }
 
 } // namespace candlewick
