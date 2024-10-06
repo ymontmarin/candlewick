@@ -10,12 +10,13 @@ struct Vertex {
   Float4 col;
 };
 
-Float4 red = {1.f, 0., 0., 1.};
-Float4 green = {0.f, 1., 0., 1.};
-Float4 blue = {0.f, 0., 1., 1.};
+const Float4 red = {1.f, 0., 0., 1.};
+const Float4 green = {0.f, 1., 0., 1.};
+const Float4 blue = {0.f, 0., 1., 1.};
 
 // clang-format off
 const Vertex vertexData[] = {
+  // top
   // f1
   {{0., 0., 1.}, red},
   {{1., 0., 1.}, (blue + red) / 2},
@@ -24,7 +25,7 @@ const Vertex vertexData[] = {
   {{1., 1., 1.}, blue},
   {{0., 1., 1.}, green},
   {{0., 0., 1.}, red},
-  // bottom
+  // -y
   // f3
   {{0., 0., 1.}, red},
   {{0., 0., 0.}, blue},
@@ -33,33 +34,42 @@ const Vertex vertexData[] = {
   {{1., 0., 0.}, red},
   {{1., 0., 1.}, (blue + red) / 2},
   {{0., 0., 1.}, red},
-  // left
+  // -x
   // f5
   {{0., 0., 1.}, red},
-  {{0., 1., 1.}, green},
-  {{0., 1., 0.}, blue},
+  {{0., 1., 1.}, red},
+  {{0., 1., 0.}, red},
   // f6
-  {{0., 1., 0.}, blue},
-  {{0., 0., 0.}, green},
+  {{0., 1., 0.}, red},
+  {{0., 0., 0.}, red},
   {{0., 0., 1.}, red},
-  // back
+  // bottom
   // f7
   {{1., 1., 0.}, blue},
-  {{1., 0., 0.}, (blue + red) / 2},
-  {{0., 0., 0.}, red},
+  {{1., 0., 0.}, blue},
+  {{0., 0., 0.}, blue},
   // f8
-  {{0., 0., 0.}, red},
-  {{0., 1., 0.}, (blue + red) / 2},
+  {{0., 0., 0.}, blue},
+  {{0., 1., 0.}, blue},
   {{1., 1., 0.}, blue},
-  // right
+  // +x
   // f9
-  {{1., 0., 0.}, red},
+  {{1., 0., 0.}, green},
   {{1., 1., 0.}, green},
-  {{1., 1., 1.}, blue},
+  {{1., 1., 1.}, green},
   // f10
-  {{1., 1., 1.}, blue},
+  {{1., 1., 1.}, green},
   {{1., 0., 1.}, green},
-  {{1., 0., 0.}, red}
+  {{1., 0., 0.}, green},
+  // +y
+  // f11
+  {{0., 1., 1.}, blue},
+  {{1., 1., 1.}, (red+blue)/2},
+  {{1., 1., 0.}, blue},
+  // f12
+  {{1., 1., 0.}, blue},
+  {{0., 1., 0.}, (2 * green+blue)/3},
+  {{0., 1., 1.}, blue},
 };
 // clang-format on
 
@@ -236,6 +246,8 @@ int main() {
   const float fov_rad = 45.0_radf;
   Matrix4f perp =
       orthographicMatrix({aspectRatio * fov_rad, fov_rad}, 0.1, 10.);
+  Matrix4f modelMat = Matrix4f::Identity();
+  modelMat.col(3).head<3>() << -0.5f, -0.5f, -0.5f;
   Matrix4f view;
   Matrix4f projViewMat;
 
@@ -249,13 +261,14 @@ int main() {
     SDL_GPUTexture *swapchain;
     vertex_binding.buffer = state.buf_vertex;
     vertex_binding.offset = 0;
-    const Float3 center{0.5, 0.5, 0.5};
-    Float3 eye{0.5, 0.5, 0.5};
+    const Float3 center{0., 0., 0.};
+    Float3 eye{0., 0., 0.};
+    // start at phi -> eye.x = 2.5, eye.y = 0.5
     const float phi = 0.05 * frame;
     eye.x() += 2.0 * std::cos(phi);
     eye.y() += 2.0 * std::sin(phi);
     view = lookAt(eye, center, {0., 0., 1.});
-    projViewMat = perp * view;
+    projViewMat = perp * view * modelMat;
 
     if (SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchain, NULL,
                                        NULL)) {
@@ -285,7 +298,7 @@ int main() {
       break;
     }
     SDL_SubmitGPUCommandBuffer(cmdbuf);
-    SDL_Log("Frame [% 3d]", frame);
+    SDL_Log("Frame [%3d] phi = %.2f", frame, phi);
     frame++;
   }
 
