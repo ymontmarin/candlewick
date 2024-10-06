@@ -253,8 +253,8 @@ int main() {
     Float3 eye{0.5, 0.5, 0.5};
     const float phi = 0.05 * frame;
     eye.x() += 2.0 * std::cos(phi);
-    eye.z() += 2.0 * std::sin(phi);
-    view = lookAt(eye, center, {0., 1., 0.});
+    eye.y() += 2.0 * std::sin(phi);
+    view = lookAt(eye, center, {0., 0., 1.});
     projViewMat = perp * view;
 
     if (SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchain, NULL,
