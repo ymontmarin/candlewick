@@ -42,8 +42,7 @@ Shader::Shader(SDL_GPUDevice *device, const char *filename,
                                .num_storage_buffers = 0,
                                .num_uniform_buffers = uniformBufferCount,
                                .props = 0U};
-  _shader =
-      (SDL_GPUShader *)SDL_ShaderCross_CompileFromSPIRV(device, &info, false);
+  _shader = SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(device, &info);
   if (!_shader) {
     SDL_Log("Failed to create shader, %s", SDL_GetError());
   }
