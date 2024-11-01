@@ -1,7 +1,7 @@
 #include "Shader.h"
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_filesystem.h>
-#include "SDL_gpu_shadercross.h"
+#include <SDL3_gpu_shadercross/SDL_gpu_shadercross.h>
 
 namespace candlewick {
 SDL_GPUShaderStage detect_shader_stage(const char *filename) {

@@ -12,14 +12,19 @@ add_library(
   candlewick/core/Texture2D.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}_core PUBLIC SDL3::SDL3 SDL3::Headers)
-target_link_libraries(${PROJECT_NAME}_core PUBLIC assimp::assimp Eigen3::Eigen)
+target_link_libraries(
+  ${PROJECT_NAME}_core
+  PUBLIC
+    SDL3::SDL3
+    SDL3::Headers
+    SDL3_gpu_shadercross::SDL3_gpu_shadercross
+    assimp::assimp
+    Eigen3::Eigen
+)
 target_include_directories(${PROJECT_NAME}_core PUBLIC ./)
 target_include_directories(
   ${PROJECT_NAME}_core
-  PUBLIC
-    ${PROJECT_SOURCE_DIR}/external/SDL_gpu_shadercross
-    ${PROJECT_SOURCE_DIR}/external/imgui/backends
+  PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui/backends
 )
 
 add_library(${PROJECT_NAME} INTERFACE)

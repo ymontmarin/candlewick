@@ -1,8 +1,7 @@
 #include "candlewick/core/Device.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/MeshLayout.h"
-#define SDL_GPU_SHADERCROSS_IMPLEMENTATION
-#include "SDL_gpu_shadercross.h"
+#include <SDL3_gpu_shadercross/SDL_gpu_shadercross.h>
 #include "math_util.hpp"
 
 struct Vertex {
