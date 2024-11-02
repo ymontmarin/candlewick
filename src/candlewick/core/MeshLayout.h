@@ -23,7 +23,7 @@ struct MeshLayout {
                             SDL_GPUVertexElementFormat format,
                             Uint32 offset) &&;
 
-  SDL_GPUVertexInputState toVertexInputState();
+  SDL_GPUVertexInputState toVertexInputState() const;
 
 private:
   std::vector<SDL_GPUVertexBufferDescription> vertex_buffer_desc;

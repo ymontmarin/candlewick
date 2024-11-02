@@ -30,7 +30,7 @@ MeshLayout &&MeshLayout::addAttribute(Uint32 loc, Uint32 binding,
   return std::move(addAttribute(loc, binding, format, offset));
 }
 
-SDL_GPUVertexInputState MeshLayout::toVertexInputState() {
+SDL_GPUVertexInputState MeshLayout::toVertexInputState() const {
   return {vertex_buffer_desc.data(), (Uint32)vertex_buffer_desc.size(),
           vertex_attributes.data(), (Uint32)vertex_attributes.size()};
 }
