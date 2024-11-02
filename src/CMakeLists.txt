@@ -5,6 +5,7 @@ add_library(
   ${PROJECT_NAME}_core
   SHARED
   candlewick/core/Device.cpp
+  candlewick/core/math_util.cpp
   candlewick/core/Mesh.cpp
   candlewick/core/MeshLayout.cpp
   candlewick/core/MeshLoader.cpp

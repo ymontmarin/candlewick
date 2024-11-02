@@ -1,6 +1,8 @@
-#include "math_util.hpp"
+#include "math_util.h"
 
 #include <Eigen/Geometry>
+
+namespace candlewick {
 
 Eigen::Matrix4f lookAt(const Float3 &eye, const Float3 &center,
                        const Float3 &up) {
@@ -53,3 +55,4 @@ Eigen::Matrix4f orthographicMatrix(const Float2 &size, float near, float far) {
   // clang-format on
   return out;
 }
+} // namespace candlewick

@@ -2,7 +2,9 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/MeshLayout.h"
 #include <SDL3_gpu_shadercross/SDL_gpu_shadercross.h>
-#include "math_util.hpp"
+#include "candlewick/core/math_util.h"
+
+using namespace candlewick;
 
 struct Vertex {
   Float3 pos;
@@ -114,7 +116,6 @@ SDL_GPUTexture *createDepthTexture(candlewick::Device &device,
 }
 
 int main() {
-  using namespace candlewick;
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     return 1;
   }

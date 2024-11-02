@@ -2,6 +2,8 @@
 
 #include <Eigen/Core>
 
+namespace candlewick {
+
 using Float2 = Eigen::Vector2f;
 using Float3 = Eigen::Vector3f;
 using Float4 = Eigen::Vector4f;
@@ -26,3 +28,5 @@ Eigen::Matrix4f perspectiveMatrix(float left, float right, float top,
                                   float bottom, float near, float far);
 
 Eigen::Matrix4f orthographicMatrix(const Float2 &size, float, float far);
+
+} // namespace candlewick
