@@ -1,12 +1,8 @@
 #pragma once
 
-#include <Eigen/Core>
+#include "math_types.h"
 
 namespace candlewick {
-
-using Float2 = Eigen::Vector2f;
-using Float3 = Eigen::Vector3f;
-using Float4 = Eigen::Vector4f;
 
 inline double deg2rad(double t) { return t * M_PI / 180.0; }
 inline float deg2rad(float t) { return t * M_PIf / 180.0f; }
