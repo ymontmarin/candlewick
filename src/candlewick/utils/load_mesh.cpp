@@ -8,53 +8,40 @@
 
 namespace candlewick {
 
-/// Traverse the Assimp scene recursively to build the mesh data.
-/// \returns Number of vertices.
-Uint32 buildMeshImpl(const aiScene *scene, const aiNode *node,
-                     aiMatrix4x4 parentWorldTransform, Uint32 vertexOffset,
-                     MeshData &meshData) {
-  auto &vertices = meshData.vertices;
-  auto &faces = meshData.faces;
-  auto &normals = meshData.normals;
+MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
+  using Vertex = MeshData::Vertex;
+  using IndexType = MeshData::IndexType;
+  const Uint32 expectedFaceSize = 3;
 
-  Uint32 nbVtx = 0;
-  if (node) {
-    aiMatrix4x4 tr = parentWorldTransform * node->mTransformation;
+  std::vector<Vertex> vertexData{inMesh->mNumVertices};
+  std::vector<IndexType> indexData;
+  indexData.resize(inMesh->mNumFaces * expectedFaceSize);
 
-    for (Uint32 i = 0; i < node->mNumMeshes; i++) {
-      const Uint32 meshIdx = node->mMeshes[i];
-      aiMesh *inMesh = scene->mMeshes[meshIdx];
+  for (Uint32 vertex_id = 0; vertex_id < inMesh->mNumVertices; vertex_id++) {
+    aiVector3D pos = inMesh->mVertices[vertex_id];
+    pos = transform * pos;
 
-      for (Uint32 vertex_id = 0; vertex_id < inMesh->mNumVertices;
-           vertex_id++) {
-        aiVector3D pos = inMesh->mVertices[vertex_id];
-        pos = tr * pos;
-        vertices.push_back(Float3::Map(&pos.x));
+    Vertex vertex{.pos = Float3::Map(&pos.x), .normal{}};
 
-        if (inMesh->HasNormals()) {
-          aiVector3D n_ = inMesh->mNormals[vertex_id];
-          normals.push_back(Float3::Map(&n_.x));
-        }
-      }
-
-      for (Uint32 fid = 0; fid < inMesh->mNumFaces; fid++) {
-        aiFace &f = inMesh->mFaces[fid];
-        Vec3u::MapType face_indices{f.mIndices};
-        faces.push_back(face_indices.array() + vertexOffset);
-      }
-
-      nbVtx += inMesh->mNumVertices;
+    if (inMesh->HasNormals()) {
+      aiVector3D n_ = inMesh->mNormals[vertex_id];
+      vertex.normal = Float3::Map(&n_.x);
     }
 
-    for (Uint32 k = 0; k < node->mNumChildren; k++) {
-      const aiNode *cNode = node->mChildren[k];
-      nbVtx += buildMeshImpl(scene, cNode, tr, nbVtx, meshData);
+    vertexData[vertex_id] = std::move(vertex);
+  }
+
+  for (Uint32 face_id = 0; face_id < inMesh->mNumFaces; face_id++) {
+    const aiFace &f = inMesh->mFaces[face_id];
+    for (Uint32 ii = 0; ii < f.mNumIndices; ii++) {
+      indexData[face_id * expectedFaceSize + ii] = f.mIndices[ii];
     }
   }
-  return nbVtx;
+  return MeshData{std::move(vertexData), std::move(indexData)};
 }
 
-LoadMeshReturn loadMesh(const char *path, MeshData &meshData) {
+LoadMeshReturn loadSceneMeshes(const char *path,
+                               std::vector<MeshData> &meshData) {
 
   ::Assimp::Importer import;
   // remove point primitives
@@ -66,18 +53,19 @@ LoadMeshReturn loadMesh(const char *path, MeshData &meshData) {
                         aiProcess_FindDegenerates;
   const aiScene *scene = import.ReadFile(path, pFlags);
   if (!scene) {
-    SDL_Log("%s: Warning: Failed to load resource.", __FUNCTION__);
+    SDL_Log("%s: Warning: Failed to load resource. %s", __FUNCTION__,
+            import.GetErrorString());
     return LoadMeshReturn::FailedToLoad;
   }
 
   if (!scene->HasMeshes())
     return LoadMeshReturn::NoMeshes;
 
-  aiMatrix4x4 rootTr = scene->mRootNode->mTransformation;
-  Uint32 numVertices =
-      buildMeshImpl(scene, scene->mRootNode, rootTr, 0, meshData);
-  (void)numVertices;
-  assert(numVertices == meshData.numVertices());
+  aiMatrix4x4 transform = scene->mRootNode->mTransformation;
+  meshData.resize(scene->mNumMeshes);
+  for (std::size_t i = 0; i < scene->mNumMeshes; i++) {
+    meshData[i] = loadAiMesh(scene->mMeshes[i], transform);
+  }
 
   return LoadMeshReturn::OK;
 }

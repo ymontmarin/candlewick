@@ -8,16 +8,23 @@ namespace candlewick {
 struct Mesh;
 
 struct MeshData {
-  std::vector<Float3> vertices;
-  std::vector<Vec3u> faces;
-  std::vector<Float3> normals;
+  // use a vertex struct, allows us to interleave data properly
+  struct Vertex {
+    Float3 pos;
+    Float3 normal;
+  };
+  using IndexType = Uint32;
+  std::vector<Vertex> vertexData;
+  std::vector<IndexType> indexData;
 
-  Uint32 numVertices() const { return static_cast<Uint32>(vertices.size()); }
+  std::size_t numVertices() const { return vertexData.size(); }
+  std::size_t numIndices() const { return indexData.size(); }
 
   constexpr explicit MeshData() = default;
   MeshData(const MeshData &) = delete;
   MeshData(MeshData &&) noexcept = default;
   MeshData &operator=(MeshData &&) noexcept = default;
+  MeshData(std::vector<Vertex> vertexData, std::vector<IndexType> indexData);
 };
 
 Mesh convertToMesh(const MeshData &meshData);

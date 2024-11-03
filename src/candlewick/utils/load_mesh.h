@@ -1,10 +1,13 @@
 #pragma once
 
+#include <vector>
+
 namespace candlewick {
 
 struct MeshData;
 
 enum class LoadMeshReturn { OK, FailedToLoad, NoMeshes };
 
-LoadMeshReturn loadMesh(const char *path, MeshData &meshData);
+LoadMeshReturn loadSceneMeshes(const char *path,
+                               std::vector<MeshData> &meshData);
 } // namespace candlewick
