@@ -8,9 +8,9 @@ add_library(
   candlewick/core/math_util.cpp
   candlewick/core/Mesh.cpp
   candlewick/core/MeshLayout.cpp
-  candlewick/core/MeshLoader.cpp
   candlewick/core/Shader.cpp
   candlewick/core/Texture2D.cpp
+  candlewick/utils/load_mesh.cpp
 )
 
 target_link_libraries(
