@@ -23,6 +23,8 @@ struct Mesh {
 
   bool isIndexed() const { return indexBuffer; }
 
+  void releaseBuffers(const Device &device);
+
 private:
   /// Add a vertex buffer corresponding to binding slot @p binding,
   /// using the pre-allocated @p buffer.

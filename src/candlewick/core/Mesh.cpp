@@ -1,4 +1,6 @@
 #include "Mesh.h"
+
+#include "Device.h"
 #include "MeshLayout.h"
 #include "./errors.h"
 
@@ -34,6 +36,18 @@ Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer, Uint64 offset) {
   indexBuffer = buffer;
   indexBufferOffset = offset;
   return *this;
+}
+
+void Mesh::releaseBuffers(const Device &device) {
+  for (auto &buf : vertexBuffers) {
+    SDL_ReleaseGPUBuffer(device, buf);
+    buf = nullptr;
+  }
+
+  if (isIndexed()) {
+    SDL_ReleaseGPUBuffer(device, indexBuffer);
+    indexBuffer = nullptr;
+  }
 }
 
 } // namespace candlewick
