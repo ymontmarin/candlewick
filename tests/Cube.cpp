@@ -138,7 +138,7 @@ int main() {
 
   // Buffers
 
-  MeshLayout mesh_layout;
+  MeshLayout mesh_layout{SDL_GPU_PRIMITIVETYPE_TRIANGLELIST};
   mesh_layout.addBinding(0, sizeof(Vertex))
       .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                     offsetof(Vertex, pos))
@@ -204,7 +204,7 @@ int main() {
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
       .vertex_input_state = mesh_layout.toVertexInputState(),
-      .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+      .primitive_type = mesh_layout.primitiveType(),
       .rasterizer_state =
           {
               .fill_mode = SDL_GPU_FILLMODE_FILL,
