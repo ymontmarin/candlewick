@@ -4,7 +4,8 @@ import subprocess
 import sys
 
 filename = sys.argv[1]
-proc = subprocess.run(["glslang", filename, "--target-env", "vulkan1.2", '-o', f'{filename}.spv'],
-            shell=False
-            )
+out_file = f"shaders/compiled/{filename}.spv"
+proc = subprocess.run(
+    ["glslang", filename, "--target-env", "vulkan1.2", "-o", out_file], shell=False
+)
 print(proc.args)
