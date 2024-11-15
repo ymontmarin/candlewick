@@ -23,8 +23,8 @@ Shader::Shader(SDL_GPUDevice *device, const char *filename,
   const char *currentPath = SDL_GetBasePath();
   SDL_GPUShaderStage stage = detect_shader_stage(filename);
   char path[256];
-  SDL_snprintf(path, sizeof(path), "%s../../../assets/%s.spv", currentPath,
-               filename);
+  SDL_snprintf(path, sizeof(path), "%s../../../assets/shaders/compiled/%s.spv",
+               currentPath, filename);
   SDL_Log("Loading shader %s", path);
 
   size_t code_size;
