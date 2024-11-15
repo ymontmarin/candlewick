@@ -1,9 +1,6 @@
 [submodule "external/SDL_gpu_shadercross"]
 	path = external/SDL_gpu_shadercross
 	url = git@github.com:libsdl-org/SDL_gpu_shadercross.git
-[submodule "external/SPIRV-Cross"]
-	path = external/SPIRV-Cross
-	url = git@github.com:KhronosGroup/SPIRV-Cross.git
 [submodule "external/imgui"]
 	path = external/imgui
 	url = git@github.com:ocornut/imgui.git
