@@ -1,8 +1,10 @@
 #include "candlewick/core/Device.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/MeshLayout.h"
-#include <SDL3_gpu_shadercross/SDL_gpu_shadercross.h>
 #include "candlewick/core/math_util.h"
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_gpu.h>
 
 using namespace candlewick;
 
@@ -119,8 +121,7 @@ int main() {
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     return 1;
   }
-  SDL_ShaderCross_Init();
-  Device device{SDL_ShaderCross_GetSPIRVShaderFormats()};
+  Device device{SDL_GPU_SHADERFORMAT_SPIRV};
 
   const float wWidth = 1280;
   const float wHeight = 720;
@@ -311,6 +312,5 @@ int main() {
   SDL_ReleaseWindowFromGPUDevice(device, window);
   SDL_DestroyWindow(window);
   device.destroy();
-  SDL_ShaderCross_Quit();
   SDL_Quit();
 }
