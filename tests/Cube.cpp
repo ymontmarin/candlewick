@@ -173,14 +173,16 @@ int main() {
   {
     cmdbuf = SDL_AcquireGPUCommandBuffer(device);
     SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(cmdbuf);
-    SDL_GPUTransferBufferLocation src_location;
-    src_location.transfer_buffer = transfer_buffer;
-    src_location.offset = 0;
+    SDL_GPUTransferBufferLocation src_location{
+        .transfer_buffer = transfer_buffer,
+        .offset = 0,
+    };
 
-    SDL_GPUBufferRegion dst_location;
-    dst_location.buffer = state.buf_vertex;
-    dst_location.offset = 0;
-    dst_location.size = sizeof(vertexData);
+    SDL_GPUBufferRegion dst_location{
+        .buffer = state.buf_vertex,
+        .offset = 0,
+        .size = sizeof(vertexData),
+    };
 
     SDL_UploadToGPUBuffer(copy_pass, &src_location, &dst_location, false);
     SDL_EndGPUCopyPass(copy_pass);
@@ -225,9 +227,6 @@ int main() {
               .has_depth_stencil_target = true,
           },
       .props = 0};
-  pipeline_desc.rasterizer_state.front_face =
-      SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE;
-  pipeline_desc.rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL;
   SDL_GPUGraphicsPipeline *pipeline =
       SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
   if (!pipeline) {
