@@ -1,2 +1,4 @@
 build*/
 !.vscode/
+frag.spv
+vert.spv
