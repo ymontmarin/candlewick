@@ -10,7 +10,6 @@ add_library(
   candlewick/core/MeshLayout.cpp
   candlewick/core/Shader.cpp
   candlewick/core/Texture2D.cpp
-  candlewick/utils/UploadMesh.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/MeshData.cpp
 )

@@ -3,7 +3,6 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/math_util.h"
 #include "candlewick/utils/MeshData.h"
-#include "candlewick/utils/UploadMesh.h"
 #include "candlewick/utils/LoadMesh.h"
 
 #include <SDL3/SDL.h>
@@ -67,6 +66,12 @@ SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
   };
   return SDL_CreateGPUTexture(device, &texinfo);
 }
+
+struct alignas(16) uniform_data_t {
+  Eigen::Matrix<float, 4, 4, Eigen::DontAlign> mvp;
+  Eigen::Matrix<float, 3, 3, Eigen::DontAlign> normalMatrix;
+  float padding[3]; // fit glsl/spirv std140 layout
+};
 
 int main() {
   if (!ExampleInit()) {
@@ -213,11 +218,7 @@ int main() {
       SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                              SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-      struct alignas(16) uniform_t {
-        Eigen::Matrix<float, 4, 4, Eigen::DontAlign> mvp;
-        Eigen::Matrix<float, 3, 3, Eigen::DontAlign> normalMatrix;
-        float padding[3]; // fit glsl/spirv std140 layout
-      } uniformData{projViewMat, normalMatrix, {}};
+      uniform_data_t uniformData{projViewMat, normalMatrix, {}};
 
       SDL_PushGPUVertexUniformData(command_buffer, 0, &uniformData,
                                    sizeof(uniformData));

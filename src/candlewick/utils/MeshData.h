@@ -40,4 +40,7 @@ Mesh convertToMeshIndexed(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
 /// required vertex and index buffers.
 Mesh convertToMeshIndexed(const Device &device, const MeshData &meshData);
 
+/// \brief Upload mesh contents to GPU device.
+void uploadMeshToDevice(const Device &device, const Mesh &mesh,
+                        const MeshData &meshData);
 } // namespace candlewick
