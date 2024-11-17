@@ -52,9 +52,9 @@ public:
   std::vector<SDL_GPUBuffer *> vertexBuffers;
   std::vector<Uint32> vertexBufferOffsets;
   std::vector<BufferOwnership> vertexBufferOwnerships;
-  SDL_GPUBuffer *indexBuffer;
+  SDL_GPUBuffer *indexBuffer{NULL};
   BufferOwnership indexBufferOwnership;
-  Uint32 indexBufferOffset;
+  Uint32 indexBufferOffset{0};
 };
 
 } // namespace candlewick
