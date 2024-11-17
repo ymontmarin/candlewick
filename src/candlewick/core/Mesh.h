@@ -41,8 +41,6 @@ private:
 public:
   /// Either the vertex count or, for indexed meshes, the index count;
   Uint32 count = ~Uint32{};
-  Uint32 vertexOffset;
-  Uint32 indexOffset;
 
   enum BufferOwnership {
     Owned,

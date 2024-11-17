@@ -41,6 +41,7 @@ Mesh &Mesh::addVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
 
 Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer, Uint32 offset,
                            bool takeOwnership) {
+  SDL_Log("Set index buffer to mesh (owned: %d)", takeOwnership);
   indexBuffer = buffer;
   indexBufferOffset = offset;
   indexBufferOwnership = takeOwnership ? Owned : Borrowed;
