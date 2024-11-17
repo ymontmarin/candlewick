@@ -13,8 +13,9 @@ MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
   using IndexType = MeshData::IndexType;
   const Uint32 expectedFaceSize = 3;
 
-  std::vector<Vertex> vertexData{inMesh->mNumVertices};
+  std::vector<Vertex> vertexData;
   std::vector<IndexType> indexData;
+  vertexData.resize(inMesh->mNumVertices);
   indexData.resize(inMesh->mNumFaces * expectedFaceSize);
 
   for (Uint32 vertex_id = 0; vertex_id < inMesh->mNumVertices; vertex_id++) {
@@ -49,8 +50,10 @@ LoadMeshReturn loadSceneMeshes(const char *path,
                             aiPrimitiveType_LINE | aiPrimitiveType_POINT);
   unsigned int pFlags = aiProcess_CalcTangentSpace | aiProcess_Triangulate |
                         aiProcess_GenSmoothNormals | aiProcess_SortByPType |
-                        aiProcess_GenUVCoords | aiProcess_OptimizeMeshes |
-                        aiProcess_FindDegenerates;
+                        aiProcess_JoinIdenticalVertices |
+                        aiProcess_GenUVCoords | aiProcess_RemoveComponent |
+                        aiProcess_FindDegenerates |
+                        aiProcess_ImproveCacheLocality;
   const aiScene *scene = import.ReadFile(path, pFlags);
   if (!scene) {
     SDL_Log("%s: Warning: Failed to load resource. %s", __FUNCTION__,
