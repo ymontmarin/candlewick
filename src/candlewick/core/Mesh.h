@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core.h"
+#include "Tags.h"
 #include "MeshLayout.h"
 
 namespace candlewick {
@@ -10,6 +11,7 @@ namespace candlewick {
 struct Mesh {
   explicit Mesh(MeshLayout layout);
 
+  Mesh(NoInitT);
   Mesh(const Mesh &) = delete;
   Mesh(Mesh &&) noexcept = default;
 
@@ -18,26 +20,41 @@ struct Mesh {
 
   const MeshLayout &layout() const { return _layout; }
 
-  Mesh &addVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint64 offset);
-  Mesh &setIndexBuffer(SDL_GPUBuffer *buffer, Uint64 offset);
+  Mesh &addVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
+                        bool takeOwnership = false);
+  Mesh &setIndexBuffer(SDL_GPUBuffer *buffer, Uint32 offset,
+                       bool takeOwnership = false);
 
-  bool isIndexed() const { return indexBuffer; }
+  bool isIndexed() const { return indexBuffer != NULL; }
+  bool isCountSet() const { return count != ~Uint32{}; }
 
-  void releaseBuffers(const Device &device);
+  void releaseOwnedBuffers(const Device &device);
 
 private:
   /// Add a vertex buffer corresponding to binding slot @p binding,
   /// using the pre-allocated @p buffer.
   std::size_t addVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
-                                  Uint64 offset);
+                                  Uint32 offset);
 
   MeshLayout _layout;
 
 public:
+  /// Either the vertex count or, for indexed meshes, the index count;
+  Uint32 count = ~Uint32{};
+  Uint32 vertexOffset;
+  Uint32 indexOffset;
+
+  enum BufferOwnership {
+    Owned,
+    Borrowed,
+  };
+
   std::vector<SDL_GPUBuffer *> vertexBuffers;
-  std::vector<Uint64> vertexBufferOffsets;
+  std::vector<Uint32> vertexBufferOffsets;
+  std::vector<BufferOwnership> vertexBufferOwnerships;
   SDL_GPUBuffer *indexBuffer;
-  Uint64 indexBufferOffset;
+  BufferOwnership indexBufferOwnership;
+  Uint32 indexBufferOffset;
 };
 
 } // namespace candlewick
