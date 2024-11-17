@@ -165,12 +165,22 @@ int main() {
       orthographicMatrix({aspectRatio * fov, fov}, 0.1, 10.0);
 
   Uint32 frameNo = 0;
-  for (Uint32 i = 0; i < 200; i++) {
+  bool quitRequested = false;
+  while (frameNo < 200 && !quitRequested) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      SDL_Log("Poll event type: %d", event.type);
+      if (event.type == SDL_EVENT_QUIT) {
+        SDL_Log("Application exit requested.");
+        quitRequested = true;
+        break;
+      }
+    }
     Eigen::AngleAxisf rot{M_PI_2f, Eigen::Vector3f{1., 0., 0.}};
     Eigen::Affine3f modelMat = Eigen::Affine3f::Identity();
     modelMat.rotate(rot);
     Float3 eye{0., 0., 4.0};
-    float phi = i * 0.03;
+    float phi = frameNo * 0.03;
     float radius = 6.0;
     eye.x() = radius * std::cos(phi);
     eye.y() = radius * std::sin(phi);

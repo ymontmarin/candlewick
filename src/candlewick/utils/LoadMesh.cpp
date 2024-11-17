@@ -67,7 +67,8 @@ LoadMeshReturn loadSceneMeshes(const char *path,
   aiMatrix4x4 transform = scene->mRootNode->mTransformation;
   meshData.resize(scene->mNumMeshes);
   for (std::size_t i = 0; i < scene->mNumMeshes; i++) {
-    meshData[i] = loadAiMesh(scene->mMeshes[i], transform);
+    aiMesh *inMesh = scene->mMeshes[i];
+    meshData[i] = loadAiMesh(inMesh, transform);
   }
 
   return LoadMeshReturn::OK;
