@@ -8,7 +8,7 @@ namespace candlewick {
 /// Struct which defines the layout of a mesh's vertices.
 /// This is a clever wrapper around
 struct MeshLayout {
-  explicit MeshLayout(SDL_GPUPrimitiveType primitive)
+  constexpr explicit MeshLayout(SDL_GPUPrimitiveType primitive)
       : _primitiveType(primitive) {}
 
   /// @p slot - index for vertex buffer
