@@ -1,5 +1,6 @@
 #include "candlewick/core/Device.h"
 #include "candlewick/core/Shader.h"
+#include "candlewick/core/Mesh.h"
 #include "candlewick/core/MeshLayout.h"
 #include "candlewick/core/math_util.h"
 
@@ -77,7 +78,6 @@ const Vertex vertexData[] = {
 // clang-format on
 
 struct State {
-  SDL_GPUBuffer *buf_vertex;
   SDL_GPUSampleCount sample_count;
 };
 
@@ -132,11 +132,6 @@ int main() {
     return 1;
   }
 
-  // Shaders
-
-  Shader vertexShader{device, "VertexColor.vert", 1};
-  Shader fragmentShader{device, "VertexColor.frag", 0};
-
   // Buffers
 
   MeshLayout mesh_layout{SDL_GPU_PRIMITIVETYPE_TRIANGLELIST};
@@ -150,12 +145,14 @@ int main() {
                                       .size = sizeof(vertexData),
                                       .props = 0};
 
-  state.buf_vertex = SDL_CreateGPUBuffer(device, &buffer_desc);
-  if (!state.buf_vertex) {
+  Mesh mesh{mesh_layout};
+  auto buf_vertex = SDL_CreateGPUBuffer(device, &buffer_desc);
+  if (!buf_vertex) {
     SDL_Log("Failed to create vertex buffer: %s", SDL_GetError());
     return 1;
   }
-  SDL_SetGPUBufferName(device, state.buf_vertex, "vertex_buf");
+  SDL_SetGPUBufferName(device, buf_vertex, "vertex_buf");
+  mesh.addVertexBuffer(0, buf_vertex, 0, true);
 
   SDL_GPUTransferBufferCreateInfo transfer_buffer_desc{
       .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
@@ -179,8 +176,8 @@ int main() {
     };
 
     SDL_GPUBufferRegion dst_location{
-        .buffer = state.buf_vertex,
-        .offset = 0,
+        .buffer = mesh.vertexBuffers[0],
+        .offset = mesh.vertexBufferOffsets[0],
         .size = sizeof(vertexData),
     };
 
@@ -191,6 +188,11 @@ int main() {
   SDL_ReleaseGPUTransferBuffer(device, transfer_buffer);
 
   state.sample_count = SDL_GPU_SAMPLECOUNT_1;
+
+  // Shaders
+
+  Shader vertexShader{device, "VertexColor.vert", 1};
+  Shader fragmentShader{device, "VertexColor.frag", 0};
 
   // Pipeline
 
@@ -259,8 +261,8 @@ int main() {
     SDL_GPUBufferBinding vertex_binding;
     cmdbuf = SDL_AcquireGPUCommandBuffer(device);
     SDL_GPUTexture *swapchain;
-    vertex_binding.buffer = state.buf_vertex;
-    vertex_binding.offset = 0;
+    vertex_binding.buffer = mesh.vertexBuffers[0];
+    vertex_binding.offset = mesh.vertexBufferOffsets[0];
     const Float3 center{0., 0., 0.};
     Float3 eye{0., 0., 0.};
     // start at phi -> eye.x = 2.5, eye.y = 0.5
@@ -306,7 +308,7 @@ int main() {
 
   SDL_ReleaseGPUTexture(device, texture_depth);
 
-  SDL_ReleaseGPUBuffer(device, state.buf_vertex);
+  mesh.releaseOwnedBuffers(device);
 
   SDL_ReleaseWindowFromGPUDevice(device, window);
   SDL_DestroyWindow(window);
