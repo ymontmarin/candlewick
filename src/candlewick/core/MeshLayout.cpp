@@ -20,7 +20,12 @@ MeshLayout &&MeshLayout::addBinding(Uint32 slot, Uint32 pitch) && {
 MeshLayout &MeshLayout::addAttribute(Uint32 loc, Uint32 binding,
                                      SDL_GPUVertexElementFormat format,
                                      Uint32 offset) & {
-  vertex_attributes.push_back({loc, binding, format, offset});
+  vertex_attributes.push_back({
+      .location = loc,
+      .buffer_slot = binding,
+      .format = format,
+      .offset = offset,
+  });
   return *this;
 }
 
