@@ -9,13 +9,13 @@ layout(location=0) out vec3 f_normal;
 // i am not that smart
 layout(set=1, binding=0) uniform UniformBlock
 {
-    mat4 viewProj;
+    mat4 mvp;
     mat3 normalMatrix;
 };
 
 void main() {
 
-    f_normal = normalMatrix * normal;
-    gl_Position = viewProj * vec4(position, 1.0);
+    f_normal = normalize(normalMatrix * normal);
+    gl_Position = mvp * vec4(position, 1.0);
 
 }
