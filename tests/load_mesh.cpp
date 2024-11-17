@@ -161,10 +161,12 @@ int main() {
 
   Uint32 frameNo = 0;
   for (Uint32 i = 0; i < 200; i++) {
+    Eigen::AngleAxisf rot{M_PI_2f, Eigen::Vector3f{1., 0., 0.}};
     Eigen::Affine3f modelMat = Eigen::Affine3f::Identity();
-    Float3 eye{0., 0., 0.2};
-    float phi = i * 0.02;
-    float radius = 3.5;
+    modelMat.rotate(rot);
+    Float3 eye{0., 0., 4.0};
+    float phi = i * 0.03;
+    float radius = 6.0;
     eye.x() = radius * std::cos(phi);
     eye.y() = radius * std::sin(phi);
     Float3 center = Float3::Zero();
@@ -211,15 +213,15 @@ int main() {
       SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                              SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-      struct uniform_t {
-        Matrix4f mvp;
-        Matrix3f normalMatrix;
-      } uniformData{projViewMat, normalMatrix};
+      struct alignas(16) uniform_t {
+        Eigen::Matrix<float, 4, 4, Eigen::DontAlign> mvp;
+        Eigen::Matrix<float, 3, 3, Eigen::DontAlign> normalMatrix;
+        float padding[3]; // fit glsl/spirv std140 layout
+      } uniformData{projViewMat, normalMatrix, {}};
 
       SDL_PushGPUVertexUniformData(command_buffer, 0, &uniformData,
                                    sizeof(uniformData));
       SDL_DrawGPUIndexedPrimitives(render_pass, meshes[0].count, 1, 0, 0, 0);
-      // SDL_DrawGPUPrimitives(render_pass, meshes[0].count, 1, 0, 0);
 
       SDL_EndGPURenderPass(render_pass);
     }
