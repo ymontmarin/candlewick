@@ -2,9 +2,9 @@
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/math_util.h"
-#include "candlewick/core/CopyBuffer.h"
 #include "candlewick/utils/MeshData.h"
-#include "candlewick/utils/load_mesh.h"
+#include "candlewick/utils/UploadMesh.h"
+#include "candlewick/utils/LoadMesh.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -100,7 +100,7 @@ int main() {
   /** COPY DATA TO GPU **/
 
   SDL_Log("Uploading mesh...");
-  uploadMesh(device, meshes[0], meshDatas[0]);
+  uploadMeshToDevice(device, meshes[0], meshDatas[0]);
 
   /** CREATE PIPELINE **/
   Shader vertexShader{device, "VertexNormal.vert", 2};

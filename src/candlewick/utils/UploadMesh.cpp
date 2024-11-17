@@ -1,14 +1,14 @@
-#include "CopyBuffer.h"
+#include "UploadMesh.h"
+#include "MeshData.h"
 
-#include "Mesh.h"
-#include "Device.h"
-#include "../utils/MeshData.h"
+#include "../core/Mesh.h"
+#include "../core/Device.h"
 #include <SDL3/SDL_log.h>
 
 namespace candlewick {
 
-void uploadMesh(const Device &device, const Mesh &mesh,
-                const MeshData &meshData) {
+void uploadMeshToDevice(const Device &device, const Mesh &mesh,
+                        const MeshData &meshData) {
 
   SDL_GPUCommandBuffer *upload_command_buffer;
   SDL_GPUTransferBuffer *transfer_buffer;

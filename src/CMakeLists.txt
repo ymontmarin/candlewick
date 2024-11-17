@@ -5,13 +5,13 @@ add_library(
   ${PROJECT_NAME}_core
   SHARED
   candlewick/core/Device.cpp
-  candlewick/core/CopyBuffer.cpp
   candlewick/core/math_util.cpp
   candlewick/core/Mesh.cpp
   candlewick/core/MeshLayout.cpp
   candlewick/core/Shader.cpp
   candlewick/core/Texture2D.cpp
-  candlewick/utils/load_mesh.cpp
+  candlewick/utils/UploadMesh.cpp
+  candlewick/utils/LoadMesh.cpp
   candlewick/utils/MeshData.cpp
 )
 
