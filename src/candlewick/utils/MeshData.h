@@ -28,12 +28,16 @@ struct MeshData {
   MeshData(std::vector<Vertex> vertexData, std::vector<IndexType> indexData);
 };
 
-Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
-                   Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
-                   Uint64 indexOffset, bool takeOwnership = false);
-
 /// \brief Convert @c MeshData to a triangle @c Mesh. This creates the required
-/// vertex and index buffers.
+/// vertex buffer.
 Mesh convertToMesh(const Device &device, const MeshData &meshData);
+
+Mesh convertToMeshIndexed(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
+                          Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
+                          Uint64 indexOffset, bool takeOwnership = false);
+
+/// \brief Convert @c MeshData to an indexed triangle @c Mesh. This creates the
+/// required vertex and index buffers.
+Mesh convertToMeshIndexed(const Device &device, const MeshData &meshData);
 
 } // namespace candlewick
