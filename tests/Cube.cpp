@@ -83,21 +83,6 @@ struct State {
 
 static State state;
 
-SDL_GPUTextureFormat getSupportedDepthFormat(const candlewick::Device &device) {
-  if (SDL_GPUTextureSupportsFormat(
-          device, SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT,
-          SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET)) {
-    return SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT;
-  } else if (SDL_GPUTextureSupportsFormat(
-                 device, SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT,
-                 SDL_GPU_TEXTURETYPE_2D,
-                 SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET)) {
-    return SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT;
-  } else {
-    return SDL_GPUTextureFormat(-1);
-  }
-};
-
 SDL_GPUTexture *createDepthTexture(candlewick::Device &device,
                                    SDL_Window *window,
                                    SDL_GPUTextureFormat depth_tex_format) {
@@ -200,8 +185,6 @@ int main() {
   SDL_zero(color_desc);
   color_desc.format = SDL_GetGPUSwapchainTextureFormat(device, window);
 
-  // SDL_GPUTextureFormat depth_stencil_format =
-  // getSupportedDepthFormat(device);
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
   assert(int(depth_stencil_format) >= 0);
 
