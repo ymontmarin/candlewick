@@ -9,4 +9,4 @@ endfunction()
 
 create_test(Triangle.cpp)
 create_test(Cube.cpp)
-create_test(load_mesh.cpp)
+create_test(MeshNormalsRgb.cpp)
