@@ -69,9 +69,9 @@ SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
 }
 
 struct alignas(16) uniform_data_t {
-  Eigen::Matrix<float, 4, 4, Eigen::DontAlign> mvp;
-  Eigen::Matrix<float, 3, 3, Eigen::DontAlign> normalMatrix;
-  float padding[3]; // fit glsl/spirv std140 layout
+  GpuMat4 mvp;
+  GpuMat3 normalMatrix;
+  float padding[3];
 };
 
 int main() {
@@ -236,7 +236,7 @@ int main() {
       SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                              SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-      uniform_data_t uniformData{projViewMat, normalMatrix, {}};
+      uniform_data_t uniformData{projViewMat, normalMatrix};
 
       SDL_PushGPUVertexUniformData(command_buffer, 0, &uniformData,
                                    sizeof(uniformData));
