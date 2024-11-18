@@ -4,6 +4,7 @@
 #include "candlewick/core/math_util.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
+#include "candlewick/utils/CylinderControl.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -166,6 +167,10 @@ int main() {
 
   Uint32 frameNo = 0;
   bool quitRequested = false;
+  Eigen::AngleAxisf rot{M_PI_2f, Eigen::Vector3f{1., 0., 0.}};
+  Eigen::Affine3f modelMat = Eigen::Affine3f{rot};
+  const float radius = 6.0;
+  Matrix4f viewMat = lookAt({radius, 0, 4.}, Float3::Zero(), {0., 0., 1.});
   while (frameNo < 200 && !quitRequested) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -175,17 +180,20 @@ int main() {
         quitRequested = true;
         break;
       }
+      if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+        float wy = event.wheel.y;
+        cylinderCameraZoom(viewMat, wy);
+      }
+      if (event.type == SDL_EVENT_KEY_DOWN) {
+        const float step_size = 0.06;
+        if (event.key.key == SDLK_UP) {
+          cylinderCameraUpDown(viewMat, +step_size);
+        } else if (event.key.key == SDLK_DOWN) {
+          cylinderCameraUpDown(viewMat, -step_size);
+        }
+      }
     }
-    Eigen::AngleAxisf rot{M_PI_2f, Eigen::Vector3f{1., 0., 0.}};
-    Eigen::Affine3f modelMat = Eigen::Affine3f::Identity();
-    modelMat.rotate(rot);
-    Float3 eye{0., 0., 4.0};
-    float phi = frameNo * 0.03;
-    float radius = 6.0;
-    eye.x() = radius * std::cos(phi);
-    eye.y() = radius * std::sin(phi);
-    Float3 center = Float3::Zero();
-    Matrix4f viewMat = lookAt(eye, center, {0., 0., 1.});
+    cylinderCameraZRotate(viewMat, 0.05f, {0., 0.});
     // model-view matrix
     const Matrix4f modelView = viewMat * modelMat.matrix();
     // MVP matrix
