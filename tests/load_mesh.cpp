@@ -68,7 +68,7 @@ SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
   return SDL_CreateGPUTexture(device, &texinfo);
 }
 
-struct alignas(16) uniform_data_t {
+struct alignas(16) TransformUniformData {
   GpuMat4 mvp;
   GpuMat3 normalMatrix;
   float padding[3];
@@ -236,7 +236,7 @@ int main() {
       SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                              SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-      uniform_data_t uniformData{projViewMat, normalMatrix};
+      TransformUniformData uniformData{projViewMat, normalMatrix};
 
       SDL_PushGPUVertexUniformData(command_buffer, 0, &uniformData,
                                    sizeof(uniformData));

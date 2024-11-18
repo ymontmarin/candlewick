@@ -7,7 +7,7 @@ layout(location=0) out vec3 f_normal;
 
 // set=1 is required, for some god forsaken reason
 // i am not that smart
-layout(set=1, binding=0) uniform UniformBlock
+layout(set=1, binding=0) uniform TranformBlock
 {
     mat4 mvp;
     mat3 normalMatrix;
