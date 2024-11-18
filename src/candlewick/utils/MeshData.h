@@ -2,6 +2,7 @@
 
 #include "../core/Core.h"
 #include "../core/math_types.h"
+#include "MaterialData.h"
 #include <SDL3/SDL_gpu.h>
 
 namespace candlewick {
@@ -17,11 +18,12 @@ struct MeshData {
   using IndexType = Uint32;
   std::vector<Vertex> vertexData;
   std::vector<IndexType> indexData;
+  PbrMaterialData pbrMaterial;
 
   std::size_t numVertices() const { return vertexData.size(); }
   std::size_t numIndices() const { return indexData.size(); }
 
-  constexpr explicit MeshData() = default;
+  explicit MeshData() = default;
   MeshData(const MeshData &) = delete;
   MeshData(MeshData &&) noexcept = default;
   MeshData &operator=(MeshData &&) noexcept = default;

@@ -69,6 +69,11 @@ LoadMeshReturn loadSceneMeshes(const char *path,
   for (std::size_t i = 0; i < scene->mNumMeshes; i++) {
     aiMesh *inMesh = scene->mMeshes[i];
     meshData[i] = loadAiMesh(inMesh, transform);
+    Uint32 materialId = inMesh->mMaterialIndex;
+    if (scene->HasMaterials()) {
+      aiMaterial *material = scene->mMaterials[materialId];
+      meshData[i].pbrMaterial = loadFromAssimpMaterial(material);
+    }
   }
 
   return LoadMeshReturn::OK;
