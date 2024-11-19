@@ -161,7 +161,7 @@ int main() {
   SDL_GPUCommandBuffer *command_buffer;
   SDL_GPUTexture *swapchain;
 
-  const float fov = 55.0_radf;
+  const auto fov = 55.0_radf;
   Matrix4f projectionMat =
       orthographicMatrix({aspectRatio * fov, fov}, 0.1, 10.0);
 

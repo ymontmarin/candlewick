@@ -228,7 +228,7 @@ int main() {
       createDepthTexture(device, window, depth_stencil_format);
 
   using Eigen::Matrix4f;
-  const float fov_rad = 45.0_radf;
+  const auto fov_rad = 45.0_radf;
   Matrix4f perp =
       orthographicMatrix({aspectRatio * fov_rad, fov_rad}, 0.1, 10.);
   Matrix4f modelMat = Matrix4f::Identity();

@@ -6,11 +6,13 @@ namespace candlewick {
 
 inline double deg2rad(double t) { return t * M_PI / 180.0; }
 inline float deg2rad(float t) { return t * M_PIf / 180.0f; }
-inline float operator""_radf(long double t) {
-  return deg2rad(static_cast<float>(t));
+
+inline Rad<float> operator""_radf(long double t) {
+  return Rad<float>(deg2rad(static_cast<float>(t)));
 }
-inline double operator""_rad(long double t) {
-  return deg2rad(static_cast<double>(t));
+
+inline Rad<double> operator""_rad(long double t) {
+  return Rad<double>(deg2rad(static_cast<double>(t)));
 }
 
 /// Compute view matrix looking at \p center from \p eye, with

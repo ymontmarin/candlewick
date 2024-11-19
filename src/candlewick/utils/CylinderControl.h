@@ -7,7 +7,7 @@
 namespace candlewick {
 
 /// \brief Rotate the camera around the center by a given increment.
-inline void cylinderCameraZRotate(Eigen::Matrix4f &viewMatrix, float step,
+inline void cylinderCameraZRotate(Eigen::Matrix4f &viewMatrix, Rad<float> step,
                                   Float2 center) {
   // transform to compose with view matrix
   Eigen::Affine3f camTransform = Eigen::Affine3f::Identity();

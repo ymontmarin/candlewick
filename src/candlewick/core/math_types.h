@@ -11,4 +11,11 @@ using GpuVec4 = Eigen::Matrix<float, 4, 1, Eigen::DontAlign>;
 using GpuMat3 = Eigen::Matrix<float, 3, 3, Eigen::ColMajor | Eigen::DontAlign>;
 using GpuMat4 = Eigen::Matrix<float, 4, 4, Eigen::ColMajor | Eigen::DontAlign>;
 
+template <typename T> struct Rad {
+  constexpr Rad(T value) : _value(value) {}
+  constexpr operator T() const { return _value; }
+
+  T _value;
+};
+
 } // namespace candlewick
