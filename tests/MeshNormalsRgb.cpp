@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "candlewick/core/Device.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/Shader.h"
@@ -25,29 +27,7 @@ const float wWidth = 1280;
 const float wHeight = 720;
 const float aspectRatio = wWidth / wHeight;
 
-static Device device{NoInit};
-static SDL_Window *window;
-
-static bool ExampleInit() {
-  if (!SDL_Init(SDL_INIT_VIDEO))
-    return false;
-  device = Device{SDL_GPU_SHADERFORMAT_SPIRV, true};
-
-  window = SDL_CreateWindow(__FILE_NAME__, wWidth, wHeight, 0);
-  if (!SDL_ClaimWindowForGPUDevice(device, window)) {
-    SDL_Log("Error %s", SDL_GetError());
-    return false;
-  }
-
-  return true;
-}
-
-static void ExampleTeardown() {
-  SDL_ReleaseWindowFromGPUDevice(device, window);
-  SDL_DestroyWindow(window);
-  device.destroy();
-  SDL_Quit();
-}
+Context ctx;
 
 SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
                                    SDL_GPUTextureFormat depth_tex_format,
@@ -75,9 +55,11 @@ struct alignas(16) TransformUniformData {
 };
 
 int main() {
-  if (!ExampleInit()) {
+  if (!ExampleInit(ctx, wWidth, wHeight)) {
     return 1;
   }
+  Device &device = ctx.device;
+  SDL_Window *window = ctx.window;
 
   const char *basePath = SDL_GetBasePath();
   char meshPath[256];
@@ -269,6 +251,6 @@ int main() {
   }
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 
-  ExampleTeardown();
+  ExampleTeardown(ctx);
   return 0;
 }

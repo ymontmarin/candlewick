@@ -1,12 +1,19 @@
 enable_testing()
 find_package(Eigen3 REQUIRED)
 
+add_library(Common SHARED Common.h Common.cpp)
+target_link_libraries(Common PRIVATE candlewick_core)
+
 function(create_test filename)
   get_filename_component(name ${filename} NAME_WE)
   add_executable(${name} ${filename})
   target_link_libraries(${name} PRIVATE candlewick_core)
+  foreach(arg ${ARGN})
+    message(STATUS "create_test: Linking ${name} to ${arg}")
+    target_link_libraries(${name} PRIVATE ${arg})
+  endforeach()
 endfunction()
 
 create_test(Triangle.cpp)
 create_test(Cube.cpp)
-create_test(MeshNormalsRgb.cpp)
+create_test(MeshNormalsRgb.cpp Common)
