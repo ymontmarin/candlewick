@@ -3,9 +3,11 @@
 import subprocess
 import sys
 
-filename = sys.argv[1]
-out_file = f"shaders/compiled/{filename}.spv"
-proc = subprocess.run(
-    ["glslang", filename, "--target-env", "vulkan1.2", "-o", out_file], shell=False
-)
-print(proc.args)
+shader_name = sys.argv[1]
+for stage in ["vert", "frag"]:
+    filename = f"{shader_name}.{stage}"
+    out_file = f"shaders/compiled/{filename}.spv"
+    proc = subprocess.run(
+        ["glslang", filename, "--target-env", "vulkan1.2", "-o", out_file], shell=False
+    )
+    print(proc.args)
