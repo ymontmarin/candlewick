@@ -34,4 +34,11 @@ inline void cylinderCameraZoom(Eigen::Matrix4f &viewMatrix, float yoff) {
   camPos += zAxis * length * alpha;
 }
 
+inline void cylinderCameraViewportDrag(Eigen::Matrix4f &viewMatrix, Float2 step,
+                                       bool yinvert = true) {
+  float ystep = yinvert ? -step.y() : step.y();
+  cylinderCameraUpDown(viewMatrix, ystep);
+  cylinderCameraZRotate(viewMatrix, Rad(step.x()), {0., 0.});
+}
+
 } // namespace candlewick
