@@ -1,6 +1,5 @@
 #include "Common.h"
 
-#include "candlewick/core/Device.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/math_util.h"
