@@ -90,7 +90,7 @@ int main() {
   uploadMeshToDevice(device, meshes[0], meshDatas[0]);
 
   /** CREATE PIPELINE **/
-  Shader vertexShader{device, "VertexNormal.vert", 2};
+  Shader vertexShader{device, "VertexNormal.vert", 1};
   Shader fragmentShader{device, "VertexNormal.frag", 0};
 
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
@@ -186,6 +186,10 @@ int main() {
               viewMat,
               Float2{event.motion.xrel, event.motion.yrel}.cwiseProduct(
                   camViewportSpeed));
+        }
+        if (mouseButton >= SDL_BUTTON_RMASK) {
+          float camXLocRotSpeed = 0.01 * pixelDensity;
+          cylinderXLocalRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
         }
       }
     }
