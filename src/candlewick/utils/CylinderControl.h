@@ -30,17 +30,6 @@ inline void cylinderCameraUpDown(Eigen::Matrix4f &viewMatrix, float step) {
   viewMatrix.applyOnTheRight(transform.matrix());
 }
 
-inline void cylinderCameraZoom(Eigen::Matrix4f &viewMatrix, float yoff) {
-  float scale = 0.85f;
-  Eigen::Ref<Float3> camPos{viewMatrix.col(3).head<3>()};
-  Float3 fwd{viewMatrix.col(2).head<3>()};
-  const float length = camPos.norm();
-  const float alpha = 1.0f - (yoff > 0 ? 1 / scale : scale);
-
-  auto zAxis = Eigen::Vector3f::UnitZ();
-  camPos += zAxis * length * alpha;
-}
-
 inline void cylinderCameraViewportDrag(Eigen::Matrix4f &viewMatrix, Float2 step,
                                        bool yinvert = true) {
   float ystep = yinvert ? -step.y() : step.y();
