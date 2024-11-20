@@ -5,8 +5,8 @@ layout(location=1) in vec3 normal;
 
 layout(location=0) out vec3 f_normal;
 
-// set=1 is required, for some god forsaken reason
-// i am not that smart
+// set=1 is required, see the documentation on SDL3's shader layout
+// https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader
 layout(set=1, binding=0) uniform TranformBlock
 {
     mat4 mvp;
