@@ -153,10 +153,9 @@ int main() {
   const float radius = 6.0;
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
   Matrix4f viewMat = lookAt({radius, 0, 4.}, Float3::Zero(), {0., 0., 1.});
-  while (frameNo < 200 && !quitRequested) {
+  while (frameNo < 500 && !quitRequested) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      SDL_Log("Poll event type: %d", event.type);
       if (event.type == SDL_EVENT_QUIT) {
         SDL_Log("Application exit requested.");
         quitRequested = true;
