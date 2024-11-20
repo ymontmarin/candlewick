@@ -170,6 +170,7 @@ int main() {
   Eigen::AngleAxisf rot{M_PI_2f, Eigen::Vector3f{1., 0., 0.}};
   Eigen::Affine3f modelMat = Eigen::Affine3f{rot};
   const float radius = 6.0;
+  const float pixelDensity = SDL_GetWindowPixelDensity(window);
   Matrix4f viewMat = lookAt({radius, 0, 4.}, Float3::Zero(), {0., 0., 1.});
   while (frameNo < 200 && !quitRequested) {
     SDL_Event event;
@@ -186,14 +187,28 @@ int main() {
       }
       if (event.type == SDL_EVENT_KEY_DOWN) {
         const float step_size = 0.06;
-        if (event.key.key == SDLK_UP) {
+        switch (event.key.key) {
+        case SDLK_UP:
           cylinderCameraUpDown(viewMat, +step_size);
-        } else if (event.key.key == SDLK_DOWN) {
+          break;
+        case SDLK_DOWN:
           cylinderCameraUpDown(viewMat, -step_size);
+          break;
+        }
+      }
+      if (event.type == SDL_EVENT_MOUSE_MOTION) {
+        auto mouseButton = event.motion.state;
+        bool dragging = mouseButton >= SDL_BUTTON_LMASK;
+        if (dragging) {
+          Float2 camViewportSpeed{0.005, 0.01};
+          camViewportSpeed *= pixelDensity;
+          cylinderCameraViewportDrag(
+              viewMat,
+              Float2{event.motion.xrel, event.motion.yrel}.cwiseProduct(
+                  camViewportSpeed));
         }
       }
     }
-    cylinderCameraZRotate(viewMat, 0.05f, {0., 0.});
     // model-view matrix
     const Matrix4f modelView = viewMat * modelMat.matrix();
     // MVP matrix
