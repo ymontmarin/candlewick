@@ -5,10 +5,11 @@
 namespace candlewick {
 
 struct alignas(16) PbrMaterialUniform {
+  GpuVec4 baseColor;
   float metalness;
   float roughness;
   float ao;
-  GpuVec4 baseColor;
+  float _padding;
 };
 
 } // namespace candlewick
