@@ -1,0 +1,288 @@
+#include "Common.h"
+
+#include "candlewick/core/Mesh.h"
+#include "candlewick/core/Shader.h"
+#include "candlewick/core/math_util.h"
+#include "candlewick/utils/MeshData.h"
+#include "candlewick/utils/LoadMesh.h"
+#include "candlewick/utils/CylinderControl.h"
+#include "candlewick/core/LightUniforms.h"
+#include "candlewick/core/MaterialUniform.h"
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_gpu.h>
+#include <SDL3/SDL_filesystem.h>
+
+#include <Eigen/Geometry>
+
+using namespace candlewick;
+using Eigen::Matrix3f;
+using Eigen::Matrix4f;
+
+struct TestMesh {
+  const char *filename;
+  Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+} meshes[] = {
+    {"assets/meshes/teapot.obj",
+     Eigen::Affine3f{Eigen::AngleAxisf{M_PI_2f, Float3{1., 0., 0.}}}},
+    {"assets/meshes/mammoth.obj"},
+    {"assets/meshes/stanford-bunny.obj"},
+    {"assets/meshes/cube.obj"},
+};
+
+const float wWidth = 1600;
+const float wHeight = 900;
+const float aspectRatio = wWidth / wHeight;
+
+Context ctx;
+
+SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
+                                   SDL_GPUTextureFormat depth_tex_format,
+                                   SDL_GPUSampleCount sample_count) {
+  Uint32 w, h;
+  SDL_GetWindowSizeInPixels(window, (int *)&w, (int *)&h);
+  SDL_GPUTextureCreateInfo texinfo{
+      .type = SDL_GPU_TEXTURETYPE_2D,
+      .format = depth_tex_format,
+      .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+      .width = w,
+      .height = h,
+      .layer_count_or_depth = 1,
+      .num_levels = 1,
+      .sample_count = sample_count,
+      .props = 0,
+  };
+  return SDL_CreateGPUTexture(device, &texinfo);
+}
+
+struct alignas(16) TransformUniformData {
+  GpuMat4 model;
+  GpuMat4 mvp;
+  GpuMat3 normalMatrix;
+  float padding[3];
+};
+
+int main() {
+  if (!ExampleInit(ctx, wWidth, wHeight)) {
+    return 1;
+  }
+  Device &device = ctx.device;
+  SDL_Window *window = ctx.window;
+  const TestMesh test_mesh = meshes[0];
+
+  const char *basePath = SDL_GetBasePath();
+  char meshPath[256];
+  SDL_snprintf(meshPath, 256, "%s../../../%s", basePath, test_mesh.filename);
+  auto modelMat = test_mesh.transform;
+
+  std::vector<MeshData> meshDatas;
+  LoadMeshReturn ret = loadSceneMeshes(meshPath, meshDatas);
+  if (ret != LoadMeshReturn::OK) {
+    SDL_Log("Failed to load mesh.");
+    return 1;
+  }
+  SDL_Log("Loaded %zu MeshData objects.", meshDatas.size());
+  for (size_t i = 0; i < meshDatas.size(); i++) {
+    SDL_Log("Mesh %zu: %zu vertices, %zu indices", i,
+            meshDatas[i].numVertices(), meshDatas[i].numIndices());
+  }
+
+  std::vector<Mesh> meshes;
+  for (std::size_t j = 0; j < meshDatas.size(); j++) {
+    // Mesh mesh = convertToMesh(device, meshDatas[j]);
+    Mesh mesh = convertToMeshIndexed(device, meshDatas[j]);
+    meshes.push_back(std::move(mesh));
+  }
+  SDL_assert(meshDatas[0].numIndices() == meshes[0].count);
+
+  /** COPY DATA TO GPU **/
+
+  SDL_Log("Uploading mesh...");
+  uploadMeshToDevice(device, meshes[0], meshDatas[0]);
+
+  /** CREATE PIPELINE **/
+  Shader vertexShader{device, "PbrBasic.vert", 1};
+  Shader fragmentShader{device, "PbrBasic.frag", 2};
+
+  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
+  SDL_GPUTexture *depthTexture = createDepthTexture(
+      device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
+
+  SDL_GPUColorTargetDescription colorTarget;
+  SDL_zero(colorTarget);
+  colorTarget.format = SDL_GetGPUSwapchainTextureFormat(device, window);
+  SDL_GPUDepthStencilTargetInfo depthTarget;
+  SDL_zero(depthTarget);
+  depthTarget.clear_depth = 1.0;
+  depthTarget.load_op = SDL_GPU_LOADOP_CLEAR;
+  depthTarget.store_op = SDL_GPU_STOREOP_DONT_CARE;
+  depthTarget.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
+  depthTarget.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
+  depthTarget.texture = depthTexture;
+  depthTarget.cycle = true;
+
+  // create pipeline
+  SDL_GPUGraphicsPipelineCreateInfo pipeline_desc{
+      .vertex_shader = vertexShader,
+      .fragment_shader = fragmentShader,
+      .vertex_input_state = meshes[0].layout().toVertexInputState(),
+      .primitive_type = meshes[0].layout().primitiveType(),
+      .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
+                        .cull_mode = SDL_GPU_CULLMODE_NONE,
+                        .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
+      .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
+                           .enable_depth_test = true,
+                           .enable_depth_write = true},
+      .target_info{.color_target_descriptions = &colorTarget,
+                   .num_color_targets = 1,
+                   .depth_stencil_format = depth_stencil_format,
+                   .has_depth_stencil_target = true},
+      .props = 0,
+  };
+  SDL_Log("Creating pipeline...");
+  SDL_GPUGraphicsPipeline *pipeline =
+      SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
+  if (pipeline == NULL) {
+    SDL_Log("Failed to create pipeline: %s", SDL_GetError());
+    return 1;
+  }
+
+  vertexShader.release();
+  fragmentShader.release();
+
+  SDL_GPUCommandBuffer *command_buffer;
+  SDL_GPUTexture *swapchain;
+
+  Rad<float> fov = 55.0_radf;
+  Matrix4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+
+  Uint32 frameNo = 0;
+  bool quitRequested = false;
+  const float pixelDensity = SDL_GetWindowPixelDensity(window);
+  Matrix4f viewMat = lookAt({6.0, 0, 3.}, Float3::Zero());
+
+  DirectionalLightUniform myLight{
+      .direction = {0., 1., 1.},
+      .color = {1.0, 1.0, 0.9},
+      .intensity = 2.0,
+  };
+
+  PbrMaterialUniform myMaterial{
+      .baseColor = {0., 0.234, 0.89, 1.},
+      .metalness = 0.f,
+      .roughness = 1.f,
+      .ao = 1.f,
+  };
+
+  while (frameNo < 1000 && !quitRequested) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      if (event.type == SDL_EVENT_QUIT) {
+        SDL_Log("Application exit requested.");
+        quitRequested = true;
+        break;
+      }
+      if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+        float wy = event.wheel.y;
+        const float scaleFac = std::exp(kScrollZoom * wy);
+        // orthographicZoom(projectionMat, scaleFac);
+        // recreate
+        fov = std::min(Rad(fov * scaleFac), 170.0_radf);
+        SDL_Log("Change fov to %f", rad2deg(fov));
+        projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+      }
+      if (event.type == SDL_EVENT_KEY_DOWN) {
+        const float step_size = 0.06;
+        switch (event.key.key) {
+        case SDLK_UP:
+          cylinderCameraUpDown(viewMat, +step_size);
+          break;
+        case SDLK_DOWN:
+          cylinderCameraUpDown(viewMat, -step_size);
+          break;
+        }
+      }
+      if (event.type == SDL_EVENT_MOUSE_MOTION) {
+        auto mouseButton = event.motion.state;
+        bool dragging = mouseButton >= SDL_BUTTON_LMASK;
+        if (dragging) {
+          Float2 camViewportSpeed{0.005, 0.01};
+          camViewportSpeed *= pixelDensity;
+          cylinderCameraViewportDrag(
+              viewMat,
+              Float2{event.motion.xrel, event.motion.yrel}.cwiseProduct(
+                  camViewportSpeed));
+        }
+        if (mouseButton >= SDL_BUTTON_RMASK) {
+          float camXLocRotSpeed = 0.01 * pixelDensity;
+          cylinderXLocalRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
+        }
+      }
+    }
+    // model-view matrix
+    const Matrix4f modelView = viewMat * modelMat.matrix();
+    // MVP matrix
+    const Matrix4f projViewMat = projectionMat * modelView;
+    const Matrix3f normalMatrix = modelMat.linear().inverse().transpose();
+
+    // render pass
+
+    SDL_GPURenderPass *render_pass;
+
+    command_buffer = SDL_AcquireGPUCommandBuffer(device);
+    SDL_Log("Frame [%u]", frameNo);
+
+    if (!SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain,
+                                        NULL, NULL)) {
+      SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
+      break;
+    } else {
+
+      SDL_GPUColorTargetInfo ctinfo{
+          .texture = swapchain,
+          .clear_color = SDL_FColor{0., 0., 0., 0.},
+          .load_op = SDL_GPU_LOADOP_CLEAR,
+          .store_op = SDL_GPU_STOREOP_STORE,
+          .cycle = false,
+      };
+      SDL_GPUBufferBinding vertex_binding{
+          .buffer = meshes[0].vertexBuffers[0],
+          .offset = meshes[0].vertexBufferOffsets[0],
+      };
+      SDL_GPUBufferBinding index_binding{
+          .buffer = meshes[0].indexBuffer,
+          .offset = meshes[0].indexBufferOffset,
+      };
+      render_pass =
+          SDL_BeginGPURenderPass(command_buffer, &ctinfo, 1, &depthTarget);
+      SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
+      SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
+      SDL_BindGPUIndexBuffer(render_pass, &index_binding,
+                             SDL_GPU_INDEXELEMENTSIZE_32BIT);
+
+      TransformUniformData cameraUniform{modelMat.matrix(), projViewMat,
+                                         normalMatrix};
+
+      SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
+                                   sizeof(cameraUniform));
+      SDL_PushGPUFragmentUniformData(command_buffer, 0, &myMaterial,
+                                     sizeof(PbrMaterialUniform));
+      SDL_PushGPUFragmentUniformData(command_buffer, 1, &myLight,
+                                     sizeof(myLight));
+      SDL_DrawGPUIndexedPrimitives(render_pass, meshes[0].count, 1, 0, 0, 0);
+
+      SDL_EndGPURenderPass(render_pass);
+    }
+
+    SDL_SubmitGPUCommandBuffer(command_buffer);
+    frameNo++;
+  }
+
+  for (auto &mesh : meshes) {
+    mesh.releaseOwnedBuffers(device);
+  }
+  SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
+
+  ExampleTeardown(ctx);
+  return 0;
+}
