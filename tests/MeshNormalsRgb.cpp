@@ -233,7 +233,10 @@ int main() {
       SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                              SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-      TransformUniformData cameraUniform{projViewMat, normalMatrix};
+      TransformUniformData cameraUniform{
+          projViewMat,
+          normalMatrix,
+      };
 
       SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                    sizeof(cameraUniform));

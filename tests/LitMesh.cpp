@@ -25,7 +25,9 @@ struct TestMesh {
 } meshes[] = {
     {"assets/meshes/teapot.obj",
      Eigen::Affine3f{Eigen::AngleAxisf{M_PI_2f, Float3{1., 0., 0.}}}},
-    {"assets/meshes/mammoth.obj"},
+    {"assets/meshes/mammoth.obj",
+     Eigen::Affine3f{Eigen::UniformScaling<float>(4.0f)}.rotate(
+         Eigen::AngleAxisf{M_PI_2f, Float3{1., 0., 0.}})},
     {"assets/meshes/stanford-bunny.obj"},
     {"assets/meshes/cube.obj"},
 };
@@ -57,9 +59,8 @@ SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
 
 struct alignas(16) TransformUniformData {
   GpuMat4 model;
-  GpuMat4 mvp;
-  GpuMat3 normalMatrix;
-  float padding[3];
+  alignas(16) GpuMat4 mvp;
+  alignas(16) GpuMat3 normalMatrix;
 };
 
 int main() {
@@ -162,13 +163,13 @@ int main() {
   Matrix4f viewMat = lookAt({6.0, 0, 3.}, Float3::Zero());
 
   DirectionalLightUniform myLight{
-      .direction = {0., 1., 1.},
-      .color = {1.0, 1.0, 0.9},
+      .direction = {0., -1., 1.},
+      .color = {1.0, 1.0, 1.0},
       .intensity = 2.0,
   };
 
   PbrMaterialUniform myMaterial{
-      .baseColor = {0., 0.234, 0.89, 1.},
+      .baseColor = 0xed7612ff_rgbaf,
       .metalness = 0.f,
       .roughness = 1.f,
       .ao = 1.f,
@@ -260,8 +261,11 @@ int main() {
       SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                              SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-      TransformUniformData cameraUniform{modelMat.matrix(), projViewMat,
-                                         normalMatrix};
+      TransformUniformData cameraUniform{
+          modelMat.matrix(),
+          projViewMat,
+          normalMatrix,
+      };
 
       SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                    sizeof(cameraUniform));
