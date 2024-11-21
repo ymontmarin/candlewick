@@ -31,10 +31,15 @@ cmake_policy(SET CMP0167 NEW)
 find_package(pinocchio)
 set(BUILD_WITH_PINOCCHIO ${pinocchio_FOUND})
 if(${BUILD_WITH_PINOCCHIO})
-  add_library(candlewick_multibody SHARED candlewick/multibody/LoadUrdf.cpp)
+  find_package(robot_descriptions_cpp REQUIRED)
+  add_library(
+    candlewick_multibody
+    SHARED
+    candlewick/multibody/LoadPinocchioGeometry.cpp
+  )
   target_link_libraries(
     candlewick_multibody
-    PUBLIC pinocchio::pinocchio_parsers
+    PUBLIC pinocchio::pinocchio robot_descriptions_cpp::robot_descriptions_cpp
   )
   target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_multibody)
 endif()
