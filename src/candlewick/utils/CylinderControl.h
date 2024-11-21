@@ -21,8 +21,11 @@ inline void cylinderCameraZRotate(Eigen::Matrix4f &viewMatrix, Rad<float> step,
 inline void cylinderXLocalRotate(Eigen::Matrix4f &viewMatrix,
                                  Rad<float> angle) {
   Eigen::AngleAxisf aa{angle, Eigen::Vector3f::UnitX()};
-  Eigen::Affine3f tr(aa);
+  Eigen::Affine3f tr{aa};
+  Float3 center = viewMatrix.col(3).head<3>();
+  viewMatrix.col(3).head<3>().setZero();
   viewMatrix.applyOnTheLeft(tr.matrix());
+  viewMatrix.col(3).head<3>() = center;
 }
 
 inline void cylinderCameraUpDown(Eigen::Matrix4f &viewMatrix, float step) {
