@@ -21,15 +21,14 @@ MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
   for (Uint32 vertex_id = 0; vertex_id < inMesh->mNumVertices; vertex_id++) {
     aiVector3D pos = inMesh->mVertices[vertex_id];
     pos = transform * pos;
-
-    Vertex vertex{.pos = Float3::Map(&pos.x), .normal{}};
+    Vertex &vertex = vertexData[vertex_id];
+    vertex.pos = Float3::Map(&pos.x);
 
     if (inMesh->HasNormals()) {
       aiVector3D n_ = inMesh->mNormals[vertex_id];
+      n_ = aiMatrix3x3(transform) * n_;
       vertex.normal = Float3::Map(&n_.x);
     }
-
-    vertexData[vertex_id] = std::move(vertex);
   }
 
   for (Uint32 face_id = 0; face_id < inMesh->mNumFaces; face_id++) {
