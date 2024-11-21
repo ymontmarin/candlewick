@@ -5,8 +5,8 @@ layout(location=1) in vec3 fragNormal;
 
 // Light structure
 struct DirectionalLight {
-    vec3 color;
     vec3 direction;
+    vec3 color;
     float intensity;
 };
 
@@ -35,7 +35,6 @@ void main() {
         normal = -normal;
     }
     vec3 lightCol = light.intensity * light.color;
-    // vec3 lightCol = light.direction;
     // ambient color
     vec3 ambientColor = vec3(0.05, 0.05, 0.05);
     // lambertian diffuse term
