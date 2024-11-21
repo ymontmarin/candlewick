@@ -12,8 +12,8 @@ struct Mesh;
 struct MeshData {
   // use a vertex struct, allows us to interleave data properly
   struct alignas(16) Vertex {
-    Float3 pos;
-    alignas(16) Float3 normal;
+    GpuVec3 pos;
+    alignas(16) GpuVec3 normal;
   };
   using IndexType = Uint32;
   std::vector<Vertex> vertexData;

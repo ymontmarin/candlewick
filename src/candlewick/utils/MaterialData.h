@@ -14,7 +14,7 @@ struct PbrMaterialData {
   std::vector<std::string> texturePaths;
 
   PbrMaterialUniform toUniform() const {
-    return {metalness, roughness, ao, baseColor};
+    return {baseColor, metalness, roughness, ao};
   }
 };
 
