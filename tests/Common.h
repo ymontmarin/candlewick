@@ -5,6 +5,8 @@
 using candlewick::Device;
 using candlewick::NoInit;
 
+const float kScrollZoom = 0.05;
+
 struct Context {
   Device device{NoInit};
   SDL_Window *window;
