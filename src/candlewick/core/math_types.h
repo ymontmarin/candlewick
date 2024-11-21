@@ -6,9 +6,22 @@ namespace candlewick {
 using Float2 = Eigen::Vector2f;
 using Float3 = Eigen::Vector3f;
 using Float4 = Eigen::Vector4f;
+
+/** GPU typedefs and adapters **/
+
 using GpuVec3 = Eigen::Matrix<float, 3, 1, Eigen::DontAlign>;
 using GpuVec4 = Eigen::Matrix<float, 4, 1, Eigen::DontAlign>;
-using GpuMat3 = Eigen::Matrix<float, 3, 3, Eigen::ColMajor | Eigen::DontAlign>;
+// adapter type instead of typedef, to fit GLSL layout
+struct GpuMat3 {
+  /* implicit */ GpuMat3(Eigen::Matrix3f value) : _data() {
+    _data.topRows<3>() = value;
+  }
+  operator auto &() { return _data; }
+  operator const auto &() const { return _data; }
+
+private:
+  Eigen::Matrix<float, 4, 3, Eigen::DontAlign> _data;
+};
 using GpuMat4 = Eigen::Matrix<float, 4, 4, Eigen::ColMajor | Eigen::DontAlign>;
 
 template <typename T> struct Rad {
