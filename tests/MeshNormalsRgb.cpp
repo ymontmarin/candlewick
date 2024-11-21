@@ -142,17 +142,15 @@ int main() {
   SDL_GPUCommandBuffer *command_buffer;
   SDL_GPUTexture *swapchain;
 
-  const auto fov = 55.0_radf;
-  Matrix4f projectionMat =
-      orthographicMatrix({aspectRatio * fov, fov}, 0.1, 10.0);
+  // const auto fov = 55.0_radf;
+  Matrix4f projectionMat = orthographicMatrix({aspectRatio, 1.0f}, 0.1, 100.0);
 
   Uint32 frameNo = 0;
   bool quitRequested = false;
   Eigen::AngleAxisf rot{M_PI_2f, Eigen::Vector3f{1., 0., 0.}};
   Eigen::Affine3f modelMat = Eigen::Affine3f{rot};
-  const float radius = 6.0;
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
-  Matrix4f viewMat = lookAt({radius, 0, 4.}, Float3::Zero(), {0., 0., 1.});
+  Matrix4f viewMat = lookAt({6.0, 0, 4.}, Float3::Zero(), {0., 0., 1.});
   while (frameNo < 500 && !quitRequested) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -163,7 +161,7 @@ int main() {
       }
       if (event.type == SDL_EVENT_MOUSE_WHEEL) {
         float wy = event.wheel.y;
-        cylinderCameraZoom(viewMat, wy);
+        orthographicZoom(projectionMat, std::exp(kScrollZoom * wy));
       }
       if (event.type == SDL_EVENT_KEY_DOWN) {
         const float step_size = 0.06;
@@ -235,10 +233,10 @@ int main() {
       SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                              SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-      TransformUniformData uniformData{projViewMat, normalMatrix};
+      TransformUniformData cameraUniform{projViewMat, normalMatrix};
 
-      SDL_PushGPUVertexUniformData(command_buffer, 0, &uniformData,
-                                   sizeof(uniformData));
+      SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
+                                   sizeof(cameraUniform));
       SDL_DrawGPUIndexedPrimitives(render_pass, meshes[0].count, 1, 0, 0, 0);
 
       SDL_EndGPURenderPass(render_pass);

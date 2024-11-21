@@ -230,7 +230,8 @@ int main() {
   using Eigen::Matrix4f;
   const auto fov_rad = 45.0_radf;
   Matrix4f perp =
-      orthographicMatrix({aspectRatio * fov_rad, fov_rad}, 0.1, 10.);
+      // orthographicMatrix({aspectRatio * fov_rad, fov_rad}, 0.1, 10.);
+      perspectiveFromFov(fov_rad, aspectRatio, 0.1, 10.);
   Matrix4f modelMat = Matrix4f::Identity();
   modelMat.col(3).head<3>() << -0.5f, -0.5f, -0.5f;
   Matrix4f view;

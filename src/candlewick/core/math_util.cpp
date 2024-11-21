@@ -21,36 +21,40 @@ Eigen::Matrix4f lookAt(const Float3 &eye, const Float3 &center,
   return mat;
 }
 
+Eigen::Matrix4f perspectiveFromFov(float fovY, float aspectRatio, float nearZ,
+                                   float farZ) {
+  float f = 1.0f / std::tan(fovY * 0.5f);
+
+  Eigen::Matrix4f result = Eigen::Matrix4f::Zero();
+  result(0, 0) = f / aspectRatio;
+  result(1, 1) = f;
+  result(2, 2) = (farZ + nearZ) / (nearZ - farZ);
+  result(3, 2) = -1.0f;
+  // translation component along Z
+  result(2, 3) = (2.0f * farZ * nearZ) / (nearZ - farZ);
+
+  return result;
+}
+
 Eigen::Matrix4f perspectiveMatrix(float left, float right, float top,
                                   float bottom, float near, float far) {
-  Eigen::Matrix4f out;
   float hfov = right - left;
   float vfov = top - bottom;
-  out.setZero();
-  out(0, 0) = 2 * near / hfov;
-  out(0, 2) = (left + right) / hfov;
-
-  out(1, 1) = 2 * near / vfov;
-  out(1, 2) = (top + bottom) / vfov;
-
-  out(2, 2) = -(far + near) / (far - near);
-  out(2, 3) = -2 * far * near / (far - near);
-
-  out(3, 2) = -1.f;
-  return out;
+  float aspect = hfov / vfov;
+  return perspectiveFromFov(vfov, aspect, near, far);
 }
 
 Eigen::Matrix4f orthographicMatrix(const Float2 &size, float near, float far) {
   assert(size.y() < 90._radf);
   const Float2 xyScale = 2.0f * size.cwiseInverse();
-  const float zScale = 2.0 / (near - far);
-  const float m32 = near * zScale - 1.f;
+  const float zScale = 2.0f / (near - far);
+  const float m23 = near * zScale - 1.f;
   Eigen::Matrix4f out;
   // clang-format off
   out << xyScale.x(), 0.         , 0.     , 0.,
          0.         , xyScale.y(), 0.     , 0.,
-         0.         , 0.         , zScale , 0.,
-         0.         , 0.         , m32    , 1.;
+         0.         , 0.         , zScale , m23,
+         0.         , 0.         , 0.     , 1.;
   // clang-format on
   return out;
 }
