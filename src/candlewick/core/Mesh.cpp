@@ -34,14 +34,11 @@ Mesh &Mesh::addVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
                             bool takeOwnership) {
   std::size_t idx = addVertexBufferImpl(slot, buffer, offset);
   vertexBufferOwnerships[idx] = takeOwnership ? Owned : Borrowed;
-  SDL_Log("Adding vertex buffer to mesh in slot %u (offset: %u, owned: %d)",
-          slot, offset, takeOwnership);
   return *this;
 }
 
 Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer, Uint32 offset,
                            bool takeOwnership) {
-  SDL_Log("Set index buffer to mesh (owned: %d)", takeOwnership);
   indexBuffer = buffer;
   indexBufferOffset = offset;
   indexBufferOwnership = takeOwnership ? Owned : Borrowed;
