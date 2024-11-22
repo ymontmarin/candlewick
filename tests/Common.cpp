@@ -8,7 +8,7 @@ bool ExampleInit(Context &ctx, float wWidth, float wHeight) {
     return false;
   new (&ctx.device) Device{SDL_GPU_SHADERFORMAT_SPIRV, true};
 
-  ctx.window = SDL_CreateWindow(__FILE_NAME__, wWidth, wHeight, 0);
+  ctx.window = SDL_CreateWindow("candlewick: examples", wWidth, wHeight, 0);
   if (!SDL_ClaimWindowForGPUDevice(ctx.device, ctx.window)) {
     SDL_Log("Error %s", SDL_GetError());
     return false;
