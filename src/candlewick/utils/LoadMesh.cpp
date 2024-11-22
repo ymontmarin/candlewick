@@ -53,6 +53,7 @@ LoadMeshReturn loadSceneMeshes(const char *path,
                         aiProcess_GenUVCoords | aiProcess_RemoveComponent |
                         aiProcess_FindDegenerates |
                         aiProcess_ImproveCacheLocality;
+  import.SetPropertyBool(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, true);
   const aiScene *scene = import.ReadFile(path, pFlags);
   if (!scene) {
     SDL_Log("%s: Warning: Failed to load resource. %s", __FUNCTION__,
