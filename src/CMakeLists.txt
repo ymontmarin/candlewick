@@ -14,6 +14,7 @@ add_library(
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/MaterialData.cpp
   candlewick/utils/MeshData.cpp
+  candlewick/utils/MeshDataView.cpp
 )
 
 target_link_libraries(
