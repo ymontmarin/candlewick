@@ -50,7 +50,7 @@ void main() {
     vec3 specular = vec3(spec);
 
     fragColor.rgb = ambientColor;
-    fragColor.rgb += material.baseColor.rgb * diffuse;
+    fragColor += material.baseColor * vec4(diffuse, 1.);
     fragColor.rgb += specular;
     fragColor = clamp(fragColor, 0., 1.);
 }
