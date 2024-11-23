@@ -4,22 +4,33 @@
 #include "MeshData.h"
 
 namespace candlewick {
-struct MeshDataView {
+struct MeshDataView : MeshDataBase<MeshDataView> {
   using Vertex = MeshData::Vertex;
   using IndexType = MeshData::IndexType;
+  SDL_GPUPrimitiveType primitiveType;
   std::span<const Vertex> vertexData;
   std::span<const IndexType> indexData;
 
   MeshDataView(const MeshData &meshData);
   MeshDataView(const MeshData &meshData, size_t offset, size_t len);
   template <size_t N, size_t M>
-  MeshDataView(const Vertex (&vertices)[N], const IndexType (&indices)[M]);
+  MeshDataView(SDL_GPUPrimitiveType primitiveType, const Vertex (&vertices)[N],
+               const IndexType (&indices)[M]);
+
+  template <size_t N>
+  MeshDataView(SDL_GPUPrimitiveType primitiveType, const Vertex (&vertices)[N]);
 };
 
 template <size_t N, size_t M>
-MeshDataView::MeshDataView(const Vertex (&vertices)[N],
+MeshDataView::MeshDataView(SDL_GPUPrimitiveType primitiveType,
+                           const Vertex (&vertices)[N],
                            const IndexType (&indices)[M])
-    : vertexData(vertices), indexData(indices) {}
+    : primitiveType(primitiveType), vertexData(vertices), indexData(indices) {}
+
+template <size_t N>
+MeshDataView::MeshDataView(SDL_GPUPrimitiveType primitiveType,
+                           const Vertex (&vertices)[N])
+    : primitiveType(primitiveType), vertexData(vertices), indexData() {}
 
 MeshData toOwningMeshData(MeshDataView view);
 

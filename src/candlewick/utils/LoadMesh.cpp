@@ -37,7 +37,8 @@ MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
       indexData[face_id * expectedFaceSize + ii] = f.mIndices[ii];
     }
   }
-  return MeshData{std::move(vertexData), std::move(indexData)};
+  return MeshData{SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, std::move(vertexData),
+                  std::move(indexData)};
 }
 
 LoadMeshReturn loadSceneMeshes(const char *path,
@@ -72,7 +73,7 @@ LoadMeshReturn loadSceneMeshes(const char *path,
     Uint32 materialId = inMesh->mMaterialIndex;
     if (scene->HasMaterials()) {
       aiMaterial *material = scene->mMaterials[materialId];
-      meshData[i].pbrMaterial = loadFromAssimpMaterial(material);
+      meshData[i].material = loadFromAssimpMaterial(material);
     }
   }
 

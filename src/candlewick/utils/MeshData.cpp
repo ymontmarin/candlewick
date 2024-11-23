@@ -6,23 +6,20 @@
 
 namespace candlewick {
 
-MeshData::MeshData(std::vector<Vertex> vertexData,
+MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
+                   std::vector<Vertex> vertexData,
                    std::vector<IndexType> indexData)
-    : vertexData(std::move(vertexData)), indexData(std::move(indexData)) {}
-
-MeshLayout get_default_layout() {
-  using Vertex = MeshData::Vertex;
-  return MeshLayout{SDL_GPU_PRIMITIVETYPE_TRIANGLELIST}
-      .addBinding(0, sizeof(Vertex))
-      .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                    offsetof(Vertex, pos))
-      .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                    offsetof(Vertex, normal));
-}
+    : primitiveType(primitiveType), vertexData(std::move(vertexData)),
+      indexData(std::move(indexData)) {}
 
 Mesh convertToMesh(const Device &device, const MeshData &meshData) {
   using Vertex = MeshData::Vertex;
-  Mesh mesh{get_default_layout()};
+  Mesh mesh{MeshLayout{meshData.primitiveType}
+                .addBinding(0, sizeof(Vertex))
+                .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                              offsetof(Vertex, pos))
+                .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                              offsetof(Vertex, normal))};
   SDL_GPUBufferCreateInfo createInfo{
       .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
       .size = Uint32(sizeof(Vertex) * meshData.numVertices()),
@@ -36,7 +33,13 @@ Mesh convertToMesh(const Device &device, const MeshData &meshData) {
 Mesh convertToMeshIndexed(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                           Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
                           Uint64 indexOffset, bool takeOwnership) {
-  Mesh mesh{get_default_layout()};
+  using Vertex = MeshData::Vertex;
+  Mesh mesh{MeshLayout{meshData.primitiveType}
+                .addBinding(0, sizeof(Vertex))
+                .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                              offsetof(Vertex, pos))
+                .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                              offsetof(Vertex, normal))};
 
   mesh.addVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership)
       .setIndexBuffer(indexBuffer, indexOffset, takeOwnership);
