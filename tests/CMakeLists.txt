@@ -15,6 +15,6 @@ function(create_test filename)
 endfunction()
 
 create_test(Triangle.cpp)
-create_test(Cube.cpp)
+create_test(ColoredCube.cpp)
 create_test(MeshNormalsRgb.cpp Common)
 create_test(LitMesh.cpp Common)
