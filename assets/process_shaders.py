@@ -25,6 +25,6 @@ for stage_file in stages:
     assert os.path.exists(stage_file)
     out_file = f"shaders/compiled/{stage_file}.spv"
     proc = subprocess.run(
-        ["glslang", stage_file, "--target-env", "vulkan1.2", "-o", out_file], shell=False
+        ["glslc", stage_file, "--target-env=vulkan1.2", "-Werror", "-o", out_file], shell=False
     )
     print(proc.args)
