@@ -32,6 +32,6 @@ MeshDataView::MeshDataView(SDL_GPUPrimitiveType primitiveType,
                            const Vertex (&vertices)[N])
     : primitiveType(primitiveType), vertexData(vertices), indexData() {}
 
-MeshData toOwningMeshData(MeshDataView view);
+MeshData toOwningMeshData(const MeshDataView &view);
 
 } // namespace candlewick
