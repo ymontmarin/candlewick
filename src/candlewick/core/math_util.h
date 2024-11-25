@@ -8,45 +8,9 @@ inline double deg2rad(double t) { return t * M_PI / 180.0; }
 inline float deg2rad(float t) { return t * M_PIf / 180.0f; }
 inline float rad2deg(float t) { return t * 180.0f / M_PIf; }
 
-inline Eigen::Vector3i hexToRgbi(unsigned long hex) {
-  // red = quotient of hex by 256^2
-  int r = hex / (256 * 256);
-  // remainder
-  hex -= r;
-  // green = long division of remainder by 256
-  int g = hex / 256;
-  hex -= g;
-  // blue = remainder
-  int b = hex;
-  Eigen::Vector3i result{r, g, b};
-  assert(result.x() < 256);
-  assert(result.y() < 256);
-  assert(result.z() < 256);
-  return result;
-};
+Eigen::Vector3i hexToRgbi(unsigned long hex);
 
-inline Eigen::Vector4i hexToRgbai(unsigned long hex) {
-  unsigned rem = hex;
-  // red = quotient of hex by 256^2
-  int r = rem >> 24;
-  // remainder
-  rem %= 1 << 24;
-  // green = long division of remainder by 256
-  int g = rem >> 16;
-  rem %= 1 << 16;
-  // blue = quotient of remainder
-  int b = rem >> 8;
-  rem %= 1 << 8;
-  // alpha = remainder
-  int a = rem;
-  Eigen::Vector4i result{r, g, b, a};
-  assert(result.x() < 256);
-  assert(result.y() < 256);
-  assert(result.z() < 256);
-  assert(result.w() < 256);
-  printf("Convert hex %zx to color rgba(%d,%d,%d,%d)\n", hex, r, g, b, a);
-  return result;
-};
+Eigen::Vector4i hexToRgbai(unsigned long hex);
 
 inline Float3 hexToRgbf(unsigned long hex) {
   Eigen::Vector3i res = hexToRgbi(hex);

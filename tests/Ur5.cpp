@@ -86,7 +86,7 @@ void eventLoop(bool &quitRequested) {
       const float scaleFac = std::exp(kScrollZoom * wy);
       // orthographicZoom(projectionMat, scaleFac);
       // recreate
-      fov = std::min(Rad(fov * scaleFac), 170.0_radf);
+      fov = std::min(fov * scaleFac, 170.0_radf);
       SDL_Log("Change fov to %f", rad2deg(fov));
       projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
     }

@@ -31,4 +31,14 @@ template <typename T> struct Rad {
   T _value;
 };
 
+template <typename T>
+constexpr Rad<T> operator*(const Rad<T> &left, const T &right) {
+  return Rad<T>{T(left) * right};
+}
+
+template <typename T>
+constexpr Rad<T> operator*(const T &left, const Rad<T> &right) {
+  return Rad<T>{left * T(right)};
+}
+
 } // namespace candlewick
