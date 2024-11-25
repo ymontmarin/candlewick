@@ -10,7 +10,7 @@ struct PbrMaterialData {
   float metalness = 0.f;
   float roughness = 1.0f;
   float ao = 1.0f;
-  Float4 baseColor;
+  Float4 baseColor{1., 1., 1., 1.};
   std::vector<std::string> texturePaths;
 
   PbrMaterialUniform toUniform() const {
