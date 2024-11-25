@@ -11,6 +11,11 @@ MeshDataView::MeshDataView(const MeshData &meshData, size_t offset, size_t len)
       vertexData(meshData.vertexData.begin() + offset, len),
       indexData(meshData.indexData.begin() + offset, len) {}
 
+MeshDataView::MeshDataView(SDL_GPUPrimitiveType primitiveType,
+                           std::span<const Vertex> vertices,
+                           std::span<const IndexType> indices)
+    : primitiveType(primitiveType), vertexData(vertices), indexData(indices) {}
+
 MeshData toOwningMeshData(const MeshDataView &view) {
   std::vector<MeshData::Vertex> vertexData;
   vertexData.assign(view.vertexData.begin(), view.vertexData.end());
