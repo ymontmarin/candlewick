@@ -1,6 +1,13 @@
 find_package(SDL3 3.1.3 REQUIRED)
 find_package(assimp REQUIRED)
 find_package(Eigen3 REQUIRED)
+
+set(
+  PRIMITIVE_SOURCES
+  candlewick/primitives/Cube.cpp
+  candlewick/primitives/Plane.cpp
+)
+
 add_library(
   ${PROJECT_NAME}_core
   SHARED
@@ -15,7 +22,8 @@ add_library(
   candlewick/utils/MaterialData.cpp
   candlewick/utils/MeshData.cpp
   candlewick/utils/MeshDataView.cpp
-  candlewick/primitives/Cube.cpp
+  candlewick/utils/MeshTransforms.cpp
+  ${PRIMITIVE_SOURCES}
 )
 
 target_link_libraries(
