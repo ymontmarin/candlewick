@@ -11,6 +11,7 @@
 #include "candlewick/multibody/LoadPinocchioGeometry.h"
 
 #include "candlewick/primitives/Plane.h"
+#include "candlewick/primitives/Grid.h"
 
 #include <robot_descriptions_cpp/robot_spec.hpp>
 #include <robot_descriptions_cpp/robot_load.hpp>
@@ -38,6 +39,11 @@ static bool add_plane = true;
 static Matrix4f viewMat;
 static Matrix4f projectionMat;
 static Rad<float> fov = 55.0_radf;
+
+static struct {
+  MeshData data;
+  Mesh mesh;
+} gridMesh{.data = loadGrid(10), .mesh{NoInit}};
 
 Context ctx;
 
@@ -103,8 +109,7 @@ void eventLoop(bool &quitRequested) {
     }
     if (event.type == SDL_EVENT_MOUSE_MOTION) {
       SDL_MouseButtonFlags mouseButton = event.motion.state;
-      bool dragging = mouseButton >= SDL_BUTTON_LMASK;
-      if (dragging) {
+      if (mouseButton >= SDL_BUTTON_LMASK) {
         Float2 camViewportSpeed{0.005, 0.01};
         camViewportSpeed *= pixelDensity;
         cylinderCameraViewportDrag(
@@ -117,6 +122,22 @@ void eventLoop(bool &quitRequested) {
       }
     }
   }
+}
+
+void drawGrid(SDL_GPUCommandBuffer *command_buffer,
+              SDL_GPURenderPass *render_pass, Matrix4f projViewMat) {
+  struct {
+    GpuMat4 mvp;
+  } cameraUniform{.mvp = projViewMat};
+  SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
+                               sizeof(cameraUniform));
+  auto vertex_binding = gridMesh.mesh.getVertexBinding(0);
+  auto index_binding = gridMesh.mesh.getIndexBinding();
+
+  SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
+  SDL_BindGPUIndexBuffer(render_pass, &index_binding,
+                         SDL_GPU_INDEXELEMENTSIZE_32BIT);
+  SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.mesh.count, 1, 0, 0, 0);
 }
 
 int main() {
@@ -163,51 +184,70 @@ int main() {
   struct {
     MeshData data;
     Mesh mesh;
-  } plane{loadPlaneTiled(0.2f, 3, 1), Mesh{NoInit}};
-  new (&plane.mesh) Mesh{convertToMesh(device, plane.data)};
+  } plane{loadPlaneTiled(0.25f, 3, 3), Mesh{NoInit}};
+  plane.mesh = convertToMesh(device, plane.data);
   uploadMeshToDevice(device, plane.mesh, plane.data);
-  /** CREATE PIPELINE **/
-  Shader vertexShader{device, "PbrBasic.vert", 1};
-  Shader fragmentShader{device, "PbrBasic.frag", 2};
 
+  // Load grid
+  gridMesh.mesh = convertToMesh(device, gridMesh.data);
+  uploadMeshToDevice(device, gridMesh.mesh, gridMesh.data);
+
+  /** CREATE PIPELINES **/
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
   SDL_GPUTexture *depthTexture = createDepthTexture(
       device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
+  SDL_GPUGraphicsPipeline *mesh_pipeline = NULL;
+  {
+    Shader vertexShader{device, "PbrBasic.vert", 1};
+    Shader fragmentShader{device, "PbrBasic.frag", 2};
 
-  SDL_GPUColorTargetDescription colorTarget;
-  SDL_zero(colorTarget);
-  colorTarget.format = SDL_GetGPUSwapchainTextureFormat(device, window);
+    SDL_GPUColorTargetDescription colorTarget;
+    SDL_zero(colorTarget);
+    colorTarget.format = SDL_GetGPUSwapchainTextureFormat(device, window);
 
-  // create pipeline
-  SDL_GPUGraphicsPipelineCreateInfo mesh_pipeline_desc{
-      .vertex_shader = vertexShader,
-      .fragment_shader = fragmentShader,
-      .vertex_input_state =
-          meshGroups[0].meshes[0].layout().toVertexInputState(),
-      .primitive_type = meshGroups[0].meshes[0].layout().primitiveType(),
-      .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
-                        .cull_mode = SDL_GPU_CULLMODE_NONE,
-                        .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
-      .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
-                           .enable_depth_test = true,
-                           .enable_depth_write = true},
-      .target_info{.color_target_descriptions = &colorTarget,
-                   .num_color_targets = 1,
-                   .depth_stencil_format = depth_stencil_format,
-                   .has_depth_stencil_target = true},
-      .props = 0,
-  };
+    // create pipeline
+    SDL_GPUGraphicsPipelineCreateInfo mesh_pipeline_desc{
+        .vertex_shader = vertexShader,
+        .fragment_shader = fragmentShader,
+        .vertex_input_state =
+            meshGroups[0].meshes[0].layout().toVertexInputState(),
+        .primitive_type = meshGroups[0].meshes[0].layout().primitiveType(),
+        .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
+                          .cull_mode = SDL_GPU_CULLMODE_NONE,
+                          .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
+        .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
+                             .enable_depth_test = true,
+                             .enable_depth_write = true},
+        .target_info{.color_target_descriptions = &colorTarget,
+                     .num_color_targets = 1,
+                     .depth_stencil_format = depth_stencil_format,
+                     .has_depth_stencil_target = true},
+        .props = 0,
+    };
 
-  SDL_Log("Creating pipeline...");
-  SDL_GPUGraphicsPipeline *mesh_pipeline =
-      SDL_CreateGPUGraphicsPipeline(device, &mesh_pipeline_desc);
-  if (mesh_pipeline == NULL) {
-    SDL_Log("Failed to create pipeline: %s", SDL_GetError());
-    return 1;
+    SDL_Log("Creating pipeline...");
+    mesh_pipeline = SDL_CreateGPUGraphicsPipeline(device, &mesh_pipeline_desc);
+    if (mesh_pipeline == NULL) {
+      SDL_Log("Failed to create pipeline: %s", SDL_GetError());
+      return 1;
+    }
+
+    vertexShader.release();
+    fragmentShader.release();
   }
 
-  vertexShader.release();
-  fragmentShader.release();
+  {
+    using Vertex = MeshData::Vertex;
+    auto layout = MeshLayout{SDL_GPU_PRIMITIVETYPE_LINELIST}
+                      .addBinding(0, sizeof(Vertex))
+                      .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                                    offsetof(Vertex, pos))
+                      .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                                    offsetof(Vertex, normal));
+    initGridPipeline(ctx, layout, depth_stencil_format);
+  }
+
+  // APPLICATION UNIFORMS AND LOOP
 
   projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
 
@@ -233,13 +273,11 @@ int main() {
     SDL_GPURenderPass *render_pass;
 
     command_buffer = SDL_AcquireGPUCommandBuffer(device);
+    SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain, NULL,
+                                   NULL);
     SDL_Log("Frame [%u]", frameNo);
 
-    if (!SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain,
-                                        NULL, NULL)) {
-      SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
-      break;
-    } else {
+    if (swapchain) {
 
       SDL_GPUColorTargetInfo ctinfo{
           .texture = swapchain,
@@ -346,7 +384,16 @@ int main() {
         }
       }
 
+      // render grid
+      if (true) {
+        SDL_BindGPUGraphicsPipeline(render_pass, ctx.lineListPipeline);
+        drawGrid(command_buffer, render_pass, projectionMat * viewMat);
+      }
+
       SDL_EndGPURenderPass(render_pass);
+    } else {
+      SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
+      break;
     }
 
     SDL_SubmitGPUCommandBuffer(command_buffer);

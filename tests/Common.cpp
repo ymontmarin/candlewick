@@ -1,3 +1,6 @@
+#include "candlewick/core/MeshLayout.h"
+#include "candlewick/core/Shader.h"
+
 #include "Common.h"
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
@@ -22,4 +25,36 @@ void ExampleTeardown(Context &ctx) {
   SDL_DestroyWindow(ctx.window);
   ctx.device.destroy();
   SDL_Quit();
+}
+
+void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
+                      SDL_GPUTextureFormat depth_stencil_format) {
+  using namespace candlewick;
+  Shader vertexShader{ctx.device, "Hud3dElement.vert", 1};
+  Shader fragmentShader{ctx.device, "Hud3dElement.frag", 0};
+
+  SDL_GPUColorTargetDescription colorTarget;
+  SDL_zero(colorTarget);
+  colorTarget.format = SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window);
+
+  SDL_GPUGraphicsPipelineCreateInfo createInfo{
+      .vertex_shader = vertexShader,
+      .fragment_shader = fragmentShader,
+      .vertex_input_state = layout.toVertexInputState(),
+      .primitive_type = layout.primitiveType(),
+      .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
+                        .cull_mode = SDL_GPU_CULLMODE_NONE,
+                        .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
+      .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
+                           .enable_depth_test = true,
+                           .enable_depth_write = true},
+      .target_info{.color_target_descriptions = &colorTarget,
+                   .num_color_targets = 1,
+                   .depth_stencil_format = depth_stencil_format,
+                   .has_depth_stencil_target = true},
+      .props = 0,
+  };
+  ctx.lineListPipeline = SDL_CreateGPUGraphicsPipeline(ctx.device, &createInfo);
+  vertexShader.release();
+  fragmentShader.release();
 }
