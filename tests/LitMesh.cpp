@@ -26,9 +26,11 @@ struct TestMesh {
     {"assets/meshes/teapot.obj",
      Eigen::Affine3f{Eigen::AngleAxisf{M_PI_2f, Float3{1., 0., 0.}}}},
     {"assets/meshes/mammoth.obj",
-     Eigen::Affine3f{Eigen::UniformScaling<float>(4.0f)}.rotate(
+     Eigen::Affine3f{Eigen::UniformScaling(4.0f)}.rotate(
          Eigen::AngleAxisf{M_PI_2f, Float3{1., 0., 0.}})},
-    {"assets/meshes/stanford-bunny.obj"},
+    {"assets/meshes/stanford-bunny.obj",
+     Eigen::Affine3f{Eigen::UniformScaling(12.0f)}.rotate(
+         Eigen::AngleAxisf(M_PI_2f, Float3{1., 0., 0.}))},
     {"assets/meshes/cube.obj"},
 };
 
