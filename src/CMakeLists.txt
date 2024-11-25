@@ -5,6 +5,7 @@ find_package(Eigen3 REQUIRED)
 set(
   PRIMITIVE_SOURCES
   candlewick/primitives/Cube.cpp
+  candlewick/primitives/Grid.cpp
   candlewick/primitives/Plane.cpp
 )
 
