@@ -364,17 +364,11 @@ int main() {
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
                                        sizeof(PbrMaterialUniform));
 
-        SDL_GPUBufferBinding vertex_binding{
-            .buffer = plane.mesh.vertexBuffers[0],
-            .offset = plane.mesh.vertexBufferOffsets[0],
-        };
+        SDL_GPUBufferBinding vertex_binding = plane.mesh.getVertexBinding(0);
         SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
 
         if (plane.mesh.isIndexed()) {
-          SDL_GPUBufferBinding index_binding{
-              .buffer = plane.mesh.indexBuffer,
-              .offset = plane.mesh.indexBufferOffset,
-          };
+          SDL_GPUBufferBinding index_binding = plane.mesh.getIndexBinding();
           SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                                  SDL_GPU_INDEXELEMENTSIZE_32BIT);
           SDL_DrawGPUIndexedPrimitives(render_pass, plane.mesh.count, 1, 0, 0,

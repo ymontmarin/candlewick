@@ -16,7 +16,7 @@ struct Mesh {
   Mesh(Mesh &&) noexcept = default;
 
   Mesh &operator=(const Mesh &) = delete;
-  Mesh &operator=(Mesh &&) noexcept = delete;
+  Mesh &operator=(Mesh &&) noexcept = default;
 
   const MeshLayout &layout() const { return _layout; }
 
@@ -29,6 +29,14 @@ struct Mesh {
   bool isCountSet() const { return count != ~Uint32{}; }
 
   void releaseOwnedBuffers(const Device &device);
+
+  SDL_GPUBufferBinding getVertexBinding(Uint32 slot) const {
+    return {.buffer = vertexBuffers[slot], .offset = vertexBufferOffsets[slot]};
+  }
+
+  SDL_GPUBufferBinding getIndexBinding() const {
+    return {.buffer = indexBuffer, .offset = indexBufferOffset};
+  }
 
 private:
   /// Add a vertex buffer corresponding to binding slot @p binding,

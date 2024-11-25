@@ -242,11 +242,9 @@ int main() {
   // Main loop
   for (Uint32 i = 0; i < 200; i++) {
     SDL_GPURenderPass *render_pass;
-    SDL_GPUBufferBinding vertex_binding;
+    SDL_GPUBufferBinding vertex_binding = mesh.getVertexBinding(0);
     cmdbuf = SDL_AcquireGPUCommandBuffer(device);
     SDL_GPUTexture *swapchain;
-    vertex_binding.buffer = mesh.vertexBuffers[0];
-    vertex_binding.offset = mesh.vertexBufferOffsets[0];
     const Float3 center{0., 0., 0.};
     Float3 eye{0., 0., 0.};
     // start at phi -> eye.x = 2.5, eye.y = 0.5

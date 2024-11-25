@@ -217,14 +217,8 @@ int main() {
           .store_op = SDL_GPU_STOREOP_STORE,
           .cycle = false,
       };
-      SDL_GPUBufferBinding vertex_binding{
-          .buffer = meshes[0].vertexBuffers[0],
-          .offset = meshes[0].vertexBufferOffsets[0],
-      };
-      SDL_GPUBufferBinding index_binding{
-          .buffer = meshes[0].indexBuffer,
-          .offset = meshes[0].indexBufferOffset,
-      };
+      SDL_GPUBufferBinding vertex_binding = meshes[0].getVertexBinding(0);
+      SDL_GPUBufferBinding index_binding = meshes[0].getIndexBinding();
       render_pass =
           SDL_BeginGPURenderPass(command_buffer, &ctinfo, 1, &depthTarget);
       SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
