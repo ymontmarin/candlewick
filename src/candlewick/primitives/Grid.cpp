@@ -1,3 +1,4 @@
+#include "../core/math_util.h"
 #include "../utils/MeshDataView.h"
 #include "../utils/MeshTransforms.h"
 
@@ -5,14 +6,16 @@
 
 namespace candlewick {
 
+const Float3 color = 0xE0A236_rgbf;
+
 // 1—3
 // | |
 // 0—2
 const MeshData::Vertex quad[] = {
-    {{0.f, 0.f, 0.f}, Float3{}},
-    {{0.f, 1.f, 0.f}, Float3{}},
-    {{1.f, 0.f, 0.f}, Float3{}},
-    {{1.f, 1.f, 0.f}, Float3{}},
+    {{0.f, 0.f, 0.f}, color},
+    {{0.f, 1.f, 0.f}, color},
+    {{1.f, 0.f, 0.f}, color},
+    {{1.f, 1.f, 0.f}, color},
 };
 
 constexpr Uint32 indexData[] = {
