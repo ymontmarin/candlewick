@@ -1,16 +1,117 @@
 #include "MeshData.h"
 #include "MeshTransforms.h"
 
+#include <SDL3/SDL_assert.h>
+#include <SDL3/SDL_log.h>
+#include <numeric>
+
 namespace candlewick {
 
-void applyTransformToMeshInPlace(MeshData &meshData,
-                                 const Eigen::Affine3f &tr) {
+void apply3DTransformInPlace(MeshData &meshData, const Eigen::Affine3f &tr) {
   Eigen::Matrix3f normalMatrix = tr.linear().inverse().transpose();
 
   for (MeshData::Vertex &v : meshData.vertexData) {
     v.pos = tr * v.pos;
     v.normal = normalMatrix * v.normal;
   }
+}
+
+void triangleStripGenerateIndices(Uint32 vertexCount,
+                                  std::vector<Uint32> &indices) {
+  const Uint32 iMax = std::max(vertexCount, 2u) - 2u;
+  SDL_Log("triangle strip indices: iMax=%d", iMax);
+  indices.resize(3 * iMax);
+  for (Uint32 i = 0; i != iMax; i++) {
+    indices[3 * i + 0] = i % 2 ? i + 1 : i;
+    indices[3 * i + 1] = i % 2 ? i : i + 1;
+    indices[3 * i + 2] = i + 2;
+    for (size_t j = 0; j < 3; j++) {
+      Uint32 k = 3 * i + j;
+      SDL_Log("indices[%d] = %d", k, indices[k]);
+    }
+  }
+}
+
+MeshData generateIndices(const MeshData &meshData) {
+  SDL_assert(meshData.primitiveType == SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP);
+  SDL_assert(!meshData.isIndexed());
+  std::vector<Uint32> indices;
+  Uint32 vertexCount = meshData.numVertices();
+  triangleStripGenerateIndices(vertexCount, indices);
+  return MeshData(SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, meshData.vertexData,
+                  std::move(indices));
+}
+
+namespace detail {
+std::pair<Uint32, Uint32>
+mergeCalcIndexVertexCount(std::span<const MeshData> meshes) {
+  Uint32 indexCount = 0, vertexCount = 0;
+  for (const MeshData &m : meshes) {
+    // if no indices, use vertex count.
+    // if the mesh is indexed, use the index count.
+    // if moreover this is the first indexed mesh,
+    // then use the vertex count from all previous meshes.
+    if (m.isIndexed()) {
+      if (!indexCount)
+        indexCount = vertexCount;
+      indexCount += m.numIndices();
+    } else if (indexCount) {
+      indexCount += m.numVertices();
+    }
+    vertexCount += m.numVertices();
+  }
+  return {indexCount, vertexCount};
+}
+} // namespace detail
+
+MeshData mergeMeshes(std::span<const MeshData> meshes) {
+  SDL_assert(!meshes.empty());
+  // 1. check coherence of primitives
+  SDL_GPUPrimitiveType primitive = meshes[0].primitiveType;
+  for (const MeshData &m : meshes) {
+    SDL_assert(m.primitiveType == primitive);
+  }
+  auto indexVertexCount = detail::mergeCalcIndexVertexCount(meshes);
+  std::vector<MeshData::Vertex> vertexData;
+  vertexData.resize(indexVertexCount.second);
+  std::vector<MeshData::IndexType> indexData;
+  indexData.resize(indexVertexCount.first);
+
+  Uint32 vtxOffset = 0, indexOffset = 0;
+  // three cases:
+  // 1. indexed: copy indices over to our indexData vector, shift them by the
+  // number of vertices
+  // 2. not indexed but we are generating an indexed output mesh: generate
+  // trivial indices
+  // 3. neither: do nothing, just increment
+  for (size_t i = 0; i < meshes.size(); i++) {
+    const MeshData &mesh = meshes[i];
+    if (mesh.isIndexed()) {
+      std::span<MeshData::IndexType> dst{indexData.begin() + indexOffset,
+                                         mesh.numIndices()};
+      std::copy_n(mesh.indexData.begin(), mesh.numIndices(), dst.begin());
+      indexOffset += mesh.numIndices();
+
+      for (Uint32 &index : dst)
+        index += vtxOffset;
+    } else if (!indexData.empty()) {
+      std::iota(indexData.begin() + indexOffset,
+                indexData.begin() + indexOffset + mesh.numIndices(),
+                Uint32(vtxOffset));
+    }
+
+    std::copy_n(mesh.vertexData.begin(), mesh.numVertices(),
+                vertexData.begin() + vtxOffset);
+
+    vtxOffset += mesh.numVertices();
+  }
+
+  return MeshData(primitive, vertexData, indexData);
+}
+
+MeshData mergeMeshes(std::vector<MeshData> &&meshes) {
+  std::span<const MeshData> view{meshes};
+  return mergeMeshes(view);
 }
 
 } // namespace candlewick
