@@ -23,6 +23,9 @@ bool ExampleInit(Context &ctx, float wWidth, float wHeight) {
 void ExampleTeardown(Context &ctx) {
   SDL_ReleaseWindowFromGPUDevice(ctx.device, ctx.window);
   SDL_DestroyWindow(ctx.window);
+  if (ctx.lineListPipeline) {
+    SDL_ReleaseGPUGraphicsPipeline(ctx.device, ctx.lineListPipeline);
+  }
   ctx.device.destroy();
   SDL_Quit();
 }
