@@ -14,19 +14,33 @@ MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
 
 Mesh convertToMesh(const Device &device, const MeshData &meshData) {
   using Vertex = MeshData::Vertex;
+  using IndexType = MeshData::IndexType;
   Mesh mesh{MeshLayout{meshData.primitiveType}
                 .addBinding(0, sizeof(Vertex))
                 .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                               offsetof(Vertex, pos))
                 .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                               offsetof(Vertex, normal))};
-  SDL_GPUBufferCreateInfo createInfo{
+  SDL_GPUBufferCreateInfo vtxInfo{
       .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
       .size = Uint32(sizeof(Vertex) * meshData.numVertices()),
       .props = 0};
-  SDL_GPUBuffer *buf = SDL_CreateGPUBuffer(device, &createInfo);
-  mesh.addVertexBuffer(0, buf, 0, true);
-  mesh.count = meshData.numVertices();
+
+  SDL_GPUBuffer *vertexBuffer = SDL_CreateGPUBuffer(device, &vtxInfo);
+  mesh.addVertexBuffer(0, vertexBuffer, 0, true);
+
+  SDL_GPUBuffer *indexBuffer = NULL;
+  if (meshData.isIndexed()) {
+    SDL_GPUBufferCreateInfo indexInfo{
+        .usage = SDL_GPU_BUFFERUSAGE_INDEX,
+        .size = Uint32(sizeof(IndexType) * meshData.numIndices()),
+        .props = 0};
+    indexBuffer = SDL_CreateGPUBuffer(device, &indexInfo);
+    mesh.setIndexBuffer(indexBuffer, 0, true);
+    mesh.count = meshData.numIndices();
+  } else {
+    mesh.count = meshData.numVertices();
+  }
   return mesh;
 }
 
@@ -46,25 +60,6 @@ Mesh convertToMeshIndexed(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
   SDL_assert(mesh.isIndexed());
   mesh.count = meshData.numIndices();
   return mesh;
-}
-
-Mesh convertToMeshIndexed(const Device &device, const MeshData &meshData) {
-  using Vertex = MeshData::Vertex;
-  using IndexType = MeshData::IndexType;
-
-  SDL_GPUBufferCreateInfo vtxInfo{
-      .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-      .size = Uint32(sizeof(Vertex) * meshData.numVertices()),
-      .props = 0};
-
-  SDL_GPUBufferCreateInfo indexInfo{
-      .usage = SDL_GPU_BUFFERUSAGE_INDEX,
-      .size = Uint32(sizeof(IndexType) * meshData.numIndices()),
-      .props = 0};
-
-  SDL_GPUBuffer *vertexBuffer = SDL_CreateGPUBuffer(device, &vtxInfo);
-  SDL_GPUBuffer *indexBuffer = SDL_CreateGPUBuffer(device, &indexInfo);
-  return convertToMeshIndexed(meshData, vertexBuffer, 0, indexBuffer, 0, true);
 }
 
 void uploadMeshToDevice(const Device &device, const Mesh &mesh,

@@ -90,8 +90,7 @@ int main() {
 
   std::vector<Mesh> meshes;
   for (std::size_t j = 0; j < meshDatas.size(); j++) {
-    // Mesh mesh = convertToMesh(device, meshDatas[j]);
-    Mesh mesh = convertToMeshIndexed(device, meshDatas[j]);
+    Mesh mesh = convertToMesh(device, meshDatas[j]);
     meshes.push_back(std::move(mesh));
   }
   SDL_assert(meshDatas[0].numIndices() == meshes[0].count);

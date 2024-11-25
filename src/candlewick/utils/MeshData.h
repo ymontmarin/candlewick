@@ -38,17 +38,13 @@ struct MeshData : MeshDataBase<MeshData> {
            std::vector<IndexType> indexData);
 };
 
-/// \brief Convert @c MeshData to a triangle @c Mesh. This creates the required
-/// vertex buffer.
+/// \brief Convert @c MeshData to a @c Mesh. This creates the required
+/// vertex buffer and index buffer (if required).
 Mesh convertToMesh(const Device &device, const MeshData &meshData);
 
 Mesh convertToMeshIndexed(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                           Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
                           Uint64 indexOffset, bool takeOwnership = false);
-
-/// \brief Convert @c MeshData to an indexed triangle @c Mesh. This creates the
-/// required vertex and index buffers.
-Mesh convertToMeshIndexed(const Device &device, const MeshData &meshData);
 
 /// \brief Upload mesh contents to GPU device.
 void uploadMeshToDevice(const Device &device, const Mesh &mesh,
