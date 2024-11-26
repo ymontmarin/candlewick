@@ -19,8 +19,8 @@ group.add_argument(
 args = parser.parse_args()
 
 shader_name = args.shader_name
-SHADER_SRC_DIR = "shaders/src"
-SHADER_OUT_DIR = "shaders/compiled"
+SHADER_SRC_DIR = os.path.abspath("shaders/src")
+SHADER_OUT_DIR = os.path.abspath("shaders/compiled")
 print("Shader src dir:", SHADER_SRC_DIR)
 if args.all_stages:
     import glob
@@ -39,7 +39,15 @@ for stage_file in stages:
     out_file = os.path.join(SHADER_OUT_DIR, os.path.relpath(stage_file, SHADER_SRC_DIR))
     out_file = f"{out_file}.spv"
     proc = subprocess.run(
-        ["glslc", stage_file, "--target-env=vulkan1.2", "-Werror", "-o", out_file],
+        [
+            "glslc",
+            stage_file,
+            f"-I{SHADER_SRC_DIR}",
+            "--target-env=vulkan1.2",
+            "-Werror",
+            "-o",
+            out_file,
+        ],
         shell=False,
     )
     print(proc.args)
