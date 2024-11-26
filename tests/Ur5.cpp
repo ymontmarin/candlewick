@@ -7,7 +7,7 @@
 #include "candlewick/core/MaterialUniform.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
-#include "candlewick/utils/CylinderControl.h"
+#include "candlewick/utils/CameraControl.h"
 #include "candlewick/multibody/LoadPinocchioGeometry.h"
 
 #include "candlewick/primitives/Plane.h"
@@ -100,25 +100,23 @@ void eventLoop(bool &quitRequested) {
       const float step_size = 0.06;
       switch (event.key.key) {
       case SDLK_UP:
-        cylinderCameraUpDown(viewMat, +step_size);
+        cylinderCameraUpDown(viewMat, -step_size);
         break;
       case SDLK_DOWN:
-        cylinderCameraUpDown(viewMat, -step_size);
+        cylinderCameraUpDown(viewMat, +step_size);
         break;
       }
     }
     if (event.type == SDL_EVENT_MOUSE_MOTION) {
       SDL_MouseButtonFlags mouseButton = event.motion.state;
       if (mouseButton >= SDL_BUTTON_LMASK) {
-        Float2 camViewportSpeed{0.005, 0.01};
-        camViewportSpeed *= pixelDensity;
-        cylinderCameraViewportDrag(
-            viewMat, Float2{event.motion.xrel, event.motion.yrel}.cwiseProduct(
-                         camViewportSpeed));
+        cylinderCameraViewportDrag(viewMat,
+                                   Float2{event.motion.xrel, event.motion.yrel},
+                                   5e-3 * pixelDensity, 1e-2 * pixelDensity);
       }
       if (mouseButton >= SDL_BUTTON_RMASK) {
         float camXLocRotSpeed = 0.01 * pixelDensity;
-        cylinderXLocalRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
+        cameraLocalXRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
       }
     }
   }

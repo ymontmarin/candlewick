@@ -5,7 +5,7 @@
 #include "candlewick/core/math_util.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
-#include "candlewick/utils/CylinderControl.h"
+#include "candlewick/utils/CameraControl.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
 
@@ -206,18 +206,14 @@ int main() {
       }
       if (event.type == SDL_EVENT_MOUSE_MOTION) {
         auto mouseButton = event.motion.state;
-        bool dragging = mouseButton >= SDL_BUTTON_LMASK;
-        if (dragging) {
-          Float2 camViewportSpeed{0.005, 0.01};
-          camViewportSpeed *= pixelDensity;
+        if (mouseButton >= SDL_BUTTON_LMASK) {
           cylinderCameraViewportDrag(
-              viewMat,
-              Float2{event.motion.xrel, event.motion.yrel}.cwiseProduct(
-                  camViewportSpeed));
+              viewMat, Float2{event.motion.xrel, event.motion.yrel},
+              5e-3 * pixelDensity, 1e-2 * pixelDensity);
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01 * pixelDensity;
-          cylinderXLocalRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
+          cameraLocalXRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
         }
       }
     }
