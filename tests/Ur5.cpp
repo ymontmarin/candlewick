@@ -199,9 +199,9 @@ int main() {
     Shader vertexShader{device, "PbrBasic.vert", 1};
     Shader fragmentShader{device, "PbrBasic.frag", 2};
 
-    SDL_GPUColorTargetDescription colorTarget;
-    SDL_zero(colorTarget);
-    colorTarget.format = SDL_GetGPUSwapchainTextureFormat(device, window);
+    SDL_GPUColorTargetDescription colorTarget{
+        .format = SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window)};
+    SDL_zero(colorTarget.blend_state);
     SDL_Log("Mesh pipeline color target format: %d", colorTarget.format);
 
     // create pipeline
@@ -308,11 +308,12 @@ int main() {
         GpuVec3 viewPos;
       } const lightUbo{myLight, viewMat.col(3).head<3>()};
 
+      SDL_BindGPUGraphicsPipeline(render_pass, mesh_pipeline);
+
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
         const pin::SE3 &placement = geom_data.oMg[i];
         const MeshGroup &mg = meshGroups[i];
-        SDL_BindGPUGraphicsPipeline(render_pass, mesh_pipeline);
 
         Matrix4f modelMat = placement.toHomogeneousMatrix().cast<float>();
         modelView = viewMat * modelMat.matrix();
@@ -352,7 +353,6 @@ int main() {
 
       // RENDER PLANE
       if (add_plane) {
-        SDL_BindGPUGraphicsPipeline(render_pass, mesh_pipeline);
         Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
         modelView = viewMat * plane_transform.matrix();
         projViewMat = projectionMat * modelView;

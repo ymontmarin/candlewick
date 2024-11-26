@@ -36,10 +36,9 @@ void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
   Shader vertexShader{ctx.device, "Hud3dElement.vert", 1};
   Shader fragmentShader{ctx.device, "Hud3dElement.frag", 0};
 
-  SDL_GPUColorTargetDescription colorTarget;
-  SDL_zero(colorTarget);
-  colorTarget.format = SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window);
-
+  SDL_GPUColorTargetDescription colorTarget{
+      .format = SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window)};
+  SDL_zero(colorTarget.blend_state);
   SDL_GPUGraphicsPipelineCreateInfo createInfo{
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
