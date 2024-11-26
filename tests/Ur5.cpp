@@ -75,7 +75,7 @@ struct alignas(16) TransformUniformData {
 static DirectionalLightUniform myLight{
     .direction = {0., -1., -1.},
     .color = {1.0, 1.0, 1.0},
-    .intensity = 1.0,
+    .intensity = 4.0,
 };
 
 void eventLoop(bool &quitRequested) {
@@ -202,6 +202,7 @@ int main() {
     SDL_GPUColorTargetDescription colorTarget;
     SDL_zero(colorTarget);
     colorTarget.format = SDL_GetGPUSwapchainTextureFormat(device, window);
+    SDL_Log("Mesh pipeline color target format: %d", colorTarget.format);
 
     // create pipeline
     SDL_GPUGraphicsPipelineCreateInfo mesh_pipeline_desc{
@@ -302,6 +303,11 @@ int main() {
       Matrix4f modelView;
       Matrix4f projViewMat;
 
+      struct {
+        DirectionalLightUniform a;
+        GpuVec3 viewPos;
+      } const lightUbo{myLight, viewMat.col(3).head<3>()};
+
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
         const pin::SE3 &placement = geom_data.oMg[i];
@@ -321,8 +327,8 @@ int main() {
 
         SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                      sizeof(cameraUniform));
-        SDL_PushGPUFragmentUniformData(command_buffer, 1, &myLight,
-                                       sizeof(myLight));
+        SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
+                                       sizeof(lightUbo));
 
         for (size_t j = 0; j < mg.size(); j++) {
           const auto material = mg.meshDatas[j].material.toUniform();
@@ -357,8 +363,8 @@ int main() {
         const auto material = plane.data.material.toUniform();
         SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                      sizeof(cameraUniform));
-        SDL_PushGPUFragmentUniformData(command_buffer, 1, &myLight,
-                                       sizeof(myLight));
+        SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
+                                       sizeof(lightUbo));
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
                                        sizeof(PbrMaterialUniform));
 

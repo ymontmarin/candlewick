@@ -166,7 +166,7 @@ int main() {
   DirectionalLightUniform myLight{
       .direction = {0., -1., 1.},
       .color = {1.0, 1.0, 1.0},
-      .intensity = 2.0,
+      .intensity = 4.0,
   };
 
   PbrMaterialUniform myMaterial{
@@ -257,13 +257,17 @@ int main() {
           projViewMat,
           normalMatrix,
       };
+      struct {
+        DirectionalLightUniform a;
+        GpuVec3 viewPos;
+      } lightUbo{myLight, viewMat.col(3).head<3>()};
 
       SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                    sizeof(cameraUniform));
       SDL_PushGPUFragmentUniformData(command_buffer, 0, &myMaterial,
                                      sizeof(PbrMaterialUniform));
-      SDL_PushGPUFragmentUniformData(command_buffer, 1, &myLight,
-                                     sizeof(myLight));
+      SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
+                                     sizeof(lightUbo));
       SDL_DrawGPUIndexedPrimitives(render_pass, meshes[0].count, 1, 0, 0, 0);
 
       SDL_EndGPURenderPass(render_pass);
