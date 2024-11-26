@@ -2,7 +2,6 @@
 #include "MeshTransforms.h"
 
 #include <SDL3/SDL_assert.h>
-#include <SDL3/SDL_log.h>
 #include <numeric>
 
 namespace candlewick {
@@ -19,7 +18,6 @@ void apply3DTransformInPlace(MeshData &meshData, const Eigen::Affine3f &tr) {
 void triangleStripGenerateIndices(Uint32 vertexCount,
                                   std::vector<Uint32> &indices) {
   const Uint32 iMax = std::max(vertexCount, 2u) - 2u;
-  SDL_Log("triangle strip indices: iMax=%d", iMax);
   indices.resize(3 * iMax);
   for (Uint32 i = 0; i != iMax; i++) {
     indices[3 * i + 0] = i % 2 ? i + 1 : i;
@@ -27,7 +25,6 @@ void triangleStripGenerateIndices(Uint32 vertexCount,
     indices[3 * i + 2] = i + 2;
     for (size_t j = 0; j < 3; j++) {
       Uint32 k = 3 * i + j;
-      SDL_Log("indices[%d] = %d", k, indices[k]);
     }
   }
 }
