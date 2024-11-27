@@ -13,6 +13,9 @@
 #include "candlewick/primitives/Plane.h"
 #include "candlewick/primitives/Grid.h"
 
+#include "candlewick/gui/imgui_impl_sdl3_extend.h"
+#include "candlewick/gui/imgui_sdl_gpu.h"
+
 #include <robot_descriptions_cpp/robot_spec.hpp>
 #include <robot_descriptions_cpp/robot_load.hpp>
 
@@ -84,21 +87,26 @@ void eventLoop(bool &quitRequested) {
   const float panSensitivity = 1e-2 * pixelDensity;
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
+    ImGui_ImplSDL3_ProcessEvent(&event);
+    ImGuiIO &io = ImGui::GetIO();
     if (event.type == SDL_EVENT_QUIT) {
       SDL_Log("Application exit requested.");
       quitRequested = true;
       break;
     }
-    if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+
+    if (io.WantCaptureMouse | io.WantCaptureKeyboard)
+      continue;
+    switch (event.type) {
+    case SDL_EVENT_MOUSE_WHEEL: {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
       // orthographicZoom(projectionMat, scaleFac);
-      // recreate
       fov = std::min(fov * scaleFac, 170.0_radf);
-      SDL_Log("Change fov to %f", rad2deg(fov));
       projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+      break;
     }
-    if (event.type == SDL_EVENT_KEY_DOWN) {
+    case SDL_EVENT_KEY_DOWN: {
       const float step_size = 0.06;
       switch (event.key.key) {
       case SDLK_UP:
@@ -108,8 +116,9 @@ void eventLoop(bool &quitRequested) {
         cylinderCameraUpDown(viewMat, +step_size);
         break;
       }
+      break;
     }
-    if (event.type == SDL_EVENT_MOUSE_MOTION) {
+    case SDL_EVENT_MOUSE_MOTION: {
       SDL_MouseButtonFlags mouseButton = event.motion.state;
       bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
       if (mouseButton & SDL_BUTTON_LMASK) {
@@ -125,6 +134,8 @@ void eventLoop(bool &quitRequested) {
         float camXLocRotSpeed = 0.01 * pixelDensity;
         cameraLocalXRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
       }
+      break;
+    }
     }
   }
 }
@@ -145,12 +156,39 @@ void drawGrid(SDL_GPUCommandBuffer *command_buffer,
   SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.mesh.count, 1, 0, 0, 0);
 }
 
+bool GuiInit() {
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+
+  ImGuiIO &io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+  io.IniFilename = nullptr;
+
+  ImGui::StyleColorsDark();
+  if (!ImGui_ImplSDL3_InitForSDLGPU3(ctx.window, ctx.device)) {
+    SDL_Log("Failed to init ImGui for SDL");
+    return false;
+  }
+  return ImGui_ImplSDLGPU3_Init(ctx.device, ctx.window);
+}
+
+void GuiTeardown() {
+  ImGui_ImplSDLGPU3_Shutdown();
+  ImGui_ImplSDL3_Shutdown();
+  ImGui::DestroyContext();
+}
+
 int main() {
   if (!ExampleInit(ctx, wWidth, wHeight)) {
     return 1;
   }
   Device &device = ctx.device;
   SDL_Window *window = ctx.window;
+
+  if (!GuiInit()) {
+    return 1;
+  }
 
   pin::Model model;
   pin::GeometryModel geom_model;
@@ -262,6 +300,8 @@ int main() {
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
 
+  static bool show_demo_window = true;
+
   while (frameNo < 1000 && !quitRequested) {
     // logic
     eventLoop(quitRequested);
@@ -269,6 +309,15 @@ int main() {
     Eigen::VectorXd q = pin::interpolate(model, q0, q1, phi);
     pin::forwardKinematics(model, pin_data, q);
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
+
+    ImGui_ImplSDLGPU3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+
+    if (show_demo_window)
+      ImGui::ShowDemoWindow(&show_demo_window);
+
+    ImGui::Render();
 
     // render pass
 
@@ -400,6 +449,9 @@ int main() {
       break;
     }
 
+    ImGui_ImplSDLGPU3_RenderDrawData(ImGui::GetDrawData(), command_buffer,
+                                     swapchain);
+
     SDL_SubmitGPUCommandBuffer(command_buffer);
     frameNo++;
   }
@@ -409,6 +461,7 @@ int main() {
   }
   SDL_ReleaseGPUGraphicsPipeline(device, mesh_pipeline);
 
+  GuiTeardown();
   ExampleTeardown(ctx);
   return 0;
 }
