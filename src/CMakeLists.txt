@@ -10,7 +10,7 @@ set(
 )
 
 add_library(
-  ${PROJECT_NAME}_core
+  candlewick_core
   SHARED
   candlewick/core/Device.cpp
   candlewick/core/math_util.cpp
@@ -27,16 +27,17 @@ add_library(
 )
 
 target_link_libraries(
-  ${PROJECT_NAME}_core
+  candlewick_core
   PUBLIC SDL3::SDL3 SDL3::Headers assimp::assimp Eigen3::Eigen
 )
-target_include_directories(${PROJECT_NAME}_core PUBLIC ./)
-target_include_directories(
-  ${PROJECT_NAME}_core
-  PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui/backends
-)
+target_include_directories(candlewick_core PUBLIC ./)
+
+add_subdirectory(candlewick/gui)
+target_link_libraries(candlewick_core PUBLIC candlewick_imgui)
 
 add_library(${PROJECT_NAME} INTERFACE)
+target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_core)
+target_include_directories(${PROJECT_NAME} INTERFACE candlewick)
 
 cmake_policy(SET CMP0167 NEW)
 find_package(pinocchio)
@@ -55,6 +56,3 @@ if(${BUILD_WITH_PINOCCHIO})
   )
   target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_multibody)
 endif()
-
-target_link_libraries(${PROJECT_NAME} INTERFACE ${PROJECT_NAME}_core)
-target_include_directories(${PROJECT_NAME} INTERFACE candlewick)
