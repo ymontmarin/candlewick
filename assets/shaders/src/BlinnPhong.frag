@@ -1,6 +1,6 @@
 #version 450
 
-layout(location=0) in vec4 fragWorldPos;
+layout(location=0) in vec3 fragWorldPos;
 layout(location=1) in vec3 fragNormal;
 
 // Light structure
@@ -22,6 +22,7 @@ layout (set=3, binding=0) uniform Material {
 
 layout(set=3, binding=1) uniform LightBlock {
     DirectionalLight light;
+    vec3 viewPos;
 };
 
 layout(location=0) out vec4 fragColor;
@@ -42,9 +43,9 @@ void main() {
     vec3 diffuse = diffRad * lightCol;
 
     // specular term
-    vec3 camDir = normalize(-fragWorldPos.xyz / fragWorldPos.w);
-    vec3 h = normalize(lightDir + camDir);
-    float spec = max(0., dot(h, normal));
+    vec3 V = normalize(viewPos - fragWorldPos);
+    vec3 H = normalize(lightDir + V);
+    float spec = max(0., dot(H, normal));
     float shininess = 80;
     spec = pow(spec, shininess);
     vec3 specular = vec3(spec);

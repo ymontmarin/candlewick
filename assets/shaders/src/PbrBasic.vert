@@ -4,7 +4,7 @@ layout(location=0) in vec3 inPosition;
 layout(location=1) in vec3 inNormal;
 
 // world-space position-normal
-layout(location=0) out vec4 fragWorldPos;
+layout(location=0) out vec3 fragWorldPos;
 layout(location=1) out vec3 fragWorldNormal;
 
 
@@ -17,7 +17,7 @@ layout(set=1, binding=0) uniform TranformBlock
 };
 
 void main() {
-    fragWorldPos = model * vec4(inPosition, 1.0);
+    fragWorldPos = vec3(model * vec4(inPosition, 1.0));
     fragWorldNormal = normalize(normalMatrix * inNormal);
     gl_Position = mvp * vec4(inPosition, 1.0);
 }
