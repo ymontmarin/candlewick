@@ -154,7 +154,8 @@ int main() {
 
   pin::Model model;
   pin::GeometryModel geom_model;
-  auto robot_spec = robot_descriptions::loadRobotSpecFromToml("ur.toml", "ur5");
+  auto robot_spec =
+      robot_descriptions::loadRobotSpecFromToml("ur.toml", "ur5_gripper");
   robot_descriptions::loadModelFromSpec(robot_spec, model);
   robot_descriptions::loadGeomFromSpec(robot_spec, model, geom_model,
                                        pin::VISUAL);
@@ -189,7 +190,7 @@ int main() {
   struct {
     MeshData data;
     Mesh mesh;
-  } plane{loadPlaneTiled(0.25f, 3, 3), Mesh{NoInit}};
+  } plane{loadPlaneTiled(0.25f, 5, 5), Mesh{NoInit}};
   plane.mesh = convertToMesh(device, plane.data);
   uploadMeshToDevice(device, plane.mesh, plane.data);
 
@@ -307,10 +308,11 @@ int main() {
       Matrix4f modelView;
       Matrix4f projViewMat;
 
-      struct {
+      struct alignas(16) light_ubo_t {
         DirectionalLightUniform a;
-        GpuVec3 viewPos;
-      } const lightUbo{myLight, viewMat.col(3).head<3>()};
+        alignas(16) GpuVec3 viewPos;
+      };
+      const light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
 
       SDL_BindGPUGraphicsPipeline(render_pass, mesh_pipeline);
 

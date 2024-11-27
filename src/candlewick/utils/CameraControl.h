@@ -4,6 +4,12 @@
 
 namespace candlewick {
 
+inline Float3 cameraViewPos(const Eigen::Matrix4f &viewMatrix) {
+  auto R = viewMatrix.topLeftCorner<3, 3>();
+  auto translation = viewMatrix.topRightCorner<3, 1>();
+  return -R.transpose() * translation;
+}
+
 inline void cameraLocalXRotate(Eigen::Matrix4f &viewMatrix, Rad<float> angle) {
   float c, s;
   sincosf(angle, &s, &c);

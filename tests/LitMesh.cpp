@@ -253,7 +253,7 @@ int main() {
       struct {
         DirectionalLightUniform a;
         GpuVec3 viewPos;
-      } lightUbo{myLight, viewMat.col(3).head<3>()};
+      } lightUbo{myLight, cameraViewPos(viewMat)};
 
       auto materialUbo = meshDatas[0].material.toUniform();
 
