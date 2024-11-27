@@ -211,9 +211,6 @@ int main() {
         .vertex_input_state =
             meshGroups[0].meshes[0].layout().toVertexInputState(),
         .primitive_type = meshGroups[0].meshes[0].layout().primitiveType(),
-        .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
-                          .cull_mode = SDL_GPU_CULLMODE_NONE,
-                          .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
         .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
                              .enable_depth_test = true,
                              .enable_depth_write = true},
