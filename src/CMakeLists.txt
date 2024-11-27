@@ -20,7 +20,6 @@ add_library(
   candlewick/core/Texture2D.cpp
   candlewick/core/MeshGroup.cpp
   candlewick/utils/LoadMesh.cpp
-  candlewick/utils/MaterialData.cpp
   candlewick/utils/MeshData.cpp
   candlewick/utils/MeshDataView.cpp
   candlewick/utils/MeshTransforms.cpp

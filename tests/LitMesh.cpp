@@ -80,7 +80,7 @@ int main() {
 
   std::vector<MeshData> meshDatas;
   LoadMeshReturn ret = loadSceneMeshes(meshPath, meshDatas);
-  if (ret != LoadMeshReturn::OK) {
+  if (ret < LoadMeshReturn::OK) {
     SDL_Log("Failed to load mesh.");
     return 1;
   }
@@ -169,13 +169,6 @@ int main() {
       .intensity = 4.0,
   };
 
-  PbrMaterialUniform myMaterial{
-      .baseColor = 0xed7612ff_rgbaf,
-      .metalness = 0.f,
-      .roughness = 1.f,
-      .ao = 1.f,
-  };
-
   while (frameNo < 1000 && !quitRequested) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -262,10 +255,12 @@ int main() {
         GpuVec3 viewPos;
       } lightUbo{myLight, viewMat.col(3).head<3>()};
 
+      auto materialUbo = meshDatas[0].material.toUniform();
+
       SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                    sizeof(cameraUniform));
-      SDL_PushGPUFragmentUniformData(command_buffer, 0, &myMaterial,
-                                     sizeof(PbrMaterialUniform));
+      SDL_PushGPUFragmentUniformData(command_buffer, 0, &materialUbo,
+                                     sizeof(materialUbo));
       SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
                                      sizeof(lightUbo));
       SDL_DrawGPUIndexedPrimitives(render_pass, meshes[0].count, 1, 0, 0, 0);

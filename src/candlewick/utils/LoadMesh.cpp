@@ -1,5 +1,6 @@
 #include "LoadMesh.h"
 #include "MeshData.h"
+#include "assimp_convert.h"
 
 #include <SDL3/SDL_log.h>
 #include <assimp/scene.h>
@@ -41,6 +42,18 @@ MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
                   std::move(indexData)};
 }
 
+PbrMaterialData loadFromAssimpMaterial(aiMaterial *material) {
+  PbrMaterialData out;
+  aiColor4D baseColor;
+  material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor);
+  out.baseColor = util::assimpColor4ToEigen(baseColor);
+
+  material->Get(AI_MATKEY_METALLIC_FACTOR, out.metalness);
+  material->Get(AI_MATKEY_ROUGHNESS_FACTOR, out.roughness);
+  out.ao = 1.0f;
+  return out;
+}
+
 LoadMeshReturn loadSceneMeshes(const char *path,
                                std::vector<MeshData> &meshData) {
 
@@ -65,6 +78,7 @@ LoadMeshReturn loadSceneMeshes(const char *path,
   if (!scene->HasMeshes())
     return LoadMeshReturn::NoMeshes;
 
+  LoadMeshReturn ret = LoadMeshReturn::OK;
   aiMatrix4x4 transform = scene->mRootNode->mTransformation;
   meshData.resize(scene->mNumMeshes);
   for (std::size_t i = 0; i < scene->mNumMeshes; i++) {
@@ -74,10 +88,11 @@ LoadMeshReturn loadSceneMeshes(const char *path,
     if (scene->HasMaterials()) {
       aiMaterial *material = scene->mMaterials[materialId];
       meshData[i].material = loadFromAssimpMaterial(material);
+      ret = LoadMeshReturn::HasMaterials;
     }
   }
 
-  return LoadMeshReturn::OK;
+  return ret;
 }
 
 } // namespace candlewick
