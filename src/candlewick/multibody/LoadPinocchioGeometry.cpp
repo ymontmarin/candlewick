@@ -1,4 +1,5 @@
 #include "LoadPinocchioGeometry.h"
+#include "LoadCoalPrimitives.h"
 #include "../utils/LoadMesh.h"
 
 #include <pinocchio/multibody/geometry.hpp>
@@ -27,16 +28,25 @@ constexpr const char *obj_type_str(hpp::fcl::OBJECT_TYPE type) {
 
 void loadGeometryObject(const pin::GeometryObject &gobj,
                         std::vector<MeshData> &meshData) {
+  using hpp::fcl::OBJECT_TYPE;
+  using enum OBJECT_TYPE;
+  using hpp::fcl::NODE_TYPE;
 
+  const CollisionGeometry &collgom = *gobj.geometry.get();
+  const OBJECT_TYPE objType = collgom.getObjectType();
   printf("Processing GeometryObject %s.\t", gobj.name.c_str());
-  const CollisionGeometry &collgom = *gobj.geometry;
-  printf("Got object type %s\n", obj_type_str(collgom.getObjectType()));
+  printf("Got object type %s\n", obj_type_str(objType));
 
   std::vector<MeshData> newMeshes;
 
-  switch (collgom.getObjectType()) {
-  case hpp::fcl::OBJECT_TYPE::OT_BVH: {
+  switch (objType) {
+  case OT_BVH: {
     loadSceneMeshes(gobj.meshPath.c_str(), newMeshes);
+    break;
+  }
+  case OT_GEOM: {
+    newMeshes.push_back(loadCoalPrimitive(collgom, gobj.meshColor.cast<float>(),
+                                          gobj.meshScale.cast<float>()));
     break;
   }
   default:
