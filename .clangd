@@ -1,6 +1,0 @@
-CompileFlags:
-    Add: [
-        -Wall,
-        -Wextra,
-        -DSDL_GPU_SHADERCROSS_IMPLEMENTATION
-    ]
