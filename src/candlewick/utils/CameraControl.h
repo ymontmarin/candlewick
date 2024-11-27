@@ -43,4 +43,14 @@ inline void cylinderCameraViewportDrag(Eigen::Matrix4f &viewMatrix, Float2 step,
   cylinderCameraZRotate(viewMatrix, Rad(step.x()));
 }
 
+inline void cylinderCameraMoveInOut(Eigen::Matrix4f &viewMatrix, float scale,
+                                    float offset) {
+  const float alpha = 1. - (offset > 0 ? 1. / scale : scale);
+  const float curDist = viewMatrix.topRightCorner<3, 1>().norm();
+  Eigen::Matrix4f transform;
+  transform.setIdentity();
+  transform(2, 3) = curDist * alpha;
+  viewMatrix.applyOnTheLeft(transform);
+}
+
 } // namespace candlewick

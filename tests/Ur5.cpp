@@ -80,6 +80,8 @@ static DirectionalLightUniform myLight{
 
 void eventLoop(bool &quitRequested) {
   const float pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
+  const float rotSensitivity = 5e-3 * pixelDensity;
+  const float panSensitivity = 1e-2 * pixelDensity;
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (event.type == SDL_EVENT_QUIT) {
@@ -109,12 +111,17 @@ void eventLoop(bool &quitRequested) {
     }
     if (event.type == SDL_EVENT_MOUSE_MOTION) {
       SDL_MouseButtonFlags mouseButton = event.motion.state;
-      if (mouseButton >= SDL_BUTTON_LMASK) {
-        cylinderCameraViewportDrag(viewMat,
-                                   Float2{event.motion.xrel, event.motion.yrel},
-                                   5e-3 * pixelDensity, 1e-2 * pixelDensity);
+      bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
+      if (mouseButton & SDL_BUTTON_LMASK) {
+        if (controlPressed) {
+          cylinderCameraMoveInOut(viewMat, 0.95f, event.motion.yrel);
+        } else {
+          cylinderCameraViewportDrag(
+              viewMat, Float2{event.motion.xrel, event.motion.yrel},
+              rotSensitivity, panSensitivity);
+        }
       }
-      if (mouseButton >= SDL_BUTTON_RMASK) {
+      if (mouseButton & SDL_BUTTON_RMASK) {
         float camXLocRotSpeed = 0.01 * pixelDensity;
         cameraLocalXRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
       }
