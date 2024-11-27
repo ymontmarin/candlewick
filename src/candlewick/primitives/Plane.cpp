@@ -7,18 +7,21 @@ namespace candlewick {
 // │ /│
 // │/ │
 // 2——0
-MeshData::Vertex vertexData[]{{{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                              {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                              {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                              {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+const MeshData::Vertex vertexData[]{{{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+                                    {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+                                    {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+                                    {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+
+constexpr Uint32 indexData[] = {0, 1, 2, //
+                                2, 1, 3};
 
 MeshDataView loadPlane() {
-  return {SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP, vertexData};
+  return {SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, vertexData, indexData};
 }
 
 MeshData loadPlaneTiled(float scale, Uint32 xrepeat, Uint32 yrepeat,
                         bool centered) {
-  MeshData dataOwned = generateIndices(toOwningMeshData(loadPlane()));
+  MeshData dataOwned = toOwningMeshData(loadPlane());
   {
     // normalize to (-1,-1) -- (1,1)
     const Eigen::Translation3f tr{0.5, 0.5};
