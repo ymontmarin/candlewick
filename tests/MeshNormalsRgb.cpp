@@ -166,10 +166,10 @@ int main() {
         const float step_size = 0.06;
         switch (event.key.key) {
         case SDLK_UP:
-          cylinderCameraUpDown(viewMat, +step_size);
+          cameraWorldTranslateZ(viewMat, +step_size);
           break;
         case SDLK_DOWN:
-          cylinderCameraUpDown(viewMat, -step_size);
+          cameraWorldTranslateZ(viewMat, -step_size);
           break;
         }
       }
@@ -182,7 +182,7 @@ int main() {
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01 * pixelDensity;
-          cameraLocalXRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
+          cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
         }
       }
     }
