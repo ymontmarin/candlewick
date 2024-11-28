@@ -72,42 +72,42 @@
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
-  #include "imgui_impl_sdl3_extend.h"
+#include "imgui_impl_sdl3_extend.h"
 
-  // Clang warnings with -Weverything
-  #if defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored                                           \
-        "-Wimplicit-int-float-conversion" // warning: implicit conversion from
-                                          // 'xxx' to 'float' may lose precision
-  #endif
+// Clang warnings with -Weverything
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored                                               \
+    "-Wimplicit-int-float-conversion" // warning: implicit conversion from
+                                      // 'xxx' to 'float' may lose precision
+#endif
 
-  // SDL
-  #include <SDL3/SDL.h>
-  #if defined(__APPLE__)
-    #include <TargetConditionals.h>
-  #endif
-  #ifdef _WIN32
-    #ifndef WIN32_LEAN_AND_MEAN
-      #define WIN32_LEAN_AND_MEAN
-    #endif
-    #include <windows.h>
-  #endif
+// SDL
+#include <SDL3/SDL.h>
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
 
-  #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) &&                     \
-      !(defined(__APPLE__) && TARGET_OS_IOS) && !defined(__amigaos4__)
-    #define SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE 1
-  #else
-    #define SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE 0
-  #endif
+#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) &&                       \
+    !(defined(__APPLE__) && TARGET_OS_IOS) && !defined(__amigaos4__)
+#define SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE 1
+#else
+#define SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE 0
+#endif
 
-  // FIXME-LEGACY: remove when SDL 3.1.3 preview is released.
-  #ifndef SDLK_APOSTROPHE
-    #define SDLK_APOSTROPHE SDLK_QUOTE
-  #endif
-  #ifndef SDLK_GRAVE
-    #define SDLK_GRAVE SDLK_BACKQUOTE
-  #endif
+// FIXME-LEGACY: remove when SDL 3.1.3 preview is released.
+#ifndef SDLK_APOSTROPHE
+#define SDLK_APOSTROPHE SDLK_QUOTE
+#endif
+#ifndef SDLK_GRAVE
+#define SDLK_GRAVE SDLK_BACKQUOTE
+#endif
 
 // SDL Data
 struct ImGui_ImplSDL3_Data {
@@ -595,15 +595,15 @@ static void ImGui_ImplSDL3_SetupPlatformHandles(ImGuiViewport *viewport,
                                                 SDL_Window *window) {
   viewport->PlatformHandle = (void *)(intptr_t)SDL_GetWindowID(window);
   viewport->PlatformHandleRaw = nullptr;
-  #if defined(_WIN32) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(__WINRT__)
   viewport->PlatformHandleRaw =
       (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window),
                                    SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
-  #elif defined(__APPLE__) && defined(SDL_VIDEO_DRIVER_COCOA)
+#elif defined(__APPLE__) && defined(SDL_VIDEO_DRIVER_COCOA)
   viewport->PlatformHandleRaw =
       SDL_GetPointerProperty(SDL_GetWindowProperties(window),
                              SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
-  #endif
+#endif
 }
 
 static bool ImGui_ImplSDL3_Init(SDL_Window *window, SDL_Renderer *renderer,
@@ -619,7 +619,7 @@ static bool ImGui_ImplSDL3_Init(SDL_Window *window, SDL_Renderer *renderer,
   // ("wayland" and "rpi" don't support it, but we chose to use a white-list
   // instead of a black-list)
   bool mouse_can_use_global_state = false;
-  #if SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE
+#if SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE
   const char *sdl_backend = SDL_GetCurrentVideoDriver();
   const char *global_mouse_whitelist[] = {"windows", "cocoa", "x11", "DIVE",
                                           "VMAN"};
@@ -627,7 +627,7 @@ static bool ImGui_ImplSDL3_Init(SDL_Window *window, SDL_Renderer *renderer,
     if (strncmp(sdl_backend, global_mouse_whitelist[n],
                 strlen(global_mouse_whitelist[n])) == 0)
       mouse_can_use_global_state = true;
-  #endif
+#endif
 
   // Setup backend capabilities flags
   ImGui_ImplSDL3_Data *bd = IM_NEW(ImGui_ImplSDL3_Data)();
@@ -681,23 +681,23 @@ static bool ImGui_ImplSDL3_Init(SDL_Window *window, SDL_Renderer *renderer,
   ImGuiViewport *main_viewport = ImGui::GetMainViewport();
   ImGui_ImplSDL3_SetupPlatformHandles(main_viewport, window);
 
-  // From 2.0.5: Set SDL hint to receive mouse click events on window focus,
-  // otherwise SDL doesn't emit the event. Without this, when clicking to gain
-  // focus, our widgets wouldn't activate even though they showed as hovered.
-  // (This is unfortunately a global SDL setting, so enabling it might have a
-  // side-effect on your application. It is unlikely to make a difference, but
-  // if your app absolutely needs to ignore the initial on-focus click: you can
-  // ignore SDL_EVENT_MOUSE_BUTTON_DOWN events coming right after a
-  // SDL_WINDOWEVENT_FOCUS_GAINED)
-  #ifdef SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH
+// From 2.0.5: Set SDL hint to receive mouse click events on window focus,
+// otherwise SDL doesn't emit the event. Without this, when clicking to gain
+// focus, our widgets wouldn't activate even though they showed as hovered.
+// (This is unfortunately a global SDL setting, so enabling it might have a
+// side-effect on your application. It is unlikely to make a difference, but
+// if your app absolutely needs to ignore the initial on-focus click: you can
+// ignore SDL_EVENT_MOUSE_BUTTON_DOWN events coming right after a
+// SDL_WINDOWEVENT_FOCUS_GAINED)
+#ifdef SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH
   SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
-  #endif
+#endif
 
-  // From 2.0.22: Disable auto-capture, this is preventing drag and drop across
-  // multiple windows (see #5710)
-  #ifdef SDL_HINT_MOUSE_AUTO_CAPTURE
+// From 2.0.22: Disable auto-capture, this is preventing drag and drop across
+// multiple windows (see #5710)
+#ifdef SDL_HINT_MOUSE_AUTO_CAPTURE
   SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "0");
-  #endif
+#endif
 
   return true;
 }
@@ -712,9 +712,9 @@ bool ImGui_ImplSDL3_InitForVulkan(SDL_Window *window) {
 }
 
 bool ImGui_ImplSDL3_InitForD3D(SDL_Window *window) {
-  #if !defined(_WIN32)
+#if !defined(_WIN32)
   IM_ASSERT(0 && "Unsupported");
-  #endif
+#endif
   return ImGui_ImplSDL3_Init(window, nullptr, nullptr, nullptr);
 }
 
@@ -762,20 +762,20 @@ static void ImGui_ImplSDL3_UpdateMouseData() {
   ImGui_ImplSDL3_Data *bd = ImGui_ImplSDL3_GetBackendData();
   ImGuiIO &io = ImGui::GetIO();
 
-  // We forward mouse input when hovered or captured (via
-  // SDL_EVENT_MOUSE_MOTION) or when focused (below)
-  #if SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE
+// We forward mouse input when hovered or captured (via
+// SDL_EVENT_MOUSE_MOTION) or when focused (below)
+#if SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE
   // SDL_CaptureMouse() let the OS know e.g. that our imgui drag outside the SDL
   // window boundaries shouldn't e.g. trigger other operations outside
   SDL_CaptureMouse(bd->MouseButtonsDown != 0);
   SDL_Window *focused_window = SDL_GetKeyboardFocus();
   const bool is_app_focused = (bd->Window == focused_window);
-  #else
+#else
   SDL_Window *focused_window = bd->Window;
   const bool is_app_focused =
       (SDL_GetWindowFlags(bd->Window) & SDL_WINDOW_INPUT_FOCUS) !=
       0; // SDL 2.0.3 and non-windowed systems: single-viewport only
-  #endif
+#endif
   if (is_app_focused) {
     // (Optional) Set OS mouse position from Dear ImGui if requested (rarely
     // used, only when io.ConfigNavMoveSetMousePos is enabled by user)
@@ -1013,8 +1013,8 @@ void ImGui_ImplSDL3_NewFrame() {
 
 //-----------------------------------------------------------------------------
 
-  #if defined(__clang__)
-    #pragma clang diagnostic pop
-  #endif
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #endif // #ifndef IMGUI_DISABLE

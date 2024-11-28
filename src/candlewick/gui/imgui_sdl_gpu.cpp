@@ -28,22 +28,22 @@
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
-  #include "imgui_sdl_gpu.h"
-  #include <stdint.h> // intptr_t
+#include "imgui_sdl_gpu.h"
+#include <stdint.h> // intptr_t
 
-  // Clang warnings with -Weverything
-  #if defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored                                           \
-        "-Wsign-conversion" // warning: implicit conversion changes signedness
-  #endif
+// Clang warnings with -Weverything
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored                                               \
+    "-Wsign-conversion" // warning: implicit conversion changes signedness
+#endif
 
-  // SDL
-  #include <SDL3/SDL.h>
-  #if !SDL_VERSION_ATLEAST(3, 0, 0)
-    #error This backend requires SDL 3.0.0+
-  #endif
-  #include <SDL3/SDL_gpu.h>
+// SDL
+#include <SDL3/SDL.h>
+#if !SDL_VERSION_ATLEAST(3, 0, 0)
+#error This backend requires SDL 3.0.0+
+#endif
+#include <SDL3/SDL_gpu.h>
 
 // SDL_GPUDevice data
 struct ImGui_ImplSDLGPU3_Data {
@@ -775,8 +775,8 @@ void ImGui_ImplSDLGPU3_DestroyDeviceObjects() {
 
 //-----------------------------------------------------------------------------
 
-  #if defined(__clang__)
-    #pragma clang diagnostic pop
-  #endif
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #endif // #ifndef IMGUI_DISABLE
