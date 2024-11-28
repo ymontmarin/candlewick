@@ -39,6 +39,7 @@ const float wHeight = 900;
 const float aspectRatio = wWidth / wHeight;
 
 static bool add_plane = true;
+static bool add_grid = true;
 static Matrix4f viewMat;
 static Matrix4f projectionMat;
 static Rad<float> fov = 55.0_radf;
@@ -154,6 +155,8 @@ void drawMyImguiMenu() {
                    ImGuiSliderFlags_AlwaysClamp);
   updateFov(Radf(_fovdeg));
   projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+  ImGui::Checkbox("Render plane", &add_plane);
+  ImGui::Checkbox("Render grid", &add_grid);
   ImGui::End();
   ImGui::SetNextWindowCollapsed(true, ImGuiCond_FirstUseEver);
   ImGui::ShowDemoWindow(&demo_window_open);
@@ -452,7 +455,7 @@ int main() {
       }
 
       // render grid
-      if (true) {
+      if (add_grid) {
         SDL_BindGPUGraphicsPipeline(render_pass, ctx.lineListPipeline);
         drawGrid(command_buffer, render_pass, projectionMat * viewMat);
       }
