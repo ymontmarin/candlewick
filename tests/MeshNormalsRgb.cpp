@@ -50,7 +50,6 @@ SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
 struct alignas(16) TransformUniformData {
   GpuMat4 mvp;
   GpuMat3 normalMatrix;
-  float padding[3];
 };
 
 int main() {
@@ -66,7 +65,7 @@ int main() {
 
   std::vector<MeshData> meshDatas;
   LoadMeshReturn ret = loadSceneMeshes(meshPath, meshDatas);
-  if (ret != LoadMeshReturn::OK) {
+  if (ret < LoadMeshReturn::OK) {
     SDL_Log("Failed to load mesh.");
     return 1;
   }
@@ -116,7 +115,7 @@ int main() {
       .vertex_input_state = meshes[0].layout().toVertexInputState(),
       .primitive_type = meshes[0].layout().primitiveType(),
       .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
-                        .cull_mode = SDL_GPU_CULLMODE_BACK,
+                        .cull_mode = SDL_GPU_CULLMODE_NONE,
                         .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
       .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
                            .enable_depth_test = true,
@@ -141,15 +140,15 @@ int main() {
   SDL_GPUCommandBuffer *command_buffer;
   SDL_GPUTexture *swapchain;
 
-  // const auto fov = 55.0_radf;
-  Matrix4f projectionMat = orthographicMatrix({aspectRatio, 1.0f}, 0.1, 100.0);
+  Radf fov = 70._radf;
+  Matrix4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.1, 40.0);
 
   Uint32 frameNo = 0;
   bool quitRequested = false;
   Eigen::AngleAxisf rot{M_PI_2f, Eigen::Vector3f{1., 0., 0.}};
-  Eigen::Affine3f modelMat = Eigen::Affine3f{rot};
+  Eigen::Affine3f modelMat = Eigen::Affine3f{rot}.scale(0.1f);
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
-  Matrix4f viewMat = lookAt({6.0, 0, 4.}, Float3::Zero(), {0., 0., 1.});
+  Matrix4f viewMat = lookAt({0.5, 1., 1.}, Float3::Zero(), {0., 0., 1.});
   while (frameNo < 500 && !quitRequested) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -158,11 +157,14 @@ int main() {
         quitRequested = true;
         break;
       }
-      if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+
+      switch (event.type) {
+      case SDL_EVENT_MOUSE_WHEEL: {
         float wy = event.wheel.y;
         orthographicZoom(projectionMat, std::exp(kScrollZoom * wy));
+        break;
       }
-      if (event.type == SDL_EVENT_KEY_DOWN) {
+      case SDL_EVENT_KEY_DOWN: {
         const float step_size = 0.06;
         switch (event.key.key) {
         case SDLK_UP:
@@ -172,18 +174,25 @@ int main() {
           cameraWorldTranslateZ(viewMat, -step_size);
           break;
         }
+        break;
       }
-      if (event.type == SDL_EVENT_MOUSE_MOTION) {
+      case SDL_EVENT_MOUSE_MOTION: {
         auto mouseButton = event.motion.state;
+        bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
         if (mouseButton >= SDL_BUTTON_LMASK) {
-          cylinderCameraViewportDrag(
-              viewMat, Float2{event.motion.xrel, event.motion.yrel},
-              5e-3 * pixelDensity, 1e-2 * pixelDensity);
+          if (controlPressed)
+            cylinderCameraMoveInOut(viewMat, 0.95f, event.motion.yrel);
+          else
+            cylinderCameraViewportDrag(
+                viewMat, Float2{event.motion.xrel, event.motion.yrel},
+                5e-3 * pixelDensity, 1e-2 * pixelDensity);
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01 * pixelDensity;
           cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
         }
+        break;
+      }
       }
     }
     // model-view matrix
