@@ -42,6 +42,7 @@ static bool add_plane = true;
 static Matrix4f viewMat;
 static Matrix4f projectionMat;
 static Rad<float> fov = 55.0_radf;
+static bool quitRequested = false;
 
 static struct {
   MeshData data;
@@ -86,7 +87,7 @@ void updateFov(Rad<float> newFov) {
   projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
 }
 
-void eventLoop(bool &quitRequested) {
+void eventLoop() {
   const float pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
   const float displayScale = SDL_GetWindowDisplayScale(ctx.window);
   const float rotSensitivity = 5e-3 * pixelDensity;
@@ -307,12 +308,11 @@ int main() {
     initGridPipeline(ctx, layout, depth_stencil_format);
   }
 
-  // APPLICATION UNIFORMS AND LOOP
-
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+  // MAIN APPLICATION LOOP
 
   Uint32 frameNo = 0;
-  bool quitRequested = false;
+
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
   viewMat = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);
@@ -320,7 +320,7 @@ int main() {
 
   while (frameNo < 5000 && !quitRequested) {
     // logic
-    eventLoop(quitRequested);
+    eventLoop();
     double phi = 0.5 * (1. + std::sin(frameNo * 1e-2));
     Eigen::VectorXd q = pin::interpolate(model, q0, q1, phi);
     pin::forwardKinematics(model, pin_data, q);
