@@ -24,9 +24,27 @@ private:
 };
 using GpuMat4 = Eigen::Matrix<float, 4, 4, Eigen::ColMajor | Eigen::DontAlign>;
 
+float deg2rad(float);
+float rad2deg(float);
+
+template <typename T> struct Deg;
+
 template <typename T> struct Rad {
   constexpr Rad(T value) : _value(value) {}
+  explicit constexpr Rad(Deg<T> value) : _value(deg2rad(value)) {}
+  constexpr operator T &() { return _value; }
   constexpr operator T() const { return _value; }
+  explicit constexpr operator T *() { return &_value; }
+
+  T _value;
+};
+
+template <typename T> struct Deg {
+  constexpr Deg(T value) : _value(value) {}
+  explicit constexpr Deg(Rad<T> value) : _value(rad2deg(value)) {}
+  constexpr operator T &() { return _value; }
+  constexpr operator T() const { return _value; }
+  explicit constexpr operator T *() { return &_value; }
 
   T _value;
 };
@@ -40,5 +58,8 @@ template <typename T>
 constexpr Rad<T> operator*(const T &left, const Rad<T> &right) {
   return Rad<T>{left * T(right)};
 }
+
+using Radf = Rad<float>;
+using Degf = Deg<float>;
 
 } // namespace candlewick
