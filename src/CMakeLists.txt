@@ -46,6 +46,7 @@ if(${BUILD_WITH_PINOCCHIO})
   add_library(
     candlewick_multibody
     SHARED
+    candlewick/multibody/LoadCoalPrimitives.cpp
     candlewick/multibody/LoadPinocchioGeometry.cpp
   )
   target_link_libraries(

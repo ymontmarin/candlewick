@@ -3,7 +3,7 @@
 
 #include "tone_mapping.glsl"
 
-layout(location=0) in vec4 fragWorldPos;
+layout(location=0) in vec3 fragWorldPos;
 layout(location=1) in vec3 fragNormal;
 
 // Light structure
@@ -79,7 +79,7 @@ float geometrySmith(vec3 normal, vec3 V, vec3 L, float roughness) {
 void main() {
     vec3 lightDir = normalize(-light.direction);
     vec3 normal = normalize(fragNormal);
-    vec3 V = normalize(viewPos - fragWorldPos.xyz / fragWorldPos.w);
+    vec3 V = normalize(viewPos - fragWorldPos);
     vec3 H = normalize(lightDir + V);
 
     if (!gl_FrontFacing) {
