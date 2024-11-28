@@ -81,8 +81,14 @@ static DirectionalLightUniform myLight{
     .intensity = 4.0,
 };
 
+void updateFov(Rad<float> newFov) {
+  fov = newFov;
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+}
+
 void eventLoop(bool &quitRequested) {
   const float pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
+  const float displayScale = SDL_GetWindowDisplayScale(ctx.window);
   const float rotSensitivity = 5e-3 * pixelDensity;
   const float panSensitivity = 1e-2 * pixelDensity;
   SDL_Event event;
@@ -102,8 +108,7 @@ void eventLoop(bool &quitRequested) {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
       // orthographicZoom(projectionMat, scaleFac);
-      fov = std::min(fov * scaleFac, 170.0_radf);
-      projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+      updateFov(Radf(std::min(fov * scaleFac, 170.0_radf)));
       break;
     }
     case SDL_EVENT_KEY_DOWN: {
@@ -138,6 +143,19 @@ void eventLoop(bool &quitRequested) {
     }
     }
   }
+}
+
+void drawMyImguiMenu() {
+  static bool demo_window_open = true;
+  ImGui::Begin("Camera", nullptr);
+  Deg<float> _fovdeg{fov};
+  ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, 30.f, 90.f, "%.3f",
+                   ImGuiSliderFlags_AlwaysClamp);
+  updateFov(Radf(_fovdeg));
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+  ImGui::End();
+  ImGui::SetNextWindowCollapsed(true, ImGuiCond_FirstUseEver);
+  ImGui::ShowDemoWindow(&demo_window_open);
 }
 
 void drawGrid(SDL_GPUCommandBuffer *command_buffer,
@@ -300,9 +318,7 @@ int main() {
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
 
-  static bool show_demo_window = true;
-
-  while (frameNo < 1000 && !quitRequested) {
+  while (frameNo < 5000 && !quitRequested) {
     // logic
     eventLoop(quitRequested);
     double phi = 0.5 * (1. + std::sin(frameNo * 1e-2));
@@ -314,9 +330,7 @@ int main() {
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-    if (show_demo_window)
-      ImGui::ShowDemoWindow(&show_demo_window);
-
+    drawMyImguiMenu();
     ImGui::Render();
 
     // render pass
@@ -328,7 +342,7 @@ int main() {
     command_buffer = SDL_AcquireGPUCommandBuffer(device);
     SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain, NULL,
                                    NULL);
-    SDL_Log("Frame [%u]", frameNo);
+    // SDL_Log("Frame [%u]", frameNo);
 
     if (swapchain) {
 
