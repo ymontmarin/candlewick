@@ -4,6 +4,11 @@
 
 namespace candlewick {
 
+/// \name Camera control functions.
+/// These functions are prefixed `camera` but take the view matrix and
+/// not the camera's pose matrix.
+/// \{
+
 inline Float3 cameraViewPos(const Eigen::Matrix4f &viewMatrix) {
   auto R = viewMatrix.topLeftCorner<3, 3>();
   auto translation = viewMatrix.topRightCorner<3, 1>();
@@ -59,6 +64,11 @@ inline void cameraWorldTranslateZ(Eigen::Matrix4f &viewMatrix, float step) {
   cameraWorldTranslate(viewMatrix, {0., 0., step});
 }
 
+/// \}
+
+/// \name Cylindrical camera controls.
+/// \{
+
 inline void cylinderCameraViewportDrag(Eigen::Matrix4f &viewMatrix, Float2 step,
                                        float rotSensitivity,
                                        float panSensitivity,
@@ -72,9 +82,11 @@ inline void cylinderCameraViewportDrag(Eigen::Matrix4f &viewMatrix, Float2 step,
 
 inline void cylinderCameraMoveInOut(Eigen::Matrix4f &viewMatrix, float scale,
                                     float offset) {
-  const float alpha = 1. - (offset > 0 ? 1. / scale : scale);
+  const float alpha = 1.f - (offset > 0 ? 1.f / scale : scale);
   const float curDist = viewMatrix.topRightCorner<3, 1>().norm();
   viewMatrix(2, 3) += curDist * alpha;
 }
+
+/// \}
 
 } // namespace candlewick

@@ -21,12 +21,12 @@ void getPlaneOrHalfspaceNormalOffset(
   case GEOM_PLANE: {
     const Plane &g = static_cast<const Plane &>(geometry);
     n = g.n.cast<float>();
-    d = g.d;
+    d = float(g.d);
   }
   case GEOM_HALFSPACE: {
     const Halfspace &g = static_cast<const Halfspace &>(geometry);
     n = g.n.cast<float>();
-    d = g.d;
+    d = float(g.d);
   }
   default:
     break;
