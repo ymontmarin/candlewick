@@ -5,4 +5,4 @@
 
 #define CDW_UNREACHABLE_ASSERT(msg)                                            \
   SDL_assert(true);                                                            \
-  SDL_LogError(SDL_LOG_CATEGORY_GPU, msg);
+  SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s: %s", __FUNCTION__, msg);

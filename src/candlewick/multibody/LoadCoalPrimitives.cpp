@@ -1,5 +1,7 @@
 #include "LoadCoalPrimitives.h"
 
+#include "../core/errors.h"
+
 #include "../primitives/Plane.h"
 #include "../primitives/Cube.h"
 #include "../utils/MeshTransforms.h"
@@ -22,14 +24,17 @@ void getPlaneOrHalfspaceNormalOffset(
     const Plane &g = static_cast<const Plane &>(geometry);
     n = g.n.cast<float>();
     d = float(g.d);
+    return;
   }
   case GEOM_HALFSPACE: {
     const Halfspace &g = static_cast<const Halfspace &>(geometry);
     n = g.n.cast<float>();
     d = float(g.d);
+    return;
   }
   default:
-    break;
+    CDW_UNREACHABLE_ASSERT("This function should not be called with a "
+                           "non-Plane, non-Halfspace coal CollisionGeometry.");
   }
 }
 
