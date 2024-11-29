@@ -45,6 +45,9 @@ static Matrix4f projectionMat;
 static Rad<float> fov = 55.0_radf;
 static bool quitRequested = false;
 
+static float pixelDensity;
+static float displayScale;
+
 static struct {
   MeshData data;
   Mesh mesh;
@@ -85,14 +88,14 @@ static DirectionalLightUniform myLight{
 
 void updateFov(Rad<float> newFov) {
   fov = newFov;
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0);
 }
 
 void eventLoop() {
-  const float pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
-  const float displayScale = SDL_GetWindowDisplayScale(ctx.window);
-  const float rotSensitivity = 5e-3 * pixelDensity;
-  const float panSensitivity = 1e-2 * pixelDensity;
+  pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
+  displayScale = SDL_GetWindowDisplayScale(ctx.window);
+  const float rotSensitivity = 5e-3f * pixelDensity;
+  const float panSensitivity = 1e-2f * pixelDensity;
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     ImGui_ImplSDL3_ProcessEvent(&event);
@@ -114,13 +117,19 @@ void eventLoop() {
       break;
     }
     case SDL_EVENT_KEY_DOWN: {
-      const float step_size = 0.06;
+      const float step_size = 0.06f;
       switch (event.key.key) {
+      case SDLK_LEFT:
+        cameraLocalTranslateX(viewMat, +step_size);
+        break;
+      case SDLK_RIGHT:
+        cameraLocalTranslateX(viewMat, -step_size);
+        break;
       case SDLK_UP:
-        cameraLocalTranslateZ(viewMat, -step_size);
+        cameraWorldTranslateZ(viewMat, -step_size);
         break;
       case SDLK_DOWN:
-        cameraLocalTranslateZ(viewMat, +step_size);
+        cameraWorldTranslateZ(viewMat, +step_size);
         break;
       }
       break;
@@ -138,8 +147,8 @@ void eventLoop() {
         }
       }
       if (mouseButton & SDL_BUTTON_RMASK) {
-        float camXLocRotSpeed = 0.01 * pixelDensity;
-        cameraWorldRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
+        float camXLocRotSpeed = 0.01f * pixelDensity;
+        cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
       }
       break;
     }
@@ -154,7 +163,7 @@ void drawMyImguiMenu() {
   ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, 30.f, 90.f, "%.3f",
                    ImGuiSliderFlags_AlwaysClamp);
   updateFov(Radf(_fovdeg));
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
   ImGui::Checkbox("Render plane", &add_plane);
   ImGui::Checkbox("Render grid", &add_grid);
   ImGui::End();
