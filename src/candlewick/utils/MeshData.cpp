@@ -36,7 +36,7 @@ Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                    Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
                    Uint64 indexOffset, bool takeOwnership) {
   using Vertex = MeshData::Vertex;
-  Mesh mesh{MeshLayout{meshData.primitiveType}
+  Mesh mesh{MeshLayout{}
                 .addBinding(0, sizeof(Vertex))
                 .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                               offsetof(Vertex, pos))

@@ -8,8 +8,7 @@ namespace candlewick {
 /// Struct which defines the layout of a mesh's vertices.
 /// This is a clever wrapper around
 struct MeshLayout {
-  constexpr explicit MeshLayout(SDL_GPUPrimitiveType primitive)
-      : _primitiveType(primitive) {}
+  constexpr explicit MeshLayout() = default;
 
   /// @p slot - index for vertex buffer
   /// @p size - equivalent of pitch in SDL_gpu, size of consecutive elements of
@@ -25,12 +24,10 @@ struct MeshLayout {
                             Uint32 offset) &&;
 
   SDL_GPUVertexInputState toVertexInputState() const;
-  SDL_GPUPrimitiveType primitiveType() const { return _primitiveType; }
 
 private:
   std::vector<SDL_GPUVertexBufferDescription> vertex_buffer_desc;
   std::vector<SDL_GPUVertexAttribute> vertex_attributes;
-  SDL_GPUPrimitiveType _primitiveType;
 };
 
 } // namespace candlewick

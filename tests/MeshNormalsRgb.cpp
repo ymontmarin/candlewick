@@ -113,7 +113,7 @@ int main() {
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
       .vertex_input_state = meshes[0].layout().toVertexInputState(),
-      .primitive_type = meshes[0].layout().primitiveType(),
+      .primitive_type = meshDatas[0].primitiveType,
       .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
                         .cull_mode = SDL_GPU_CULLMODE_NONE,
                         .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},

@@ -6,7 +6,7 @@
 
 namespace candlewick {
 
-Mesh::Mesh(NoInitT) : _layout(SDL_GPUPrimitiveType(0)) {}
+Mesh::Mesh(NoInitT) : _layout() {}
 
 Mesh::Mesh(MeshLayout layout) : _layout(std::move(layout)) {
   const Uint32 count = _layout.toVertexInputState().num_vertex_buffers;

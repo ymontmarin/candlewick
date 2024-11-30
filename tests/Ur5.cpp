@@ -288,7 +288,7 @@ int main() {
         .fragment_shader = fragmentShader,
         .vertex_input_state =
             meshGroups[0].meshes[0].layout().toVertexInputState(),
-        .primitive_type = meshGroups[0].meshes[0].layout().primitiveType(),
+        .primitive_type = meshGroups[0].meshDatas[0].primitiveType,
         .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
                              .enable_depth_test = true,
                              .enable_depth_write = true},
@@ -312,7 +312,7 @@ int main() {
 
   {
     using Vertex = MeshData::Vertex;
-    auto layout = MeshLayout{SDL_GPU_PRIMITIVETYPE_LINELIST}
+    auto layout = MeshLayout{}
                       .addBinding(0, sizeof(Vertex))
                       .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                                     offsetof(Vertex, pos))

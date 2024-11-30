@@ -128,7 +128,7 @@ int main() {
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
       .vertex_input_state = meshes[0].layout().toVertexInputState(),
-      .primitive_type = meshes[0].layout().primitiveType(),
+      .primitive_type = meshDatas[0].primitiveType,
       .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
                         .cull_mode = SDL_GPU_CULLMODE_NONE,
                         .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
@@ -156,7 +156,7 @@ int main() {
   SDL_GPUTexture *swapchain;
 
   Rad<float> fov = 55.0_radf;
-  Matrix4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+  Matrix4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
 
   Uint32 frameNo = 0;
   bool quitRequested = false;
@@ -184,10 +184,10 @@ int main() {
         // recreate
         fov = std::min(fov * scaleFac, 170.0_radf);
         SDL_Log("Change fov to %f", rad2deg(fov));
-        projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+        projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
       }
       if (event.type == SDL_EVENT_KEY_DOWN) {
-        const float step_size = 0.06;
+        const float step_size = 0.06f;
         switch (event.key.key) {
         case SDLK_UP:
           cameraWorldTranslateZ(viewMat, +step_size);
@@ -202,10 +202,10 @@ int main() {
         if (mouseButton >= SDL_BUTTON_LMASK) {
           cylinderCameraViewportDrag(
               viewMat, Float2{event.motion.xrel, event.motion.yrel},
-              5e-3 * pixelDensity, 1e-2 * pixelDensity);
+              5e-3f * pixelDensity, 1e-2f * pixelDensity);
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
-          float camXLocRotSpeed = 0.01 * pixelDensity;
+          float camXLocRotSpeed = 0.01f * pixelDensity;
           cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
         }
       }
