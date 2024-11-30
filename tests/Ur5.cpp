@@ -311,13 +311,12 @@ int main() {
   }
 
   {
-    using Vertex = MeshData::Vertex;
     auto layout = MeshLayout{}
-                      .addBinding(0, sizeof(Vertex))
+                      .addBinding(0, sizeof(DefaultVertex))
                       .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                                    offsetof(Vertex, pos))
+                                    offsetof(DefaultVertex, pos))
                       .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                                    offsetof(Vertex, normal));
+                                    offsetof(DefaultVertex, normal));
     initGridPipeline(ctx, layout, depth_stencil_format);
   }
 

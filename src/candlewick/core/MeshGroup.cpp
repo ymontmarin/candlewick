@@ -15,7 +15,6 @@ void MeshGroup::releaseBuffers(const Device &device) {
 
 MeshGroup::MeshGroup(const Device &device, std::span<MeshData> meshDatas)
     : meshes(), meshDatas(meshDatas) {
-  using Vertex = MeshData::Vertex;
   using IndexType = MeshData::IndexType;
   Uint32 numVertices = 0, numIndices = 0;
   for (size_t i = 0; i < meshDatas.size(); i++) {
@@ -23,9 +22,10 @@ MeshGroup::MeshGroup(const Device &device, std::span<MeshData> meshDatas)
     numIndices += meshDatas[i].numIndices();
   }
 
-  SDL_GPUBufferCreateInfo vtxInfo{.usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-                                  .size = Uint32(numVertices * sizeof(Vertex)),
-                                  .props = 0};
+  SDL_GPUBufferCreateInfo vtxInfo{
+      .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
+      .size = Uint32(numVertices * sizeof(DefaultVertex)),
+      .props = 0};
   SDL_GPUBufferCreateInfo idxInfo;
 
   if (numIndices > 0) {
@@ -43,7 +43,7 @@ MeshGroup::MeshGroup(const Device &device, std::span<MeshData> meshDatas)
     meshes.emplace_back(convertToMesh(meshDatas[i], masterVertexBuffer,
                                       vertexOffset, masterIndexBuffer,
                                       indexOffset, false));
-    vertexOffset += sizeof(Vertex) * meshDatas[i].numVertices();
+    vertexOffset += sizeof(DefaultVertex) * meshDatas[i].numVertices();
     indexOffset += sizeof(IndexType) * meshDatas[i].numIndices();
   }
 }

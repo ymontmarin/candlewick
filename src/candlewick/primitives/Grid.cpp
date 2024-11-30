@@ -11,7 +11,7 @@ const Float3 color = 0xE0A236_rgbf;
 // 1—3
 // | |
 // 0—2
-const MeshData::Vertex quad[] = {
+const DefaultVertex quad[] = {
     {{0.f, 0.f, 0.f}, color},
     {{0.f, 1.f, 0.f}, color},
     {{1.f, 0.f, 0.f}, color},

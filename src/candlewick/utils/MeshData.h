@@ -18,15 +18,16 @@ template <typename Derived> struct MeshDataBase {
   bool isIndexed() const { return numIndices() > 0; }
 };
 
+struct alignas(16) DefaultVertex {
+  GpuVec3 pos;
+  alignas(16) GpuVec3 normal;
+};
+
 struct MeshData : MeshDataBase<MeshData> {
   // use a vertex struct, allows us to interleave data properly
-  struct alignas(16) Vertex {
-    GpuVec3 pos;
-    alignas(16) GpuVec3 normal;
-  };
   using IndexType = Uint32;
   SDL_GPUPrimitiveType primitiveType;
-  std::vector<Vertex> vertexData;
+  std::vector<DefaultVertex> vertexData;
   std::vector<IndexType> indexData;
   PbrMaterialData material;
 
@@ -34,7 +35,8 @@ struct MeshData : MeshDataBase<MeshData> {
   MeshData(const MeshData &) = delete;
   MeshData(MeshData &&) noexcept = default;
   MeshData &operator=(MeshData &&) noexcept = default;
-  MeshData(SDL_GPUPrimitiveType primitiveType, std::vector<Vertex> vertexData,
+  MeshData(SDL_GPUPrimitiveType primitiveType,
+           std::vector<DefaultVertex> vertexData,
            std::vector<IndexType> indexData);
 };
 

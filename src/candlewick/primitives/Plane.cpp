@@ -7,10 +7,10 @@ namespace candlewick {
 // │ /│
 // │/ │
 // 2——0
-const MeshData::Vertex vertexData[]{{{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                                    {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                                    {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                                    {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+const DefaultVertex vertexData[]{{{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+                                 {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+                                 {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+                                 {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
 
 constexpr Uint32 indexData[] = {0, 1, 2, //
                                 2, 1, 3};
@@ -38,8 +38,8 @@ MeshData loadPlaneTiled(float scale, Uint32 xrepeat, Uint32 yrepeat,
   }
   MeshData out = mergeMeshes(meshes);
   if (centered) {
-    float xc = 0.5f * scale * xrepeat;
-    float yc = 0.5f * scale * yrepeat;
+    float xc = 0.5f * scale * float(xrepeat);
+    float yc = 0.5f * scale * float(yrepeat);
     const Eigen::Translation3f center{-xc, -yc, 0.f};
     apply3DTransformInPlace(out, Eigen::Affine3f{center});
   }

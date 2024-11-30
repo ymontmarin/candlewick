@@ -9,7 +9,7 @@ namespace candlewick {
 void apply3DTransformInPlace(MeshData &meshData, const Eigen::Affine3f &tr) {
   Eigen::Matrix3f normalMatrix = tr.linear().inverse().transpose();
 
-  for (MeshData::Vertex &v : meshData.vertexData) {
+  for (DefaultVertex &v : meshData.vertexData) {
     v.pos = tr * v.pos;
     v.normal = normalMatrix * v.normal;
   }
@@ -69,7 +69,7 @@ MeshData mergeMeshes(std::span<const MeshData> meshes) {
     SDL_assert(m.primitiveType == primitive);
   }
   auto indexVertexCount = detail::mergeCalcIndexVertexCount(meshes);
-  std::vector<MeshData::Vertex> vertexData;
+  std::vector<DefaultVertex> vertexData;
   vertexData.resize(indexVertexCount.second);
   std::vector<MeshData::IndexType> indexData;
   indexData.resize(indexVertexCount.first);

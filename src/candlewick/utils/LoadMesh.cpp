@@ -10,11 +10,10 @@
 namespace candlewick {
 
 MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
-  using Vertex = MeshData::Vertex;
   using IndexType = MeshData::IndexType;
   const Uint32 expectedFaceSize = 3;
 
-  std::vector<Vertex> vertexData;
+  std::vector<DefaultVertex> vertexData;
   std::vector<IndexType> indexData;
   vertexData.resize(inMesh->mNumVertices);
   indexData.resize(inMesh->mNumFaces * expectedFaceSize);
@@ -22,7 +21,7 @@ MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
   for (Uint32 vertex_id = 0; vertex_id < inMesh->mNumVertices; vertex_id++) {
     aiVector3D pos = inMesh->mVertices[vertex_id];
     pos = transform * pos;
-    Vertex &vertex = vertexData[vertex_id];
+    DefaultVertex &vertex = vertexData[vertex_id];
     vertex.pos = Float3::Map(&pos.x);
 
     if (inMesh->HasNormals()) {

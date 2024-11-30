@@ -6,30 +6,28 @@
 
 namespace candlewick {
 
-template <> struct VertexTraits<MeshData::Vertex> {
+template <> struct VertexTraits<DefaultVertex> {
   static constexpr auto layout() {
-    using Vertex = MeshData::Vertex;
     return MeshLayout{}
-        .addBinding(0, sizeof(Vertex))
+        .addBinding(0, sizeof(DefaultVertex))
         .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(Vertex, pos))
+                      offsetof(DefaultVertex, pos))
         .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(Vertex, normal));
+                      offsetof(DefaultVertex, normal));
   }
 };
 
 MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
-                   std::vector<Vertex> vertexData,
+                   std::vector<DefaultVertex> vertexData,
                    std::vector<IndexType> indexData)
     : primitiveType(primitiveType), vertexData(std::move(vertexData)),
       indexData(std::move(indexData)) {}
 
 Mesh convertToMesh(const Device &device, const MeshData &meshData) {
-  using Vertex = MeshData::Vertex;
   using IndexType = MeshData::IndexType;
   SDL_GPUBufferCreateInfo vtxInfo{
       .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-      .size = Uint32(sizeof(Vertex) * meshData.numVertices()),
+      .size = Uint32(sizeof(DefaultVertex) * meshData.numVertices()),
       .props = 0};
 
   SDL_GPUBuffer *vertexBuffer = SDL_CreateGPUBuffer(device, &vtxInfo);
@@ -47,8 +45,7 @@ Mesh convertToMesh(const Device &device, const MeshData &meshData) {
 Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                    Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
                    Uint64 indexOffset, bool takeOwnership) {
-  using Vertex = MeshData::Vertex;
-  constexpr auto layout = vertexLayout<Vertex>();
+  constexpr auto layout = vertexLayout<DefaultVertex>();
   Mesh mesh{layout};
 
   mesh.addVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership);
@@ -72,7 +69,7 @@ void uploadMeshToDevice(const Device &device, const Mesh &mesh,
   copy_pass = SDL_BeginGPUCopyPass(upload_command_buffer);
 
   const Uint32 vertex_payload_size =
-      meshData.numVertices() * sizeof(MeshData::Vertex);
+      meshData.numVertices() * sizeof(DefaultVertex);
   const Uint32 index_payload_size =
       meshData.numIndices() * sizeof(MeshData::IndexType);
   const Uint32 total_payload_size = vertex_payload_size + index_payload_size;
