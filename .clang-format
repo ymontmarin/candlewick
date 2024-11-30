@@ -1,4 +1,4 @@
 BasedOnStyle: LLVM
 SortIncludes: false
 
-IndentPPDirectives: BeforeHash
+IndentPPDirectives: None

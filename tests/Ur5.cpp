@@ -13,6 +13,9 @@
 #include "candlewick/primitives/Plane.h"
 #include "candlewick/primitives/Grid.h"
 
+#include "candlewick/gui/imgui_impl_sdl3_extend.h"
+#include "candlewick/gui/imgui_sdl_gpu.h"
+
 #include <robot_descriptions_cpp/robot_spec.hpp>
 #include <robot_descriptions_cpp/robot_load.hpp>
 
@@ -22,9 +25,10 @@
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/geometry.hpp>
 
-#include <SDL3/SDL.h>
+#include <SDL3/SDL_log.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_gpu.h>
-#include <SDL3/SDL_filesystem.h>
 
 namespace pin = pinocchio;
 using namespace candlewick;
@@ -36,9 +40,14 @@ const float wHeight = 900;
 const float aspectRatio = wWidth / wHeight;
 
 static bool add_plane = true;
+static bool add_grid = true;
 static Matrix4f viewMat;
 static Matrix4f projectionMat;
 static Rad<float> fov = 55.0_radf;
+static bool quitRequested = false;
+
+static float pixelDensity;
+static float displayScale;
 
 static struct {
   MeshData data;
@@ -78,38 +87,55 @@ static DirectionalLightUniform myLight{
     .intensity = 4.0,
 };
 
-void eventLoop(bool &quitRequested) {
-  const float pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
-  const float rotSensitivity = 5e-3 * pixelDensity;
-  const float panSensitivity = 1e-2 * pixelDensity;
+void updateFov(Rad<float> newFov) {
+  fov = newFov;
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0);
+}
+
+void eventLoop() {
+  pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
+  displayScale = SDL_GetWindowDisplayScale(ctx.window);
+  const float rotSensitivity = 5e-3f * pixelDensity;
+  const float panSensitivity = 1e-2f * pixelDensity;
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
+    ImGui_ImplSDL3_ProcessEvent(&event);
+    ImGuiIO &io = ImGui::GetIO();
     if (event.type == SDL_EVENT_QUIT) {
       SDL_Log("Application exit requested.");
       quitRequested = true;
       break;
     }
-    if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+
+    if (io.WantCaptureMouse | io.WantCaptureKeyboard)
+      continue;
+    switch (event.type) {
+    case SDL_EVENT_MOUSE_WHEEL: {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
       // orthographicZoom(projectionMat, scaleFac);
-      // recreate
-      fov = std::min(fov * scaleFac, 170.0_radf);
-      SDL_Log("Change fov to %f", rad2deg(fov));
-      projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+      updateFov(Radf(std::min(fov * scaleFac, 170.0_radf)));
+      break;
     }
-    if (event.type == SDL_EVENT_KEY_DOWN) {
-      const float step_size = 0.06;
+    case SDL_EVENT_KEY_DOWN: {
+      const float step_size = 0.06f;
       switch (event.key.key) {
+      case SDLK_LEFT:
+        cameraLocalTranslateX(viewMat, +step_size);
+        break;
+      case SDLK_RIGHT:
+        cameraLocalTranslateX(viewMat, -step_size);
+        break;
       case SDLK_UP:
-        cylinderCameraUpDown(viewMat, -step_size);
+        cameraWorldTranslateZ(viewMat, -step_size);
         break;
       case SDLK_DOWN:
-        cylinderCameraUpDown(viewMat, +step_size);
+        cameraWorldTranslateZ(viewMat, +step_size);
         break;
       }
+      break;
     }
-    if (event.type == SDL_EVENT_MOUSE_MOTION) {
+    case SDL_EVENT_MOUSE_MOTION: {
       SDL_MouseButtonFlags mouseButton = event.motion.state;
       bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
       if (mouseButton & SDL_BUTTON_LMASK) {
@@ -122,11 +148,28 @@ void eventLoop(bool &quitRequested) {
         }
       }
       if (mouseButton & SDL_BUTTON_RMASK) {
-        float camXLocRotSpeed = 0.01 * pixelDensity;
-        cameraLocalXRotate(viewMat, camXLocRotSpeed * event.motion.yrel);
+        float camXLocRotSpeed = 0.01f * pixelDensity;
+        cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
       }
+      break;
+    }
     }
   }
+}
+
+void drawMyImguiMenu() {
+  static bool demo_window_open = true;
+  ImGui::Begin("Camera", nullptr);
+  Deg<float> _fovdeg{fov};
+  ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, 30.f, 90.f, "%.3f",
+                   ImGuiSliderFlags_AlwaysClamp);
+  updateFov(Radf(_fovdeg));
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
+  ImGui::Checkbox("Render plane", &add_plane);
+  ImGui::Checkbox("Render grid", &add_grid);
+  ImGui::End();
+  ImGui::SetNextWindowCollapsed(true, ImGuiCond_FirstUseEver);
+  ImGui::ShowDemoWindow(&demo_window_open);
 }
 
 void drawGrid(SDL_GPUCommandBuffer *command_buffer,
@@ -145,6 +188,29 @@ void drawGrid(SDL_GPUCommandBuffer *command_buffer,
   SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.mesh.count, 1, 0, 0, 0);
 }
 
+bool GuiInit() {
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+
+  ImGuiIO &io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+  io.IniFilename = nullptr;
+
+  ImGui::StyleColorsDark();
+  if (!ImGui_ImplSDL3_InitForSDLGPU3(ctx.window, ctx.device)) {
+    SDL_Log("Failed to init ImGui for SDL");
+    return false;
+  }
+  return ImGui_ImplSDLGPU3_Init(ctx.device, ctx.window);
+}
+
+void GuiTeardown() {
+  ImGui_ImplSDLGPU3_Shutdown();
+  ImGui_ImplSDL3_Shutdown();
+  ImGui::DestroyContext();
+}
+
 int main() {
   if (!ExampleInit(ctx, wWidth, wHeight)) {
     return 1;
@@ -152,9 +218,14 @@ int main() {
   Device &device = ctx.device;
   SDL_Window *window = ctx.window;
 
+  if (!GuiInit()) {
+    return 1;
+  }
+
   pin::Model model;
   pin::GeometryModel geom_model;
-  auto robot_spec = robot_descriptions::loadRobotSpecFromToml("ur.toml", "ur5");
+  auto robot_spec =
+      robot_descriptions::loadRobotSpecFromToml("ur.toml", "ur5_gripper");
   robot_descriptions::loadModelFromSpec(robot_spec, model);
   robot_descriptions::loadGeomFromSpec(robot_spec, model, geom_model,
                                        pin::VISUAL);
@@ -189,7 +260,7 @@ int main() {
   struct {
     MeshData data;
     Mesh mesh;
-  } plane{loadPlaneTiled(0.25f, 3, 3), Mesh{NoInit}};
+  } plane{loadPlaneTiled(0.25f, 5, 5), Mesh{NoInit}};
   plane.mesh = convertToMesh(device, plane.data);
   uploadMeshToDevice(device, plane.mesh, plane.data);
 
@@ -250,24 +321,30 @@ int main() {
     initGridPipeline(ctx, layout, depth_stencil_format);
   }
 
-  // APPLICATION UNIFORMS AND LOOP
-
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+  // MAIN APPLICATION LOOP
 
   Uint32 frameNo = 0;
-  bool quitRequested = false;
+
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
   viewMat = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
 
-  while (frameNo < 1000 && !quitRequested) {
+  while (frameNo < 5000 && !quitRequested) {
     // logic
-    eventLoop(quitRequested);
+    eventLoop();
     double phi = 0.5 * (1. + std::sin(frameNo * 1e-2));
     Eigen::VectorXd q = pin::interpolate(model, q0, q1, phi);
     pin::forwardKinematics(model, pin_data, q);
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
+
+    ImGui_ImplSDLGPU3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+
+    drawMyImguiMenu();
+    ImGui::Render();
 
     // render pass
 
@@ -278,7 +355,7 @@ int main() {
     command_buffer = SDL_AcquireGPUCommandBuffer(device);
     SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain, NULL,
                                    NULL);
-    SDL_Log("Frame [%u]", frameNo);
+    // SDL_Log("Frame [%u]", frameNo);
 
     if (swapchain) {
 
@@ -307,10 +384,11 @@ int main() {
       Matrix4f modelView;
       Matrix4f projViewMat;
 
-      struct {
+      struct alignas(16) light_ubo_t {
         DirectionalLightUniform a;
-        GpuVec3 viewPos;
-      } const lightUbo{myLight, viewMat.col(3).head<3>()};
+        alignas(16) GpuVec3 viewPos;
+      };
+      const light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
 
       SDL_BindGPUGraphicsPipeline(render_pass, mesh_pipeline);
 
@@ -387,7 +465,7 @@ int main() {
       }
 
       // render grid
-      if (true) {
+      if (add_grid) {
         SDL_BindGPUGraphicsPipeline(render_pass, ctx.lineListPipeline);
         drawGrid(command_buffer, render_pass, projectionMat * viewMat);
       }
@@ -398,6 +476,9 @@ int main() {
       break;
     }
 
+    ImGui_ImplSDLGPU3_RenderDrawData(ImGui::GetDrawData(), command_buffer,
+                                     swapchain);
+
     SDL_SubmitGPUCommandBuffer(command_buffer);
     frameNo++;
   }
@@ -407,6 +488,7 @@ int main() {
   }
   SDL_ReleaseGPUGraphicsPipeline(device, mesh_pipeline);
 
+  GuiTeardown();
   ExampleTeardown(ctx);
   return 0;
 }

@@ -36,6 +36,7 @@ layout(location=0) out vec4 fragColor;
 
 // Constants
 const float PI = 3.14159265359;
+const float F0 = 0.04; // Standard base reflectivity
 
 // Schlick's Fresnel approximation
 vec3 fresnelSchlick(float cosTheta, vec3 F0) {
@@ -49,11 +50,10 @@ float distributionGGX(vec3 normal, vec3 H, float roughness) {
     float NdotH  = max(dot(normal, H), 0.0);
     float NdotH2 = NdotH * NdotH;
 
-    float num   = a2;
     float denom = (NdotH2 * (a2 - 1.0) + 1.0);
     denom = PI * denom * denom;
 
-    return num / denom;
+    return a2 / denom;
 }
 
 // Geometry function (Smith's method with Schlick-GGX)
@@ -86,21 +86,18 @@ void main() {
         // Flip normal for back faces
         normal = -normal;
     }
-    vec3 lightCol = light.intensity * light.color;
 
     // Base reflectivity
-    vec3 F0 = vec3(0.04); // Standard base reflectivity
-    F0 = mix(F0, material.baseColor.rgb, material.metalness);
+    vec3 specColor = mix(F0.rrr, material.baseColor.rgb, material.metalness);
 
     // Cook-Torrance BRDF
     float NDF = distributionGGX(normal, H, material.roughness);
     float G   = geometrySmith(normal, V, lightDir, material.roughness);
-    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), specColor);
 
     // Specular and diffuse components
-    vec3 numerator    = NDF * G * F;
-    float denominator = 4.0 * max(dot(normal, V), 0.0) * max(dot(normal, lightDir), 0.0) + 0.0001;
-    vec3 specular     = numerator / denominator;
+    float denominator = 4.0 * max(dot(normal, V), dot(normal, lightDir)) + 0.0001;
+    vec3 specular     = NDF * G * F / denominator;
 
     // Energy conservation: diffuse and specular
     vec3 kS = F;
@@ -111,6 +108,7 @@ void main() {
 
     // Combine lighting (no attenuation for directional light)
     float NdotL = max(dot(normal, lightDir), 0.0);
+    const vec3 lightCol = light.intensity * light.color;
     vec3 Lo = (kD * material.baseColor.rgb / PI + specular) * lightCol * NdotL;
 
     // Ambient term (very simple)
