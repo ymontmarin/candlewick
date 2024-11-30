@@ -40,3 +40,4 @@ set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
 
 add_subdirectory(src)
 add_subdirectory(tests)
+add_subdirectory(external/pinocchio-visualizers)

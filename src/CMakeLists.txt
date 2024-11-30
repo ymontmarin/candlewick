@@ -47,12 +47,17 @@ if(${BUILD_WITH_PINOCCHIO})
   add_library(
     candlewick_multibody
     SHARED
+    candlewick/multibody/InstantiatePinViz.cpp
     candlewick/multibody/LoadCoalPrimitives.cpp
     candlewick/multibody/LoadPinocchioGeometry.cpp
+    candlewick/multibody/Visualizer.cpp
   )
   target_link_libraries(
     candlewick_multibody
-    PUBLIC pinocchio::pinocchio robot_descriptions_cpp::robot_descriptions_cpp
+    PUBLIC
+      pinocchio::pinocchio
+      robot_descriptions_cpp::robot_descriptions_cpp
+      pinocchio-visualizers
   )
   target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_multibody)
 endif()
