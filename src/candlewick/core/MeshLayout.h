@@ -1,9 +1,12 @@
 #pragma once
 
 #include <SDL3/SDL_gpu.h>
-#include <vector>
+#include <utility>
 
 namespace candlewick {
+
+#define MAX_VERTEX_BUF_DESCS 10
+#define MAX_VERTEX_ATTRS 10
 
 /// Struct which defines the layout of a mesh's vertices.
 /// This is a clever wrapper around
@@ -14,20 +17,72 @@ struct MeshLayout {
   /// @p size - equivalent of pitch in SDL_gpu, size of consecutive elements of
   /// the vertex buffer, i.e. sizeof(Vertex) if your vertices are of some type
   /// Vertex.
-  MeshLayout &addBinding(Uint32 slot, Uint32 pitch) &;
-  MeshLayout &&addBinding(Uint32 slot, Uint32 pitch) &&;
+  constexpr MeshLayout &addBinding(Uint32 slot, Uint32 pitch) &;
+  constexpr MeshLayout &&addBinding(Uint32 slot, Uint32 pitch) &&;
 
-  MeshLayout &addAttribute(Uint32 loc, Uint32 binding,
-                           SDL_GPUVertexElementFormat format, Uint32 offset) &;
-  MeshLayout &&addAttribute(Uint32 loc, Uint32 binding,
-                            SDL_GPUVertexElementFormat format,
-                            Uint32 offset) &&;
+  constexpr MeshLayout &addAttribute(Uint32 loc, Uint32 binding,
+                                     SDL_GPUVertexElementFormat format,
+                                     Uint32 offset) &;
+  constexpr MeshLayout &&addAttribute(Uint32 loc, Uint32 binding,
+                                      SDL_GPUVertexElementFormat format,
+                                      Uint32 offset) &&;
 
-  SDL_GPUVertexInputState toVertexInputState() const;
+  constexpr SDL_GPUVertexInputState toVertexInputState() const;
+
+  constexpr Uint32 numBuffers() const { return _numBuffers; }
+  constexpr Uint32 numAttributes() const { return _numAttributes; }
 
 private:
-  std::vector<SDL_GPUVertexBufferDescription> vertex_buffer_desc;
-  std::vector<SDL_GPUVertexAttribute> vertex_attributes;
+  SDL_GPUVertexBufferDescription vertex_buffer_desc[MAX_VERTEX_BUF_DESCS];
+  Uint32 _numBuffers{0};
+  SDL_GPUVertexAttribute vertex_attributes[MAX_VERTEX_ATTRS];
+  Uint32 _numAttributes{0};
 };
+
+constexpr MeshLayout &MeshLayout::addBinding(Uint32 slot, Uint32 pitch) & {
+  vertex_buffer_desc[_numBuffers++] = {
+      .slot = slot,
+      .pitch = pitch,
+      .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+      .instance_step_rate = 0,
+  };
+  return *this;
+}
+
+constexpr MeshLayout &&MeshLayout::addBinding(Uint32 slot, Uint32 pitch) && {
+  return std::move(addBinding(slot, pitch));
+}
+
+constexpr MeshLayout &
+MeshLayout::addAttribute(Uint32 loc, Uint32 binding,
+                         SDL_GPUVertexElementFormat format, Uint32 offset) & {
+  vertex_attributes[_numAttributes++] = {
+      .location = loc,
+      .buffer_slot = binding,
+      .format = format,
+      .offset = offset,
+  };
+  return *this;
+}
+
+constexpr MeshLayout &&
+MeshLayout::addAttribute(Uint32 loc, Uint32 binding,
+                         SDL_GPUVertexElementFormat format, Uint32 offset) && {
+  return std::move(addAttribute(loc, binding, format, offset));
+}
+
+constexpr SDL_GPUVertexInputState MeshLayout::toVertexInputState() const {
+  return {vertex_buffer_desc, _numBuffers, vertex_attributes, _numAttributes};
+}
+
+template <typename V>
+concept IsVertexType = std::is_standard_layout_v<V>;
+
+template <IsVertexType V> struct VertexTraits;
+
+/// \brief Shortcut for extracting layout from compile-time struct.
+template <IsVertexType V> constexpr MeshLayout vertexLayout() {
+  return VertexTraits<V>::layout();
+}
 
 } // namespace candlewick

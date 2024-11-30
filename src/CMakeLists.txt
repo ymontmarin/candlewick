@@ -15,7 +15,6 @@ add_library(
   candlewick/core/Device.cpp
   candlewick/core/math_util.cpp
   candlewick/core/Mesh.cpp
-  candlewick/core/MeshLayout.cpp
   candlewick/core/Shader.cpp
   candlewick/core/Texture2D.cpp
   candlewick/core/MeshGroup.cpp

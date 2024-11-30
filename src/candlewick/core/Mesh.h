@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "Tags.h"
 #include "MeshLayout.h"
+#include <vector>
 
 namespace candlewick {
 
