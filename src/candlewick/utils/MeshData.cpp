@@ -6,6 +6,18 @@
 
 namespace candlewick {
 
+template <> struct VertexTraits<MeshData::Vertex> {
+  static constexpr auto layout() {
+    using Vertex = MeshData::Vertex;
+    return MeshLayout{}
+        .addBinding(0, sizeof(Vertex))
+        .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                      offsetof(Vertex, pos))
+        .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                      offsetof(Vertex, normal));
+  }
+};
+
 MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
                    std::vector<Vertex> vertexData,
                    std::vector<IndexType> indexData)
@@ -36,12 +48,8 @@ Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                    Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
                    Uint64 indexOffset, bool takeOwnership) {
   using Vertex = MeshData::Vertex;
-  Mesh mesh{MeshLayout{}
-                .addBinding(0, sizeof(Vertex))
-                .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                              offsetof(Vertex, pos))
-                .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                              offsetof(Vertex, normal))};
+  constexpr auto layout = vertexLayout<Vertex>();
+  Mesh mesh{layout};
 
   mesh.addVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership);
   if (meshData.isIndexed()) {
