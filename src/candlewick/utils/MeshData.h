@@ -42,9 +42,9 @@ struct MeshData : MeshDataBase<MeshData> {
 /// vertex buffer and index buffer (if required).
 Mesh convertToMesh(const Device &device, const MeshData &meshData);
 
-Mesh convertToMeshIndexed(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
-                          Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
-                          Uint64 indexOffset, bool takeOwnership = false);
+Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
+                   Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
+                   Uint64 indexOffset, bool takeOwnership = false);
 
 /// \brief Upload mesh contents to GPU device.
 void uploadMeshToDevice(const Device &device, const Mesh &mesh,

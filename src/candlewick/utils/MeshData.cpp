@@ -15,20 +15,12 @@ MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
 Mesh convertToMesh(const Device &device, const MeshData &meshData) {
   using Vertex = MeshData::Vertex;
   using IndexType = MeshData::IndexType;
-  Mesh mesh{MeshLayout{meshData.primitiveType}
-                .addBinding(0, sizeof(Vertex))
-                .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                              offsetof(Vertex, pos))
-                .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                              offsetof(Vertex, normal))};
   SDL_GPUBufferCreateInfo vtxInfo{
       .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
       .size = Uint32(sizeof(Vertex) * meshData.numVertices()),
       .props = 0};
 
   SDL_GPUBuffer *vertexBuffer = SDL_CreateGPUBuffer(device, &vtxInfo);
-  mesh.addVertexBuffer(0, vertexBuffer, 0, true);
-
   SDL_GPUBuffer *indexBuffer = NULL;
   if (meshData.isIndexed()) {
     SDL_GPUBufferCreateInfo indexInfo{
@@ -36,17 +28,13 @@ Mesh convertToMesh(const Device &device, const MeshData &meshData) {
         .size = Uint32(sizeof(IndexType) * meshData.numIndices()),
         .props = 0};
     indexBuffer = SDL_CreateGPUBuffer(device, &indexInfo);
-    mesh.setIndexBuffer(indexBuffer, 0, true);
-    mesh.count = meshData.numIndices();
-  } else {
-    mesh.count = meshData.numVertices();
   }
-  return mesh;
+  return convertToMesh(meshData, vertexBuffer, 0, indexBuffer, 0, true);
 }
 
-Mesh convertToMeshIndexed(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
-                          Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
-                          Uint64 indexOffset, bool takeOwnership) {
+Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
+                   Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
+                   Uint64 indexOffset, bool takeOwnership) {
   using Vertex = MeshData::Vertex;
   Mesh mesh{MeshLayout{meshData.primitiveType}
                 .addBinding(0, sizeof(Vertex))
@@ -55,10 +43,13 @@ Mesh convertToMeshIndexed(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                 .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                               offsetof(Vertex, normal))};
 
-  mesh.addVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership)
-      .setIndexBuffer(indexBuffer, indexOffset, takeOwnership);
-  SDL_assert(mesh.isIndexed());
-  mesh.count = meshData.numIndices();
+  mesh.addVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership);
+  if (meshData.isIndexed()) {
+    mesh.setIndexBuffer(indexBuffer, indexOffset, takeOwnership);
+    mesh.count = Uint32(meshData.numIndices());
+  } else {
+    mesh.count = Uint32(meshData.numVertices());
+  }
   return mesh;
 }
 

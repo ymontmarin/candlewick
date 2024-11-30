@@ -40,9 +40,9 @@ MeshGroup::MeshGroup(const Device &device, std::span<MeshData> meshDatas)
 
   Uint32 vertexOffset = 0, indexOffset = 0;
   for (size_t i = 0; i < meshDatas.size(); i++) {
-    meshes.emplace_back(convertToMeshIndexed(meshDatas[i], masterVertexBuffer,
-                                             vertexOffset, masterIndexBuffer,
-                                             indexOffset));
+    meshes.emplace_back(convertToMesh(meshDatas[i], masterVertexBuffer,
+                                      vertexOffset, masterIndexBuffer,
+                                      indexOffset, false));
     vertexOffset += sizeof(Vertex) * meshDatas[i].numVertices();
     indexOffset += sizeof(IndexType) * meshDatas[i].numIndices();
   }
