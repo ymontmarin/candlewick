@@ -25,9 +25,10 @@
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/geometry.hpp>
 
-#include <SDL3/SDL.h>
+#include <SDL3/SDL_log.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_gpu.h>
-#include <SDL3/SDL_filesystem.h>
 
 namespace pin = pinocchio;
 using namespace candlewick;
