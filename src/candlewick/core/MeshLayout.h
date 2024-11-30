@@ -81,7 +81,7 @@ concept IsVertexType = std::is_standard_layout_v<V>;
 template <IsVertexType V> struct VertexTraits;
 
 /// \brief Shortcut for extracting layout from compile-time struct.
-template <IsVertexType V> constexpr MeshLayout vertexLayout() {
+template <IsVertexType V> constexpr MeshLayout meshLayoutFor() {
   return VertexTraits<V>::layout();
 }
 

@@ -45,7 +45,7 @@ Mesh convertToMesh(const Device &device, const MeshData &meshData) {
 Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                    Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
                    Uint64 indexOffset, bool takeOwnership) {
-  constexpr auto layout = vertexLayout<DefaultVertex>();
+  constexpr auto layout = meshLayoutFor<DefaultVertex>();
   Mesh mesh{layout};
 
   mesh.addVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership);
