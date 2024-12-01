@@ -21,14 +21,14 @@ template <typename Derived> struct MeshDataBase {
 struct alignas(16) DefaultVertex {
   GpuVec3 pos;
   alignas(16) GpuVec3 normal;
+  alignas(16) GpuVec4 color;
 };
 
 struct MeshData : MeshDataBase<MeshData> {
-  // use a vertex struct, allows us to interleave data properly
   using IndexType = Uint32;
-  SDL_GPUPrimitiveType primitiveType;
-  std::vector<DefaultVertex> vertexData;
-  std::vector<IndexType> indexData;
+  SDL_GPUPrimitiveType primitiveType;    //< Geometry primitive for the mesh
+  std::vector<DefaultVertex> vertexData; //< Vertices
+  std::vector<IndexType> indexData;      //< Indices for indexed mesh. Optional.
   PbrMaterialData material;
 
   explicit MeshData() = default;

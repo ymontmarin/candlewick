@@ -13,7 +13,9 @@ template <> struct VertexTraits<DefaultVertex> {
         .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                       offsetof(DefaultVertex, pos))
         .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(DefaultVertex, normal));
+                      offsetof(DefaultVertex, normal))
+        .addAttribute(2, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+                      offsetof(DefaultVertex, color));
   }
 };
 
