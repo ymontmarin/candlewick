@@ -5,8 +5,55 @@
 
 namespace candlewick {
 
+namespace math {
+template <typename T> constexpr T max(const T &a, const T &b) {
+  if (a < b)
+    return b;
+  return a;
+}
+
+constexpr Uint32 roundUpTo16(Uint32 value) {
+  Uint32 q = value / 16;
+  Uint32 r = value % 16;
+  if (r == 0)
+    return value;
+  return (q + 1) * 16u;
+}
+} // namespace math
+
 static constexpr Uint32 MAX_VERTEX_BUF_DESCS = 10u;
 static constexpr Uint32 MAX_VERTEX_ATTRS = 10u;
+
+constexpr Uint64 vertexElementSize(SDL_GPUVertexElementFormat format) {
+  switch (format) {
+  case SDL_GPU_VERTEXELEMENTFORMAT_INT:
+    return sizeof(Sint32);
+  case SDL_GPU_VERTEXELEMENTFORMAT_INT2:
+    return sizeof(Sint32[2]);
+  case SDL_GPU_VERTEXELEMENTFORMAT_INT3:
+    return sizeof(Sint32[3]);
+  case SDL_GPU_VERTEXELEMENTFORMAT_INT4:
+    return sizeof(Sint32[4]);
+  case SDL_GPU_VERTEXELEMENTFORMAT_UINT:
+    return sizeof(Uint32);
+  case SDL_GPU_VERTEXELEMENTFORMAT_UINT2:
+    return sizeof(Uint32[2]);
+  case SDL_GPU_VERTEXELEMENTFORMAT_UINT3:
+    return sizeof(Uint32[3]);
+  case SDL_GPU_VERTEXELEMENTFORMAT_UINT4:
+    return sizeof(Uint32[4]);
+  case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT:
+    return sizeof(float);
+  case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2:
+    return sizeof(float[2]);
+  case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3:
+    return sizeof(float[3]);
+  case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4:
+    return sizeof(float[4]);
+  default:
+    return 0u;
+  }
+}
 
 /// Struct which defines the layout of a mesh's vertices.
 /// This is a clever wrapper around
@@ -31,12 +78,15 @@ struct MeshLayout {
 
   constexpr Uint32 numBuffers() const { return _numBuffers; }
   constexpr Uint32 numAttributes() const { return _numAttributes; }
+  constexpr Uint32 vertexSize() const { return _totalVertexSize; }
+
+  SDL_GPUVertexBufferDescription vertex_buffer_desc[MAX_VERTEX_BUF_DESCS];
+  SDL_GPUVertexAttribute vertex_attributes[MAX_VERTEX_ATTRS];
 
 private:
-  SDL_GPUVertexBufferDescription vertex_buffer_desc[MAX_VERTEX_BUF_DESCS];
   Uint32 _numBuffers{0};
-  SDL_GPUVertexAttribute vertex_attributes[MAX_VERTEX_ATTRS];
   Uint32 _numAttributes{0};
+  Uint32 _totalVertexSize{0};
 };
 
 constexpr MeshLayout &MeshLayout::addBinding(Uint32 slot, Uint32 pitch) & {
@@ -62,6 +112,8 @@ MeshLayout::addAttribute(Uint32 loc, Uint32 binding,
       .format = format,
       .offset = offset,
   };
+  const Uint32 attrSize = math::roundUpTo16(Uint32(vertexElementSize(format)));
+  _totalVertexSize = math::max(_totalVertexSize, offset + attrSize);
   return *this;
 }
 
@@ -76,7 +128,7 @@ constexpr SDL_GPUVertexInputState MeshLayout::toVertexInputState() const {
 }
 
 template <typename V>
-concept IsVertexType = std::is_standard_layout_v<V>;
+concept IsVertexType = std::is_standard_layout_v<V> && (alignof(V) == 16);
 
 template <IsVertexType V> struct VertexTraits;
 
