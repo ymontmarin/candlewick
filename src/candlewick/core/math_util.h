@@ -14,12 +14,12 @@ Eigen::Vector4i hexToRgbai(unsigned long hex);
 
 inline Float3 hexToRgbf(unsigned long hex) {
   Eigen::Vector3i res = hexToRgbi(hex);
-  return res.cast<float>() / 255.;
+  return res.cast<float>() / 255.f;
 };
 
 inline Float4 hexToRgbaf(unsigned long hex) {
   Eigen::Vector4i res = hexToRgbai(hex);
-  Float4 out = res.cast<float>() / 255.;
+  Float4 out = res.cast<float>() / 255.f;
   printf("Convert hex %zx to color rgba(%f,%f,%f,%f)\n", hex, out.x(), out.y(),
          out.z(), out.w());
   return out;
@@ -59,8 +59,8 @@ perspectiveFromFov(float fovY,        // Vertical field of view in radians
 Eigen::Matrix4f orthographicMatrix(const Float2 &size, float, float far);
 
 inline void orthographicZoom(Eigen::Matrix4f &projMatrix, float factor) {
-  projMatrix(0, 0) *= 1. / factor;
-  projMatrix(1, 1) *= 1. / factor;
+  projMatrix(0, 0) *= 1.f / factor;
+  projMatrix(1, 1) *= 1.f / factor;
 }
 
 } // namespace candlewick
