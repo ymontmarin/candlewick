@@ -159,9 +159,12 @@ void eventLoop() {
 
 void drawMyImguiMenu() {
   static bool demo_window_open = true;
+  const float minFov = 15.f;
+  const float maxFov = 90.f;
+
   ImGui::Begin("Camera", nullptr);
   Deg<float> _fovdeg{fov};
-  ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, 30.f, 90.f, "%.3f",
+  ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, minFov, maxFov, "%.3f",
                    ImGuiSliderFlags_AlwaysClamp);
   updateFov(Radf(_fovdeg));
   projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
