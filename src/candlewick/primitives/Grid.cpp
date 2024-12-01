@@ -6,16 +6,16 @@
 
 namespace candlewick {
 
-const Float3 color = 0xE0A236_rgbf;
+const Float4 color = 0xE0A236ff_rgbaf;
 
 // 1—3
 // | |
 // 0—2
 const DefaultVertex quad[] = {
-    {{0.f, 0.f, 0.f}, color},
-    {{0.f, 1.f, 0.f}, color},
-    {{1.f, 0.f, 0.f}, color},
-    {{1.f, 1.f, 0.f}, color},
+    {{0.f, 0.f, 0.f}, Float3{}, color},
+    {{0.f, 1.f, 0.f}, Float3{}, color},
+    {{1.f, 0.f, 0.f}, Float3{}, color},
+    {{1.f, 1.f, 0.f}, Float3{}, color},
 };
 
 constexpr Uint32 indexData[] = {
