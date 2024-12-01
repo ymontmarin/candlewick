@@ -38,8 +38,8 @@ MeshData loadGrid(Uint32 xyHalfSize) {
   meshDatas.reserve(size * size);
 
   Sint32 i, j;
-  for (i = -xyHalfSize + 1; i < Sint32(xyHalfSize); i++) {
-    for (j = -xyHalfSize + 1; j < Sint32(xyHalfSize); j++) {
+  for (i = -Sint32(xyHalfSize) + 1; i < Sint32(xyHalfSize); i++) {
+    for (j = -Sint32(xyHalfSize) + 1; j < Sint32(xyHalfSize); j++) {
       MeshData &m = meshDatas.emplace_back(toOwningMeshData(dataOrig));
       Eigen::Affine3f tr;
       tr.setIdentity();
