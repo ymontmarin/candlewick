@@ -1,9 +1,9 @@
 #version 450
 
-layout(location=0) in vec3 vtxColor;
+layout(location=0) in vec4 vtxColor;
 
 layout(location=0) out vec4 fragColor;
 
 void main() {
-    fragColor = vec4(vtxColor, 0.4);
+    fragColor = vtxColor;
 }
