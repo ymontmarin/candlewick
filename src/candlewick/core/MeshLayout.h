@@ -5,8 +5,8 @@
 
 namespace candlewick {
 
-#define MAX_VERTEX_BUF_DESCS 10
-#define MAX_VERTEX_ATTRS 10
+static constexpr Uint32 MAX_VERTEX_BUF_DESCS = 10u;
+static constexpr Uint32 MAX_VERTEX_ATTRS = 10u;
 
 /// Struct which defines the layout of a mesh's vertices.
 /// This is a clever wrapper around
