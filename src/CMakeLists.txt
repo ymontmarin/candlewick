@@ -13,7 +13,7 @@ add_library(
   candlewick_core
   SHARED
   candlewick/core/Device.cpp
-  candlewick/core/math_util.cpp
+  candlewick/core/matrix_util.cpp
   candlewick/core/Mesh.cpp
   candlewick/core/Shader.cpp
   candlewick/core/Texture2D.cpp

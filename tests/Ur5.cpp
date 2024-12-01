@@ -2,7 +2,7 @@
 
 #include "candlewick/core/MeshGroup.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/math_util.h"
+#include "candlewick/core/matrix_util.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
 #include "candlewick/utils/MeshData.h"
@@ -89,7 +89,7 @@ static DirectionalLightUniform myLight{
 
 void updateFov(Rad<float> newFov) {
   fov = newFov;
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0);
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
 }
 
 void eventLoop() {
@@ -327,7 +327,7 @@ int main() {
 
   Uint32 frameNo = 0;
 
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
   viewMat = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);

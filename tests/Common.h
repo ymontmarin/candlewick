@@ -6,7 +6,7 @@
 using candlewick::Device;
 using candlewick::NoInit;
 
-const float kScrollZoom = 0.05;
+const float kScrollZoom = 0.05f;
 
 struct Context {
   Device device{NoInit};

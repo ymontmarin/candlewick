@@ -2,7 +2,7 @@
 
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/math_util.h"
+#include "candlewick/core/matrix_util.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"

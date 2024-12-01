@@ -20,8 +20,6 @@ inline Float3 hexToRgbf(unsigned long hex) {
 inline Float4 hexToRgbaf(unsigned long hex) {
   Eigen::Vector4i res = hexToRgbai(hex);
   Float4 out = res.cast<float>() / 255.f;
-  printf("Convert hex %zx to color rgba(%f,%f,%f,%f)\n", hex, out.x(), out.y(),
-         out.z(), out.w());
   return out;
 };
 

@@ -1,4 +1,4 @@
-#include "math_util.h"
+#include "matrix_util.h"
 
 #include <Eigen/Geometry>
 
@@ -41,7 +41,6 @@ Eigen::Vector4i hexToRgbai(unsigned long hex) {
   assert(result.y() < 256);
   assert(result.z() < 256);
   assert(result.w() < 256);
-  printf("Convert hex %zx to color rgba(%d,%d,%d,%d)\n", hex, r, g, b, a);
   return result;
 };
 

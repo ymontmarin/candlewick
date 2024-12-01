@@ -2,7 +2,7 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/MeshLayout.h"
-#include "candlewick/core/math_util.h"
+#include "candlewick/core/matrix_util.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
