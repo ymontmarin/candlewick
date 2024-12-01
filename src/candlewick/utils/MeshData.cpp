@@ -6,19 +6,6 @@
 
 namespace candlewick {
 
-template <> struct VertexTraits<DefaultVertex> {
-  static constexpr auto layout() {
-    return MeshLayout{}
-        .addBinding(0, sizeof(DefaultVertex))
-        .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(DefaultVertex, pos))
-        .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(DefaultVertex, normal))
-        .addAttribute(2, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-                      offsetof(DefaultVertex, color));
-  }
-};
-
 MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
                    std::vector<DefaultVertex> vertexData,
                    std::vector<IndexType> indexData)

@@ -24,6 +24,19 @@ struct alignas(16) DefaultVertex {
   alignas(16) GpuVec4 color;
 };
 
+template <> struct VertexTraits<DefaultVertex> {
+  static constexpr auto layout() {
+    return MeshLayout{}
+        .addBinding(0, sizeof(DefaultVertex))
+        .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                      offsetof(DefaultVertex, pos))
+        .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                      offsetof(DefaultVertex, normal))
+        .addAttribute(2, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+                      offsetof(DefaultVertex, color));
+  }
+};
+
 struct MeshData : MeshDataBase<MeshData> {
   using IndexType = Uint32;
   SDL_GPUPrimitiveType primitiveType;    //< Geometry primitive for the mesh
