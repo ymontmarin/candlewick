@@ -23,9 +23,6 @@ void triangleStripGenerateIndices(Uint32 vertexCount,
     indices[3 * i + 0] = i % 2 ? i + 1 : i;
     indices[3 * i + 1] = i % 2 ? i : i + 1;
     indices[3 * i + 2] = i + 2;
-    for (size_t j = 0; j < 3; j++) {
-      Uint32 k = 3 * i + j;
-    }
   }
 }
 
@@ -33,7 +30,7 @@ MeshData generateIndices(const MeshData &meshData) {
   SDL_assert(meshData.primitiveType == SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP);
   SDL_assert(!meshData.isIndexed());
   std::vector<Uint32> indices;
-  Uint32 vertexCount = meshData.numVertices();
+  Uint32 vertexCount = Uint32(meshData.numVertices());
   triangleStripGenerateIndices(vertexCount, indices);
   return MeshData(SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, meshData.vertexData,
                   std::move(indices));
