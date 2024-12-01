@@ -9,6 +9,7 @@ using Float4 = Eigen::Vector4f;
 
 /** GPU typedefs and adapters **/
 
+using GpuVec2 = Eigen::Matrix<float, 2, 1, Eigen::DontAlign>;
 using GpuVec3 = Eigen::Matrix<float, 3, 1, Eigen::DontAlign>;
 using GpuVec4 = Eigen::Matrix<float, 4, 1, Eigen::DontAlign>;
 // adapter type instead of typedef, to fit GLSL layout
