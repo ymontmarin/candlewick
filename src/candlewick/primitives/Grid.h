@@ -1,10 +1,8 @@
 #pragma once
 
-#include "../utils/MeshDataView.h"
+#include "../utils/MeshData.h"
 
 namespace candlewick {
-
-MeshDataView loadGridElement();
 
 MeshData loadGrid(Uint32 xyHalfSize);
 

@@ -52,7 +52,12 @@ static float displayScale;
 static struct {
   MeshData data;
   Mesh mesh;
-} gridMesh{.data = loadGrid(10), .mesh{NoInit}};
+  Float4 color;
+} gridMesh{
+    .data = loadGrid(10),
+    .mesh{NoInit},
+    .color = 0xE0A236ff_rgbaf,
+};
 
 Context ctx;
 
@@ -182,6 +187,12 @@ void drawGrid(SDL_GPUCommandBuffer *command_buffer,
   } cameraUniform{.mvp = projViewMat};
   SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                sizeof(cameraUniform));
+  struct {
+    alignas(16) GpuVec4 color;
+  } colorUniform{gridMesh.color};
+  static_assert(IsVertexType<decltype(colorUniform)>, "");
+  SDL_PushGPUFragmentUniformData(command_buffer, 0, &colorUniform,
+                                 sizeof(colorUniform));
   auto vertex_binding = gridMesh.mesh.getVertexBinding(0);
   auto index_binding = gridMesh.mesh.getIndexBinding();
 
