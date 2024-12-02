@@ -84,9 +84,9 @@ int main() {
   }
   Device device{SDL_GPU_SHADERFORMAT_SPIRV};
 
-  const float wWidth = 1280;
-  const float wHeight = 720;
-  const float aspectRatio = wWidth / wHeight;
+  const Uint32 wWidth = 1280;
+  const Uint32 wHeight = 720;
+  const float aspectRatio = float(wWidth) / wHeight;
   SDL_Window *window = SDL_CreateWindow(__FILE_NAME__, wWidth, wHeight, 0);
   if (!SDL_ClaimWindowForGPUDevice(device, window)) {
     SDL_Log("Error: %s", SDL_GetError());

@@ -34,9 +34,9 @@ struct TestMesh {
     {"assets/meshes/cube.obj"},
 };
 
-const float wWidth = 1600;
-const float wHeight = 900;
-const float aspectRatio = wWidth / wHeight;
+const Uint32 wWidth = 1600;
+const Uint32 wHeight = 900;
+const float aspectRatio = float(wWidth) / wHeight;
 
 Context ctx;
 

@@ -22,9 +22,9 @@ using Eigen::Matrix4f;
 // const char *meshFilename = "assets/meshes/cube.obj";
 const char *meshFilename = "assets/meshes/teapot.obj";
 
-const float wWidth = 1280;
-const float wHeight = 720;
-const float aspectRatio = wWidth / wHeight;
+const Uint32 wWidth = 1280;
+const Uint32 wHeight = 720;
+const float aspectRatio = float(wWidth) / wHeight;
 
 Context ctx;
 

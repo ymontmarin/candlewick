@@ -14,7 +14,7 @@ struct Context {
   SDL_GPUGraphicsPipeline *hudEltPipeline;
 };
 
-bool ExampleInit(Context &ctx, float wWidth, float wHeight);
+bool ExampleInit(Context &ctx, Uint32 wWidth, Uint32 wHeight);
 void ExampleTeardown(Context &ctx);
 
 void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,

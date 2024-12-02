@@ -35,9 +35,9 @@ using namespace candlewick;
 using Eigen::Matrix3f;
 using Eigen::Matrix4f;
 
-const float wWidth = 1600;
-const float wHeight = 900;
-const float aspectRatio = wWidth / wHeight;
+const Uint32 wWidth = 1600;
+const Uint32 wHeight = 900;
+const float aspectRatio = float(wWidth) / float(wHeight);
 
 static bool add_plane = true;
 static bool add_grid = true;
