@@ -1,5 +1,5 @@
 #include "Plane.h"
-#include "../utils/DefaultVertex.h"
+#include "../core/DefaultVertex.h"
 #include "../utils/MeshTransforms.h"
 
 namespace candlewick {

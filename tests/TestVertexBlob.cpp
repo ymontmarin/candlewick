@@ -1,4 +1,4 @@
-#include "candlewick/utils/DefaultVertex.h"
+#include "candlewick/core/DefaultVertex.h"
 #include "candlewick/utils/VertexDataBlob.h"
 #include <gtest/gtest.h>
 

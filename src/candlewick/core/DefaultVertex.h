@@ -10,6 +10,7 @@ struct alignas(16) DefaultVertex {
   alignas(16) GpuVec3 normal;
   alignas(16) GpuVec4 color;
 };
+static_assert(IsVertexType<DefaultVertex>, "");
 
 template <> struct VertexTraits<DefaultVertex> {
   static constexpr auto layout() {

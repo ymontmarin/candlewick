@@ -1,6 +1,6 @@
 #include "LoadMesh.h"
 #include "MeshData.h"
-#include "DefaultVertex.h"
+#include "../core/DefaultVertex.h"
 #include "assimp_convert.h"
 
 #include <SDL3/SDL_log.h>
