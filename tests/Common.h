@@ -19,3 +19,7 @@ void ExampleTeardown(Context &ctx);
 
 void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
                       SDL_GPUTextureFormat depth_stencil_format);
+
+SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
+                                   SDL_GPUTextureFormat depth_tex_format,
+                                   SDL_GPUSampleCount sample_count);

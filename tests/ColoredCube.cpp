@@ -1,4 +1,5 @@
-#include "candlewick/core/Device.h"
+#include "Common.h"
+
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/MeshLayout.h"
@@ -77,31 +78,6 @@ const Vertex vertexData[] = {
 };
 // clang-format on
 
-struct State {
-  SDL_GPUSampleCount sample_count;
-};
-
-static State state;
-
-SDL_GPUTexture *createDepthTexture(candlewick::Device &device,
-                                   SDL_Window *window,
-                                   SDL_GPUTextureFormat depth_tex_format) {
-  Uint32 w, h;
-  SDL_GetWindowSizeInPixels(window, (int *)&w, (int *)&h);
-  SDL_GPUTextureCreateInfo texinfo{
-      .type = SDL_GPU_TEXTURETYPE_2D,
-      .format = depth_tex_format,
-      .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-      .width = w,
-      .height = h,
-      .layer_count_or_depth = 1,
-      .num_levels = 1,
-      .sample_count = state.sample_count,
-      .props = 0,
-  };
-  return SDL_CreateGPUTexture(device, &texinfo);
-}
-
 int main() {
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     return 1;
@@ -172,8 +148,6 @@ int main() {
   }
   SDL_ReleaseGPUTransferBuffer(device, transfer_buffer);
 
-  state.sample_count = SDL_GPU_SAMPLECOUNT_1;
-
   // Shaders
 
   Shader vertexShader{device, "VertexColor.vert", 1};
@@ -224,8 +198,8 @@ int main() {
   fragmentShader.release();
 
   // Depth texture
-  SDL_GPUTexture *texture_depth =
-      createDepthTexture(device, window, depth_stencil_format);
+  SDL_GPUTexture *depthTexture = createDepthTexture(
+      device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
 
   using Eigen::Matrix4f;
   const auto fov_rad = 45.0_radf;
@@ -267,7 +241,7 @@ int main() {
       depth_target.store_op = SDL_GPU_STOREOP_DONT_CARE;
       depth_target.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
       depth_target.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
-      depth_target.texture = texture_depth;
+      depth_target.texture = depthTexture;
       depth_target.cycle = true;
       render_pass = SDL_BeginGPURenderPass(cmdbuf, &ctinfo, 1, &depth_target);
       SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
@@ -288,7 +262,7 @@ int main() {
 
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 
-  SDL_ReleaseGPUTexture(device, texture_depth);
+  SDL_ReleaseGPUTexture(device, depthTexture);
 
   mesh.releaseOwnedBuffers(device);
 

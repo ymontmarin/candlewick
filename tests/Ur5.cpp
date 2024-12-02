@@ -61,25 +61,6 @@ static struct {
 
 Context ctx;
 
-SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
-                                   SDL_GPUTextureFormat depth_tex_format,
-                                   SDL_GPUSampleCount sample_count) {
-  Uint32 w, h;
-  SDL_GetWindowSizeInPixels(window, (int *)&w, (int *)&h);
-  SDL_GPUTextureCreateInfo texinfo{
-      .type = SDL_GPU_TEXTURETYPE_2D,
-      .format = depth_tex_format,
-      .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-      .width = w,
-      .height = h,
-      .layer_count_or_depth = 1,
-      .num_levels = 1,
-      .sample_count = sample_count,
-      .props = 0,
-  };
-  return SDL_CreateGPUTexture(device, &texinfo);
-}
-
 struct alignas(16) TransformUniformData {
   GpuMat4 model;
   alignas(16) GpuMat4 mvp;
