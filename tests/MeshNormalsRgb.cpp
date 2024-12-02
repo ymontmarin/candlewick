@@ -107,7 +107,6 @@ int main() {
                    .has_depth_stencil_target = true},
       .props = 0,
   };
-  SDL_Log("Creating pipeline...");
   SDL_GPUGraphicsPipeline *pipeline =
       SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
   if (pipeline == NULL) {

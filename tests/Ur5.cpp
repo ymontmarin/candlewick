@@ -294,7 +294,6 @@ int main() {
         .props = 0,
     };
 
-    SDL_Log("Creating pipeline...");
     mesh_pipeline = SDL_CreateGPUGraphicsPipeline(device, &mesh_pipeline_desc);
     if (mesh_pipeline == NULL) {
       SDL_Log("Failed to create pipeline: %s", SDL_GetError());
