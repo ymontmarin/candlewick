@@ -18,10 +18,12 @@ add_library(
   candlewick/core/Shader.cpp
   candlewick/core/Texture2D.cpp
   candlewick/core/MeshGroup.cpp
+  candlewick/utils/DumpImage.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/MeshData.cpp
   candlewick/utils/MeshDataView.cpp
   candlewick/utils/MeshTransforms.cpp
+  candlewick/utils/PixelFormatConversion.cpp
   ${PRIMITIVE_SOURCES}
   candlewick/third-party/sbti_lib.cpp
 )
