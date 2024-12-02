@@ -23,6 +23,7 @@ add_library(
   candlewick/utils/MeshDataView.cpp
   candlewick/utils/MeshTransforms.cpp
   ${PRIMITIVE_SOURCES}
+  candlewick/third-party/sbti_lib.cpp
 )
 
 target_link_libraries(
