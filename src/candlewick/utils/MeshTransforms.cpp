@@ -7,11 +7,23 @@
 namespace candlewick {
 
 void apply3DTransformInPlace(MeshData &meshData, const Eigen::Affine3f &tr) {
-  Eigen::Matrix3f normalMatrix = tr.linear().inverse().transpose();
 
-  for (DefaultVertex &v : meshData.vertexData) {
-    v.pos = tr * v.pos;
-    v.normal = normalMatrix * v.normal;
+  const MeshLayout &layout = meshData.layout();
+  auto &vertexData = meshData.vertexData;
+
+  if (auto posAttr = layout.lookupAttributeByName("pos")) {
+    for (Uint64 i = 0; i < meshData.numVertices(); i++) {
+      Float3 &pos = vertexData.getAttribute<Float3>(i, *posAttr);
+      pos = tr * pos;
+    }
+  }
+
+  if (auto normAttr = layout.lookupAttributeByName("normal")) {
+    Eigen::Matrix3f normalMatrix = tr.linear().inverse().transpose();
+    for (Uint64 i = 0; i < meshData.numVertices(); i++) {
+      Float3 &normal = vertexData.getAttribute<Float3>(i, *normAttr);
+      normal = normalMatrix * normal;
+    }
   }
 }
 
@@ -32,8 +44,9 @@ MeshData generateIndices(const MeshData &meshData) {
   std::vector<Uint32> indices;
   Uint32 vertexCount = Uint32(meshData.numVertices());
   triangleStripGenerateIndices(vertexCount, indices);
-  return MeshData(SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, meshData.vertexData,
-                  std::move(indices));
+  std::vector<char> vertexData(meshData.vertexData);
+  return MeshData(SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, meshData.layout(),
+                  std::move(vertexData), std::move(indices));
 }
 
 namespace detail {
@@ -62,14 +75,15 @@ MeshData mergeMeshes(std::span<const MeshData> meshes) {
   SDL_assert(!meshes.empty());
   // 1. check coherence of primitives
   SDL_GPUPrimitiveType primitive = meshes[0].primitiveType;
+  auto layout = meshes[0].layout();
   for (const MeshData &m : meshes) {
     SDL_assert(m.primitiveType == primitive);
   }
-  auto indexVertexCount = detail::mergeCalcIndexVertexCount(meshes);
-  std::vector<DefaultVertex> vertexData;
-  vertexData.resize(indexVertexCount.second);
+  auto [indexCount, vertexCount] = detail::mergeCalcIndexVertexCount(meshes);
+  std::vector<char> vertexData;
+  vertexData.resize(vertexCount * layout.vertexSize());
   std::vector<MeshData::IndexType> indexData;
-  indexData.resize(indexVertexCount.first);
+  indexData.resize(indexCount);
 
   Uint32 vtxOffset = 0, indexOffset = 0;
   // three cases:
@@ -90,17 +104,18 @@ MeshData mergeMeshes(std::span<const MeshData> meshes) {
         index += vtxOffset;
     } else if (!indexData.empty()) {
       std::iota(indexData.begin() + indexOffset,
-                indexData.begin() + indexOffset + mesh.numIndices(),
+                indexData.begin() + indexOffset + Uint32(mesh.numIndices()),
                 Uint32(vtxOffset));
     }
 
-    std::copy_n(mesh.vertexData.begin(), mesh.numVertices(),
-                vertexData.begin() + vtxOffset);
+    Uint64 numVtxBytes = layout.vertexSize() * mesh.numVertices();
+    std::copy_n(mesh.vertexData.data(), numVtxBytes,
+                vertexData.begin() + vtxOffset * layout.vertexSize());
 
     vtxOffset += mesh.numVertices();
   }
 
-  return MeshData(primitive, vertexData, indexData);
+  return MeshData(primitive, layout, vertexData, indexData);
 }
 
 MeshData mergeMeshes(std::vector<MeshData> &&meshes) {

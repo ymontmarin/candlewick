@@ -7,16 +7,40 @@ namespace candlewick {
 struct MeshDataView : MeshDataBase<MeshDataView> {
   using IndexType = MeshData::IndexType;
   SDL_GPUPrimitiveType primitiveType;
-  std::span<const DefaultVertex> vertexData;
+  MeshLayout layout;
+  std::span<const char> vertexData;
   std::span<const IndexType> indexData;
 
   MeshDataView(const MeshData &meshData);
-  MeshDataView(const MeshData &meshData, size_t offset, size_t len);
 
-  MeshDataView(SDL_GPUPrimitiveType primitiveType,
-               std::span<const DefaultVertex> vertices,
+  template <IsVertexType V>
+  MeshDataView(SDL_GPUPrimitiveType primitiveType, std::span<const V> vertices,
+               std::span<const IndexType> indices = {});
+
+  template <IsVertexType V, size_t N, size_t M>
+  MeshDataView(SDL_GPUPrimitiveType primitiveType, const V (&vertices)[N],
+               const IndexType (&indices)[M]);
+
+  MeshDataView(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
+               std::span<const char> vertices,
                std::span<const IndexType> indices = {});
 };
+
+template <IsVertexType V>
+MeshDataView::MeshDataView(SDL_GPUPrimitiveType primitiveType,
+                           std::span<const V> vertices,
+                           std::span<const IndexType> indices)
+    : primitiveType(primitiveType), layout(meshLayoutFor<V>()),
+      vertexData(reinterpret_cast<const char *>(vertices.data()),
+                 vertices.size() * sizeof(V)),
+      indexData(indices) {}
+
+template <IsVertexType V, size_t N, size_t M>
+MeshDataView::MeshDataView(SDL_GPUPrimitiveType primitiveType,
+                           const V (&vertices)[N],
+                           const IndexType (&indices)[M])
+    : MeshDataView(primitiveType, std::span<const V>{vertices},
+                   std::span<const IndexType>{indices}) {}
 
 MeshData toOwningMeshData(const MeshDataView &view);
 

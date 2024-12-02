@@ -15,9 +15,8 @@ private:
   Uint64 m_actualSize;
 
 public:
-  VertexDataBlob(std::vector<char> data, MeshLayout layout)
-      : m_data(data), m_layout(layout),
-        m_actualSize(data.size() / layout.vertexSize()) {}
+  VertexDataBlob() = default;
+  explicit VertexDataBlob(std::vector<char> data, MeshLayout layout);
 
   template <IsVertexType V>
   VertexDataBlob(const std::vector<V> &vertices)
@@ -65,6 +64,15 @@ public:
   const MeshLayout &layout() const { return m_layout; }
 
   Uint64 size() const { return m_actualSize; }
+
+  explicit operator std::vector<char>() const {
+    std::vector<char> out(m_data.begin(), m_data.end());
+    return out;
+  }
 };
+
+inline VertexDataBlob::VertexDataBlob(std::vector<char> data, MeshLayout layout)
+    : m_data(std::move(data)), m_layout(std::move(layout)),
+      m_actualSize(m_data.size() / layout.vertexSize()) {}
 
 } // namespace candlewick

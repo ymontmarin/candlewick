@@ -313,15 +313,7 @@ int main() {
     fragmentShader.release();
   }
 
-  {
-    auto layout = MeshLayout{}
-                      .addBinding(0, sizeof(DefaultVertex))
-                      .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                                    offsetof(DefaultVertex, pos))
-                      .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                                    offsetof(DefaultVertex, normal));
-    initGridPipeline(ctx, layout, depth_stencil_format);
-  }
+  initGridPipeline(ctx, gridMesh.mesh.layout(), depth_stencil_format);
 
   // MAIN APPLICATION LOOP
 

@@ -1,4 +1,5 @@
 #include "../core/matrix_util.h"
+#include "../utils/DefaultVertex.h"
 #include "../utils/MeshDataView.h"
 #include "../utils/MeshTransforms.h"
 

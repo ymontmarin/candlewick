@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../core/Core.h"
-#include "../core/math_types.h"
+#include "../core/Tags.h"
+#include "../core/MeshLayout.h"
+#include "VertexDataBlob.h"
 #include "MaterialData.h"
 #include <SDL3/SDL_gpu.h>
 
@@ -18,40 +20,34 @@ template <typename Derived> struct MeshDataBase {
   bool isIndexed() const { return numIndices() > 0; }
 };
 
-struct alignas(16) DefaultVertex {
-  GpuVec3 pos;
-  alignas(16) GpuVec3 normal;
-  alignas(16) GpuVec4 color;
-};
-
-template <> struct VertexTraits<DefaultVertex> {
-  static constexpr auto layout() {
-    return MeshLayout{}
-        .addBinding(0, sizeof(DefaultVertex))
-        .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(DefaultVertex, pos))
-        .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(DefaultVertex, normal))
-        .addAttribute(2, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-                      offsetof(DefaultVertex, color));
-  }
-};
-
 struct MeshData : MeshDataBase<MeshData> {
   using IndexType = Uint32;
-  SDL_GPUPrimitiveType primitiveType;    //< Geometry primitive for the mesh
-  std::vector<DefaultVertex> vertexData; //< Vertices
-  std::vector<IndexType> indexData;      //< Indices for indexed mesh. Optional.
+  SDL_GPUPrimitiveType primitiveType; //< Geometry primitive for the mesh
+  VertexDataBlob vertexData;          //< Vertices
+  std::vector<IndexType> indexData;   //< Indices for indexed mesh. Optional.
   PbrMaterialData material;
 
-  explicit MeshData() = default;
+  const MeshLayout &layout() const { return vertexData.layout(); }
+
+  explicit MeshData(NoInitT);
+  template <IsVertexType VertexT>
+  explicit MeshData(SDL_GPUPrimitiveType primitiveType,
+                    std::vector<VertexT> vertexData,
+                    std::vector<IndexType> indexData);
+  explicit MeshData(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
+                    std::vector<char> vertexData,
+                    std::vector<IndexType> indexData);
   MeshData(const MeshData &) = delete;
   MeshData(MeshData &&) noexcept = default;
   MeshData &operator=(MeshData &&) noexcept = default;
-  MeshData(SDL_GPUPrimitiveType primitiveType,
-           std::vector<DefaultVertex> vertexData,
-           std::vector<IndexType> indexData);
 };
+
+template <IsVertexType VertexT>
+MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
+                   std::vector<VertexT> vertexData,
+                   std::vector<IndexType> indexData)
+    : primitiveType(primitiveType), vertexData(std::move(vertexData)),
+      indexData(std::move(indexData)) {}
 
 /// \brief Convert @c MeshData to a @c Mesh. This creates the required
 /// vertex buffer and index buffer (if required).

@@ -42,7 +42,7 @@ MeshData loadCoalPrimitive(const hpp::fcl::CollisionGeometry &geometry,
                            const Float4 &meshColor, const Float3 &meshScale) {
   using namespace hpp::fcl;
   SDL_assert_always(geometry.getObjectType() == OT_GEOM);
-  MeshData meshData;
+  MeshData meshData{NoInit};
   Eigen::Affine3f transform = Eigen::Affine3f::Identity();
   const NODE_TYPE nodeType = geometry.getNodeType();
   SDL_Log("Loading Coal primitive of node type %d", nodeType);

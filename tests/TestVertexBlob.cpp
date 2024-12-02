@@ -1,4 +1,4 @@
-#include "candlewick/utils/MeshData.h"
+#include "candlewick/utils/DefaultVertex.h"
 #include "candlewick/utils/VertexDataBlob.h"
 #include <gtest/gtest.h>
 
@@ -42,11 +42,11 @@ template <> struct VertexTraits<CustomVertex> {
   constexpr static auto layout() {
     return MeshLayout{}
         .addBinding(0, sizeof(CustomVertex))
-        .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+        .addAttribute("pos", 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
                       offsetof(CustomVertex, pos))
-        .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+        .addAttribute("color", 1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                       offsetof(CustomVertex, color))
-        .addAttribute(2, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+        .addAttribute("uv", 2, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
                       offsetof(CustomVertex, uv));
   }
 };

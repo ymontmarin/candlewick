@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL_gpu.h>
 #include <utility>
+#include <string_view>
 
 namespace candlewick {
 
@@ -67,10 +68,12 @@ struct MeshLayout {
   constexpr MeshLayout &addBinding(Uint32 slot, Uint32 pitch) &;
   constexpr MeshLayout &&addBinding(Uint32 slot, Uint32 pitch) &&;
 
-  constexpr MeshLayout &addAttribute(Uint32 loc, Uint32 binding,
+  constexpr MeshLayout &addAttribute(std::string_view name, Uint32 loc,
+                                     Uint32 binding,
                                      SDL_GPUVertexElementFormat format,
                                      Uint32 offset) &;
-  constexpr MeshLayout &&addAttribute(Uint32 loc, Uint32 binding,
+  constexpr MeshLayout &&addAttribute(std::string_view name, Uint32 loc,
+                                      Uint32 binding,
                                       SDL_GPUVertexElementFormat format,
                                       Uint32 offset) &&;
 
@@ -80,8 +83,18 @@ struct MeshLayout {
   constexpr Uint32 numAttributes() const { return _numAttributes; }
   constexpr Uint32 vertexSize() const { return _totalVertexSize; }
 
+  const SDL_GPUVertexAttribute *
+  lookupAttributeByName(std::string_view name) const {
+    for (Uint64 i = 0; i < _numAttributes; i++) {
+      if (vertex_attr_names[i] == name)
+        return &vertex_attributes[i];
+    }
+    return NULL;
+  }
+
   SDL_GPUVertexBufferDescription vertex_buffer_desc[MAX_VERTEX_BUF_DESCS];
   SDL_GPUVertexAttribute vertex_attributes[MAX_VERTEX_ATTRS];
+  std::string_view vertex_attr_names[MAX_VERTEX_ATTRS];
 
 private:
   Uint32 _numBuffers{0};
@@ -104,8 +117,9 @@ constexpr MeshLayout &&MeshLayout::addBinding(Uint32 slot, Uint32 pitch) && {
 }
 
 constexpr MeshLayout &
-MeshLayout::addAttribute(Uint32 loc, Uint32 binding,
+MeshLayout::addAttribute(std::string_view name, Uint32 loc, Uint32 binding,
                          SDL_GPUVertexElementFormat format, Uint32 offset) & {
+  vertex_attr_names[_numAttributes] = name;
   vertex_attributes[_numAttributes++] = {
       .location = loc,
       .buffer_slot = binding,
@@ -118,9 +132,9 @@ MeshLayout::addAttribute(Uint32 loc, Uint32 binding,
 }
 
 constexpr MeshLayout &&
-MeshLayout::addAttribute(Uint32 loc, Uint32 binding,
+MeshLayout::addAttribute(std::string_view name, Uint32 loc, Uint32 binding,
                          SDL_GPUVertexElementFormat format, Uint32 offset) && {
-  return std::move(addAttribute(loc, binding, format, offset));
+  return std::move(addAttribute(name, loc, binding, format, offset));
 }
 
 constexpr SDL_GPUVertexInputState MeshLayout::toVertexInputState() const {

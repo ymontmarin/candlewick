@@ -1,4 +1,5 @@
 #include "Cube.h"
+#include "../utils/DefaultVertex.h"
 #include <SDL3/SDL_stdinc.h>
 
 namespace candlewick {

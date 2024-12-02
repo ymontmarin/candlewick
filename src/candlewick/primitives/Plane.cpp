@@ -1,4 +1,5 @@
 #include "Plane.h"
+#include "../utils/DefaultVertex.h"
 #include "../utils/MeshTransforms.h"
 
 namespace candlewick {
@@ -7,10 +8,11 @@ namespace candlewick {
 // │ /│
 // │/ │
 // 2——0
-const DefaultVertex vertexData[]{{{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                                 {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                                 {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                                 {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+const DefaultVertex vertexData[]{
+    {{+1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, Float4::Zero()},
+    {{+1.0f, +1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, Float4::Zero()},
+    {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, Float4::Zero()},
+    {{-1.0f, +1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, Float4::Zero()}};
 
 constexpr Uint32 indexData[] = {0, 1, 2, //
                                 2, 1, 3};
