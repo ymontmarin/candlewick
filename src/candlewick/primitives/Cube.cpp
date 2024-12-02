@@ -1,4 +1,5 @@
 #include "Cube.h"
+#include "../core/DefaultVertex.h"
 #include <SDL3/SDL_stdinc.h>
 
 namespace candlewick {
@@ -11,7 +12,7 @@ constexpr Uint32 indexData[]{
     20, 21, 22, 20, 22, 23  /* -X */
 };
 
-const MeshData::Vertex vertexData[]{
+const DefaultVertex vertexData[]{
     {{-1.0f, -1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
     {{1.0f, -1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
     {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, /* +Z */

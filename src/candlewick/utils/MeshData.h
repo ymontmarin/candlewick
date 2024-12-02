@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../core/Core.h"
-#include "../core/math_types.h"
+#include "../core/Tags.h"
+#include "../core/MeshLayout.h"
+#include "VertexDataBlob.h"
 #include "MaterialData.h"
 #include <SDL3/SDL_gpu.h>
 
@@ -19,24 +21,33 @@ template <typename Derived> struct MeshDataBase {
 };
 
 struct MeshData : MeshDataBase<MeshData> {
-  // use a vertex struct, allows us to interleave data properly
-  struct alignas(16) Vertex {
-    GpuVec3 pos;
-    alignas(16) GpuVec3 normal;
-  };
   using IndexType = Uint32;
-  SDL_GPUPrimitiveType primitiveType;
-  std::vector<Vertex> vertexData;
-  std::vector<IndexType> indexData;
+  SDL_GPUPrimitiveType primitiveType; //< Geometry primitive for the mesh
+  VertexDataBlob vertexData;          //< Vertices
+  std::vector<IndexType> indexData;   //< Indices for indexed mesh. Optional.
   PbrMaterialData material;
 
-  explicit MeshData() = default;
+  const MeshLayout &layout() const { return vertexData.layout(); }
+
+  explicit MeshData(NoInitT);
+  template <IsVertexType VertexT>
+  explicit MeshData(SDL_GPUPrimitiveType primitiveType,
+                    std::vector<VertexT> vertexData,
+                    std::vector<IndexType> indexData);
+  explicit MeshData(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
+                    std::vector<char> vertexData,
+                    std::vector<IndexType> indexData);
   MeshData(const MeshData &) = delete;
   MeshData(MeshData &&) noexcept = default;
   MeshData &operator=(MeshData &&) noexcept = default;
-  MeshData(SDL_GPUPrimitiveType primitiveType, std::vector<Vertex> vertexData,
-           std::vector<IndexType> indexData);
 };
+
+template <IsVertexType VertexT>
+MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
+                   std::vector<VertexT> vertexData,
+                   std::vector<IndexType> indexData)
+    : primitiveType(primitiveType), vertexData(std::move(vertexData)),
+      indexData(std::move(indexData)) {}
 
 /// \brief Convert @c MeshData to a @c Mesh. This creates the required
 /// vertex buffer and index buffer (if required).

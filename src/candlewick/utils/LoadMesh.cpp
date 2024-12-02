@@ -1,5 +1,6 @@
 #include "LoadMesh.h"
 #include "MeshData.h"
+#include "../core/DefaultVertex.h"
 #include "assimp_convert.h"
 
 #include <SDL3/SDL_log.h>
@@ -10,11 +11,10 @@
 namespace candlewick {
 
 MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
-  using Vertex = MeshData::Vertex;
   using IndexType = MeshData::IndexType;
   const Uint32 expectedFaceSize = 3;
 
-  std::vector<Vertex> vertexData;
+  std::vector<DefaultVertex> vertexData;
   std::vector<IndexType> indexData;
   vertexData.resize(inMesh->mNumVertices);
   indexData.resize(inMesh->mNumFaces * expectedFaceSize);
@@ -22,7 +22,7 @@ MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
   for (Uint32 vertex_id = 0; vertex_id < inMesh->mNumVertices; vertex_id++) {
     aiVector3D pos = inMesh->mVertices[vertex_id];
     pos = transform * pos;
-    Vertex &vertex = vertexData[vertex_id];
+    DefaultVertex &vertex = vertexData[vertex_id];
     vertex.pos = Float3::Map(&pos.x);
 
     if (inMesh->HasNormals()) {
@@ -80,10 +80,10 @@ LoadMeshReturn loadSceneMeshes(const char *path,
 
   LoadMeshReturn ret = LoadMeshReturn::OK;
   aiMatrix4x4 transform = scene->mRootNode->mTransformation;
-  meshData.resize(scene->mNumMeshes);
+  // meshData.resize(scene->mNumMeshes);
   for (std::size_t i = 0; i < scene->mNumMeshes; i++) {
     aiMesh *inMesh = scene->mMeshes[i];
-    meshData[i] = loadAiMesh(inMesh, transform);
+    meshData.push_back(loadAiMesh(inMesh, transform));
     Uint32 materialId = inMesh->mMaterialIndex;
     if (scene->HasMaterials()) {
       aiMaterial *material = scene->mMaterials[materialId];

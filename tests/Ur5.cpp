@@ -2,7 +2,7 @@
 
 #include "candlewick/core/MeshGroup.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/math_util.h"
+#include "candlewick/core/matrix_util.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
 #include "candlewick/utils/MeshData.h"
@@ -52,7 +52,12 @@ static float displayScale;
 static struct {
   MeshData data;
   Mesh mesh;
-} gridMesh{.data = loadGrid(10), .mesh{NoInit}};
+  Float4 color;
+} gridMesh{
+    .data = loadGrid(10),
+    .mesh{NoInit},
+    .color = 0xE0A236ff_rgbaf,
+};
 
 Context ctx;
 
@@ -89,7 +94,7 @@ static DirectionalLightUniform myLight{
 
 void updateFov(Rad<float> newFov) {
   fov = newFov;
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0);
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
 }
 
 void eventLoop() {
@@ -159,9 +164,12 @@ void eventLoop() {
 
 void drawMyImguiMenu() {
   static bool demo_window_open = true;
+  const float minFov = 15.f;
+  const float maxFov = 90.f;
+
   ImGui::Begin("Camera", nullptr);
   Deg<float> _fovdeg{fov};
-  ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, 30.f, 90.f, "%.3f",
+  ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, minFov, maxFov, "%.3f",
                    ImGuiSliderFlags_AlwaysClamp);
   updateFov(Radf(_fovdeg));
   projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
@@ -179,6 +187,12 @@ void drawGrid(SDL_GPUCommandBuffer *command_buffer,
   } cameraUniform{.mvp = projViewMat};
   SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                sizeof(cameraUniform));
+  struct {
+    alignas(16) GpuVec4 color;
+  } colorUniform{gridMesh.color};
+  static_assert(IsVertexType<decltype(colorUniform)>, "");
+  SDL_PushGPUFragmentUniformData(command_buffer, 0, &colorUniform,
+                                 sizeof(colorUniform));
   auto vertex_binding = gridMesh.mesh.getVertexBinding(0);
   auto index_binding = gridMesh.mesh.getIndexBinding();
 
@@ -310,22 +324,13 @@ int main() {
     fragmentShader.release();
   }
 
-  {
-    using Vertex = MeshData::Vertex;
-    auto layout = MeshLayout{}
-                      .addBinding(0, sizeof(Vertex))
-                      .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                                    offsetof(Vertex, pos))
-                      .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                                    offsetof(Vertex, normal));
-    initGridPipeline(ctx, layout, depth_stencil_format);
-  }
+  initGridPipeline(ctx, gridMesh.mesh.layout(), depth_stencil_format);
 
   // MAIN APPLICATION LOOP
 
   Uint32 frameNo = 0;
 
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01, 10.0);
+  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
   viewMat = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);
@@ -466,7 +471,7 @@ int main() {
 
       // render grid
       if (add_grid) {
-        SDL_BindGPUGraphicsPipeline(render_pass, ctx.lineListPipeline);
+        SDL_BindGPUGraphicsPipeline(render_pass, ctx.hudEltPipeline);
         drawGrid(command_buffer, render_pass, projectionMat * viewMat);
       }
 

@@ -1,56 +1,58 @@
-#include "../core/math_util.h"
-#include "../utils/MeshDataView.h"
-#include "../utils/MeshTransforms.h"
-
+#include "Grid.h"
 #include <SDL3/SDL_assert.h>
 
 namespace candlewick {
 
-const Float3 color = 0xE0A236_rgbf;
-
-// 1—3
-// | |
-// 0—2
-const MeshData::Vertex quad[] = {
-    {{0.f, 0.f, 0.f}, color},
-    {{0.f, 1.f, 0.f}, color},
-    {{1.f, 0.f, 0.f}, color},
-    {{1.f, 1.f, 0.f}, color},
+struct alignas(16) MyVertex {
+  GpuVec3 pos;
 };
 
-constexpr Uint32 indexData[] = {
-    0, 1, //
-    0, 2, //
-    1, 3, //
-    2, 3, //
-};
-
-MeshDataView loadGridElement() {
-  return {SDL_GPU_PRIMITIVETYPE_LINELIST, quad, indexData};
+template <> struct VertexTraits<MyVertex> {
+  constexpr static auto layout() {
+    return MeshLayout{}
+        .addBinding(0, sizeof(MyVertex))
+        .addAttribute("pos", 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                      offsetof(MyVertex, pos));
+  }
 };
 
 MeshData loadGrid(Uint32 xyHalfSize) {
   // one square = 50cm
   constexpr float scale = 0.5f;
-  MeshData dataOrig = toOwningMeshData(loadGridElement());
-  std::vector<MeshData> meshDatas;
   const Uint32 size = std::max(2 * xyHalfSize, 1u) - 1;
-  meshDatas.reserve(size * size);
+  std::vector<MyVertex> vertexData;
+  std::vector<MeshData::IndexType> indexData;
 
-  Sint32 i, j;
-  for (i = -xyHalfSize + 1; i < Sint32(xyHalfSize); i++) {
-    for (j = -xyHalfSize + 1; j < Sint32(xyHalfSize); j++) {
-      MeshData &m = meshDatas.emplace_back(toOwningMeshData(dataOrig));
-      Eigen::Affine3f tr;
-      tr.setIdentity();
-      tr.scale(scale);
-      tr.translate(Float3{float(i), float(j), 0.f});
-      apply3DTransformInPlace(m, tr);
+  vertexData.reserve(size * size);
+  indexData.resize(4 * size * (size - 1));
+  const Float3 center{float(xyHalfSize) * scale, float(xyHalfSize) * scale,
+                      0.f};
+
+  size_t idx = 0;
+  Uint32 i, j;
+  // y-direction
+  for (j = 0; j < size; j++) {
+    // x-direction
+    for (i = 0; i < size; i++) {
+      Float3 pos{float(i) * scale, float(j) * scale, 0.f};
+      pos -= center;
+      vertexData.emplace_back(pos);
+      if (i != size - 1) {
+        // (i,j) -- (i+1,j)
+        indexData[idx++] = Uint32(j * size + i);
+        indexData[idx++] = Uint32(j * size + i + 1);
+      }
+      if (j != size - 1) {
+        // (i,j)
+        //   |
+        // (i,j+1)
+        indexData[idx++] = Uint32(j * size + i);
+        indexData[idx++] = Uint32((j + 1) * size + i);
+      }
     }
   }
-  SDL_assert(i == size);
-  SDL_assert(j == size);
-  return mergeMeshes(meshDatas);
+  return MeshData{SDL_GPU_PRIMITIVETYPE_LINELIST, std::move(vertexData),
+                  std::move(indexData)};
 }
 
 } // namespace candlewick

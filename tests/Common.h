@@ -6,12 +6,12 @@
 using candlewick::Device;
 using candlewick::NoInit;
 
-const float kScrollZoom = 0.05;
+const float kScrollZoom = 0.05f;
 
 struct Context {
   Device device{NoInit};
   SDL_Window *window;
-  SDL_GPUGraphicsPipeline *lineListPipeline;
+  SDL_GPUGraphicsPipeline *hudEltPipeline;
 };
 
 bool ExampleInit(Context &ctx, float wWidth, float wHeight);

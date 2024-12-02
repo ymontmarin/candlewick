@@ -6,18 +6,20 @@
 
 namespace candlewick {
 
-MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
-                   std::vector<Vertex> vertexData,
+MeshData::MeshData(NoInitT) {}
+
+MeshData::MeshData(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
+                   std::vector<char> vertexData,
                    std::vector<IndexType> indexData)
-    : primitiveType(primitiveType), vertexData(std::move(vertexData)),
+    : primitiveType(primitiveType), vertexData(std::move(vertexData), layout),
       indexData(std::move(indexData)) {}
 
 Mesh convertToMesh(const Device &device, const MeshData &meshData) {
-  using Vertex = MeshData::Vertex;
   using IndexType = MeshData::IndexType;
+  auto &layout = meshData.layout();
   SDL_GPUBufferCreateInfo vtxInfo{
       .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-      .size = Uint32(sizeof(Vertex) * meshData.numVertices()),
+      .size = Uint32(layout.vertexSize() * meshData.numVertices()),
       .props = 0};
 
   SDL_GPUBuffer *vertexBuffer = SDL_CreateGPUBuffer(device, &vtxInfo);
@@ -35,13 +37,7 @@ Mesh convertToMesh(const Device &device, const MeshData &meshData) {
 Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                    Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
                    Uint64 indexOffset, bool takeOwnership) {
-  using Vertex = MeshData::Vertex;
-  Mesh mesh{MeshLayout{}
-                .addBinding(0, sizeof(Vertex))
-                .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                              offsetof(Vertex, pos))
-                .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                              offsetof(Vertex, normal))};
+  Mesh mesh{meshData.layout()};
 
   mesh.addVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership);
   if (meshData.isIndexed()) {
@@ -63,10 +59,11 @@ void uploadMeshToDevice(const Device &device, const Mesh &mesh,
   upload_command_buffer = SDL_AcquireGPUCommandBuffer(device);
   copy_pass = SDL_BeginGPUCopyPass(upload_command_buffer);
 
+  auto &layout = meshData.layout();
   const Uint32 vertex_payload_size =
-      meshData.numVertices() * sizeof(MeshData::Vertex);
+      Uint32(meshData.numVertices() * layout.vertexSize());
   const Uint32 index_payload_size =
-      meshData.numIndices() * sizeof(MeshData::IndexType);
+      Uint32(meshData.numIndices() * sizeof(MeshData::IndexType));
   const Uint32 total_payload_size = vertex_payload_size + index_payload_size;
 
   SDL_GPUTransferBufferCreateInfo transfer_buffer_desc{

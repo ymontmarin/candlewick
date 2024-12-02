@@ -2,7 +2,7 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/MeshLayout.h"
-#include "candlewick/core/math_util.h"
+#include "candlewick/core/matrix_util.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -121,9 +121,9 @@ int main() {
 
   MeshLayout mesh_layout;
   mesh_layout.addBinding(0, sizeof(Vertex))
-      .addAttribute(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+      .addAttribute("pos", 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                     offsetof(Vertex, pos))
-      .addAttribute(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+      .addAttribute("col", 1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
                     offsetof(Vertex, col));
 
   SDL_GPUBufferCreateInfo buffer_desc{.usage = SDL_GPU_BUFFERUSAGE_VERTEX,
