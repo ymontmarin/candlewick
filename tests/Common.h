@@ -11,7 +11,7 @@ const float kScrollZoom = 0.05f;
 struct Context {
   Device device{NoInit};
   SDL_Window *window;
-  SDL_GPUGraphicsPipeline *lineListPipeline;
+  SDL_GPUGraphicsPipeline *hudEltPipeline;
 };
 
 bool ExampleInit(Context &ctx, float wWidth, float wHeight);

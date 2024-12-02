@@ -23,8 +23,8 @@ bool ExampleInit(Context &ctx, float wWidth, float wHeight) {
 void ExampleTeardown(Context &ctx) {
   SDL_ReleaseWindowFromGPUDevice(ctx.device, ctx.window);
   SDL_DestroyWindow(ctx.window);
-  if (ctx.lineListPipeline) {
-    SDL_ReleaseGPUGraphicsPipeline(ctx.device, ctx.lineListPipeline);
+  if (ctx.hudEltPipeline) {
+    SDL_ReleaseGPUGraphicsPipeline(ctx.device, ctx.hudEltPipeline);
   }
   ctx.device.destroy();
   SDL_Quit();
@@ -34,7 +34,7 @@ void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
                       SDL_GPUTextureFormat depth_stencil_format) {
   using namespace candlewick;
   Shader vertexShader{ctx.device, "Hud3dElement.vert", 1};
-  Shader fragmentShader{ctx.device, "Hud3dElement.frag", 0};
+  Shader fragmentShader{ctx.device, "Hud3dElement.frag", 1};
 
   SDL_GPUColorTargetDescription colorTarget{
       .format = SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window),
@@ -64,7 +64,7 @@ void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
                    .has_depth_stencil_target = true},
       .props = 0,
   };
-  ctx.lineListPipeline = SDL_CreateGPUGraphicsPipeline(ctx.device, &createInfo);
+  ctx.hudEltPipeline = SDL_CreateGPUGraphicsPipeline(ctx.device, &createInfo);
   vertexShader.release();
   fragmentShader.release();
 }

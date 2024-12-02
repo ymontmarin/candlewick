@@ -460,7 +460,7 @@ int main() {
 
       // render grid
       if (add_grid) {
-        SDL_BindGPUGraphicsPipeline(render_pass, ctx.lineListPipeline);
+        SDL_BindGPUGraphicsPipeline(render_pass, ctx.hudEltPipeline);
         drawGrid(command_buffer, render_pass, projectionMat * viewMat);
       }
 
