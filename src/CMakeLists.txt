@@ -41,10 +41,8 @@ add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_core)
 target_include_directories(${PROJECT_NAME} INTERFACE candlewick)
 
-cmake_policy(SET CMP0167 NEW)
-find_package(pinocchio)
-set(BUILD_WITH_PINOCCHIO ${pinocchio_FOUND})
-if(${BUILD_WITH_PINOCCHIO})
+if(BUILD_PINOCCHIO_VISUALIZER)
+  find_package(pinocchio REQUIRED)
   find_package(robot_descriptions_cpp REQUIRED)
   add_library(
     candlewick_multibody
