@@ -16,6 +16,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(DOXYGEN_USE_MATHJAX NO)
 set(DOXYGEN_USE_TEMPLATE_CSS YES)
 
+# The following was copied over from https://github.com/Simple-Robotics/aligator:
+# Use BoostConfig module distributed by boost library instead of using FindBoost module distributed
+# by CMake
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+  # find_package(SDFormat14) reset this policy (with cmake_minimum_required) and redefine the find_dependency macro.
+  # Then, futur call of this macro don't use the right version of this policy.
+  # To avoid that, we define the CMP0167 default value.
+  set(CMAKE_POLICY_DEFAULT_CMP0167 NEW)
+endif()
 include(cmake/base.cmake)
 compute_project_args(PROJECT_ARGS LANGUAGES CXX)
 project(${PROJECT_NAME} ${PROJECT_ARGS})
@@ -38,8 +48,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
-
-cmake_policy(SET CMP0167 NEW)
 
 add_subdirectory(src)
 add_subdirectory(tests)
