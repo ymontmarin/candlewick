@@ -6,7 +6,7 @@
 #include <SDL3/SDL_assert.h>
 #include <stdexcept>
 
-namespace candlewick {
+namespace candlewick::media {
 
 void dumpTextureImgToFile(const Device &device, SDL_GPUTexture *texture,
                           SDL_GPUTextureFormat format, const Uint32 width,
@@ -67,4 +67,4 @@ void dumpTextureImgToFile(const Device &device, SDL_GPUTexture *texture,
   std::free(rgba_pixels);
 }
 
-} // namespace candlewick
+} // namespace candlewick::media
