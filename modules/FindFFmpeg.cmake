@@ -1,45 +1,25 @@
+find_package(PkgConfig QUIET REQUIRED)
 include(FindPackageHandleStandardArgs)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(
-  FFmpeg
-  REQUIRED
-  QUIET
-  libavdevice
-  libavfilter
-  libavformat
-  libavcodec
-  libswresample
-  libswscale
-  libavutil
-)
+if(DEFINED FFmpeg_FIND_COMPONENTS)
+  message(STATUS "Looking for FFmpeg with components ${FFmpeg_FIND_COMPONENTS}")
+else()
+  set(FFmpeg_FIND_COMPONENTS avcodec avformat avutil)
+endif()
+
+add_library(FFmpeg INTERFACE IMPORTED GLOBAL)
+foreach(_component IN LISTS FFmpeg_FIND_COMPONENTS)
+  pkg_check_modules(pc_${_component} IMPORTED_TARGET lib${_component})
+
+  if(${pc_${_component}_FOUND})
+    target_link_libraries(FFmpeg INTERFACE PkgConfig::pc_${_component})
+    add_library(FFmpeg::${_component} ALIAS PkgConfig::pc_${_component})
+    set(FFmpeg_${_component}_FOUND True)
+  endif()
+endforeach()
+
 find_package_handle_standard_args(
   FFmpeg
   FAIL_MESSAGE DEFAULT_MSG
-  REQUIRED_VARS FFmpeg_INCLUDE_DIRS FFmpeg_LIBRARIES
+  HANDLE_COMPONENTS
 )
-
-message(STATUS "FFmpeg libraries: ${FFmpeg_LIBRARIES}")
-message(STATUS "FFmpeg library dirs: ${FFmpeg_LIBRARY_DIRS}")
-message(STATUS "FFmpeg include dirs: ${FFmpeg_INCLUDE_DIRS}")
-message(STATUS "FFmpeg definitions: ${FFmpeg_CFLAGS_OTHER}")
-
-foreach(libname ${FFmpeg_LIBRARIES})
-  set(target_name ${libname})
-  add_library(${target_name} SHARED IMPORTED)
-  find_library(
-    libpath_${libname}
-    ${libname}
-    PATHS ${FFmpeg_LIBRARY_DIRS}
-    REQUIRED
-  )
-  message(STATUS "Component ${libname} found at ${libpath_${libname}}")
-  set_target_properties(
-    ${target_name}
-    PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${FFmpeg_INCLUDE_DIRS}"
-      IMPORTED_LOCATION ${libpath_${libname}}
-  )
-
-  add_library(FFmpeg::${target_name} ALIAS ${target_name})
-endforeach()
