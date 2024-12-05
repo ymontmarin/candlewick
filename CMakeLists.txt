@@ -38,6 +38,13 @@ option(BUILD_PYTHON_BINDINGS "Build Python bindings." OFF)
 option(BUILD_PINOCCHIO_VISUALIZER "Build the Pinocchio visualizer." ON)
 set(INSTALL_DOCUMENTATION OFF CACHE BOOL "" FORCE)
 
+set(
+  CMAKE_MODULE_PATH
+  "${PROJECT_SOURCE_DIR}/cmake/find-external/Simde"
+  "${PROJECT_SOURCE_DIR}/modules"
+  ${CMAKE_MODULE_PATH}
+)
+
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)

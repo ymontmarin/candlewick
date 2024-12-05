@@ -1,3 +1,4 @@
+definitions: [./CMakeLists.txt,./src]
 line_length: 80
 cache: true
 indent: 2
