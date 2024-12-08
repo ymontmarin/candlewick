@@ -93,7 +93,7 @@ VideoRecorder::VideoRecorder(Uint32 width, Uint32 height,
 void VideoRecorder::writeFrame(const Uint8 *data, size_t payloadSize,
                                AVPixelFormat avPixelFormat) {
   AVFrame *tmpFrame = av_frame_alloc();
-  tmpFrame->format = codecContext->pix_fmt;
+  tmpFrame->format = avPixelFormat;
   tmpFrame->width = int(m_width);
   tmpFrame->height = int(m_height);
 
@@ -105,7 +105,7 @@ void VideoRecorder::writeFrame(const Uint8 *data, size_t payloadSize,
         std::format("Failed to allocate frame: {:s}", errbuf));
   }
 
-  SDL_memcpy(tmpFrame->data[0], data, payloadSize);
+  memcpy(tmpFrame->data[0], data, payloadSize);
 
   swsContext =
       sws_getContext(tmpFrame->width, tmpFrame->height, avPixelFormat,

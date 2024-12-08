@@ -29,6 +29,7 @@ private:
 public:
   struct Settings {
     int fps = 30;
+    // default: 2.5 Mb/s
     long bit_rate = 2500000u;
     int outputWidth;
     int outputHeight;

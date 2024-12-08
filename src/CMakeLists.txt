@@ -25,6 +25,7 @@ add_library(
   candlewick/utils/MeshDataView.cpp
   candlewick/utils/MeshTransforms.cpp
   candlewick/utils/PixelFormatConversion.cpp
+  candlewick/utils/VideoRecorder.cpp
   ${PRIMITIVE_SOURCES}
   candlewick/third-party/sbti_lib.cpp
 )
