@@ -4,35 +4,26 @@
 
 namespace candlewick {
 
-Eigen::Vector3i hexToRgbi(unsigned long hex) {
+Vec3u8 hexToRgbi(unsigned long hex) {
   unsigned rem = unsigned(hex); // red = quotient of hex by 256^2
-  int r = rem >> 16;            // remainder
+  unsigned r = rem >> 16;       // remainder
   rem %= 1 << 16;
-  int g = rem >> 8; // green = quotient of rem by 256
+  unsigned g = rem >> 8; // green = quotient of rem by 256
   rem %= 1 << 8;
-  int b = int(rem); // blue = remainder
-  Eigen::Vector3i result{r, g, b};
-  assert(result.x() < 256);
-  assert(result.y() < 256);
-  assert(result.z() < 256);
-  return result;
+  unsigned b = rem; // blue = remainder
+  return {uint8_t(r), uint8_t(g), uint8_t(b)};
 };
 
-Eigen::Vector4i hexToRgbai(unsigned long hex) {
+Vec4u8 hexToRgbai(unsigned long hex) {
   unsigned rem = unsigned(hex);
-  int r = rem >> 24; // red = quotient of hex by 256^3 = 2^24
+  unsigned r = rem >> 24; // red = quotient of hex by 256^3 = 2^24
   rem %= 1 << 24;
-  int g = rem >> 16; // green = quotient by 256^2 = 2^16
+  unsigned g = rem >> 16; // green = quotient by 256^2 = 2^16
   rem %= 1 << 16;
-  int b = rem >> 8; // blue = quotient
+  unsigned b = rem >> 8; // blue = quotient
   rem %= 1 << 8;
-  int a = int(rem); // alpha = remainder
-  Eigen::Vector4i result{r, g, b, a};
-  assert(result.x() < 256);
-  assert(result.y() < 256);
-  assert(result.z() < 256);
-  assert(result.w() < 256);
-  return result;
+  unsigned a = rem; // alpha = remainder
+  return {uint8_t(r), uint8_t(g), uint8_t(b), uint8_t(a)};
 };
 
 Eigen::Matrix4f lookAt(const Float3 &eye, const Float3 &center,
