@@ -2,29 +2,20 @@
 
 #include <SDL3/SDL_gpu.h>
 #include <string>
+#include <memory>
 
 extern "C" {
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libswscale/swscale.h>
+#include <libavutil/pixfmt.h>
 }
 
 namespace candlewick {
 namespace media {
 
+struct VideoRecorderImpl;
+
 class VideoRecorder {
 private:
-  Uint32 m_width;  //< Width of incoming frames
-  Uint32 m_height; //< Height of incoming frames
-  Uint32 m_frameCounter;
-
-  AVFormatContext *formatContext = nullptr;
-  const AVCodec *codec = nullptr;
-  AVCodecContext *codecContext = nullptr;
-  AVStream *videoStream = nullptr;
-  SwsContext *swsContext = nullptr;
-  AVFrame *frame = nullptr;
-  AVPacket *packet = nullptr;
+  std::unique_ptr<VideoRecorderImpl> impl_;
 
 public:
   struct Settings {
@@ -45,11 +36,10 @@ public:
                           .outputHeight = int(height),
                       }) {}
 
-  Uint32 frameCounter() const { return m_frameCounter; }
+  Uint32 frameCounter() const;
   void writeFrame(const Uint8 *data, size_t payloadSize,
                   AVPixelFormat avPixelFormat);
-
-  ~VideoRecorder() noexcept;
+  ~VideoRecorder();
 };
 
 } // namespace media

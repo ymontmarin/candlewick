@@ -4,9 +4,35 @@
 #include <SDL3/SDL_filesystem.h>
 #include <format>
 
+extern "C" {
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
+}
+
 namespace candlewick::media {
 
-VideoRecorder::~VideoRecorder() noexcept {
+struct VideoRecorderImpl {
+  Uint32 m_width;  //< Width of incoming frames
+  Uint32 m_height; //< Height of incoming frames
+  Uint32 m_frameCounter;
+
+  AVFormatContext *formatContext = nullptr;
+  const AVCodec *codec = nullptr;
+  AVCodecContext *codecContext = nullptr;
+  AVStream *videoStream = nullptr;
+  SwsContext *swsContext = nullptr;
+  AVFrame *frame = nullptr;
+  AVPacket *packet = nullptr;
+
+  VideoRecorderImpl(Uint32 width, Uint32 height, const std::string &filename,
+                    VideoRecorder::Settings settings);
+  void writeFrame(const Uint8 *data, size_t payloadSize,
+                  AVPixelFormat avPixelFormat);
+  ~VideoRecorderImpl() noexcept;
+};
+
+VideoRecorderImpl::~VideoRecorderImpl() noexcept {
   av_write_trailer(formatContext);
   if (codecContext)
     avcodec_free_context(&codecContext);
@@ -21,8 +47,9 @@ VideoRecorder::~VideoRecorder() noexcept {
     av_packet_free(&packet);
 }
 
-VideoRecorder::VideoRecorder(Uint32 width, Uint32 height,
-                             const std::string &filename, Settings settings)
+VideoRecorderImpl::VideoRecorderImpl(Uint32 width, Uint32 height,
+                                     const std::string &filename,
+                                     VideoRecorder::Settings settings)
     : m_width(width), m_height(height) {
   avformat_network_init();
   codec = avcodec_find_encoder(AV_CODEC_ID_H264);
@@ -90,8 +117,8 @@ VideoRecorder::VideoRecorder(Uint32 width, Uint32 height,
   }
 }
 
-void VideoRecorder::writeFrame(const Uint8 *data, size_t payloadSize,
-                               AVPixelFormat avPixelFormat) {
+void VideoRecorderImpl::writeFrame(const Uint8 *data, size_t payloadSize,
+                                   AVPixelFormat avPixelFormat) {
   AVFrame *tmpFrame = av_frame_alloc();
   tmpFrame->format = avPixelFormat;
   tmpFrame->width = int(m_width);
@@ -145,5 +172,20 @@ void VideoRecorder::writeFrame(const Uint8 *data, size_t payloadSize,
   av_frame_free(&tmpFrame);
   sws_freeContext(swsContext);
 }
+
+// WRAPPED CLASS
+VideoRecorder::VideoRecorder(Uint32 width, Uint32 height,
+                             const std::string &filename, Settings settings)
+    : impl_(std::make_unique<VideoRecorderImpl>(width, height, filename,
+                                                settings)) {}
+
+Uint32 VideoRecorder::frameCounter() const { return impl_->m_frameCounter; }
+
+void VideoRecorder::writeFrame(const Uint8 *data, size_t payloadSize,
+                               AVPixelFormat avPixelFormat) {
+  impl_->writeFrame(data, payloadSize, avPixelFormat);
+}
+
+VideoRecorder::~VideoRecorder() = default;
 
 } // namespace candlewick::media
