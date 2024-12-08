@@ -5,16 +5,12 @@
 namespace candlewick {
 
 Eigen::Vector3i hexToRgbi(unsigned long hex) {
-  unsigned rem = hex;
-  // red = quotient of hex by 256^2 = 2^16
-  int r = rem >> 16;
-  // remainder
+  unsigned rem = unsigned(hex); // red = quotient of hex by 256^2
+  int r = rem >> 16;            // remainder
   rem %= 1 << 16;
-  // green = long division of remainder by 256
-  int g = rem >> 8;
+  int g = rem >> 8; // green = quotient of rem by 256
   rem %= 1 << 8;
-  // blue = remainder
-  int b = rem;
+  int b = int(rem); // blue = remainder
   Eigen::Vector3i result{r, g, b};
   assert(result.x() < 256);
   assert(result.y() < 256);
@@ -23,19 +19,14 @@ Eigen::Vector3i hexToRgbi(unsigned long hex) {
 };
 
 Eigen::Vector4i hexToRgbai(unsigned long hex) {
-  unsigned rem = hex;
-  // red = quotient of hex by 256^3 = 2^24
-  int r = rem >> 24;
-  // remainder
+  unsigned rem = unsigned(hex);
+  int r = rem >> 24; // red = quotient of hex by 256^3 = 2^24
   rem %= 1 << 24;
-  // green = long division of remainder by 256^2 = 2^16
-  int g = rem >> 16;
+  int g = rem >> 16; // green = quotient by 256^2 = 2^16
   rem %= 1 << 16;
-  // blue = quotient of remainder
-  int b = rem >> 8;
+  int b = rem >> 8; // blue = quotient
   rem %= 1 << 8;
-  // alpha = remainder
-  int a = rem;
+  int a = int(rem); // alpha = remainder
   Eigen::Vector4i result{r, g, b, a};
   assert(result.x() < 256);
   assert(result.y() < 256);
@@ -70,9 +61,7 @@ Eigen::Matrix4f perspectiveFromFov(float fovY, float aspectRatio, float nearZ,
   result(1, 1) = f;
   result(2, 2) = (farZ + nearZ) / (nearZ - farZ);
   result(3, 2) = -1.0f;
-  // translation component along Z
   result(2, 3) = (2.0f * farZ * nearZ) / (nearZ - farZ);
-
   return result;
 }
 
