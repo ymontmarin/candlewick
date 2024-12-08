@@ -4,44 +4,26 @@
 
 namespace candlewick {
 
-Eigen::Vector3i hexToRgbi(unsigned long hex) {
-  unsigned rem = hex;
-  // red = quotient of hex by 256^2 = 2^16
-  int r = rem >> 16;
-  // remainder
+Vec3u8 hexToRgbi(unsigned long hex) {
+  unsigned rem = unsigned(hex); // red = quotient of hex by 256^2
+  unsigned r = rem >> 16;       // remainder
   rem %= 1 << 16;
-  // green = long division of remainder by 256
-  int g = rem >> 8;
+  unsigned g = rem >> 8; // green = quotient of rem by 256
   rem %= 1 << 8;
-  // blue = remainder
-  int b = rem;
-  Eigen::Vector3i result{r, g, b};
-  assert(result.x() < 256);
-  assert(result.y() < 256);
-  assert(result.z() < 256);
-  return result;
+  unsigned b = rem; // blue = remainder
+  return {uint8_t(r), uint8_t(g), uint8_t(b)};
 };
 
-Eigen::Vector4i hexToRgbai(unsigned long hex) {
-  unsigned rem = hex;
-  // red = quotient of hex by 256^3 = 2^24
-  int r = rem >> 24;
-  // remainder
+Vec4u8 hexToRgbai(unsigned long hex) {
+  unsigned rem = unsigned(hex);
+  unsigned r = rem >> 24; // red = quotient of hex by 256^3 = 2^24
   rem %= 1 << 24;
-  // green = long division of remainder by 256^2 = 2^16
-  int g = rem >> 16;
+  unsigned g = rem >> 16; // green = quotient by 256^2 = 2^16
   rem %= 1 << 16;
-  // blue = quotient of remainder
-  int b = rem >> 8;
+  unsigned b = rem >> 8; // blue = quotient
   rem %= 1 << 8;
-  // alpha = remainder
-  int a = rem;
-  Eigen::Vector4i result{r, g, b, a};
-  assert(result.x() < 256);
-  assert(result.y() < 256);
-  assert(result.z() < 256);
-  assert(result.w() < 256);
-  return result;
+  unsigned a = rem; // alpha = remainder
+  return {uint8_t(r), uint8_t(g), uint8_t(b), uint8_t(a)};
 };
 
 Eigen::Matrix4f lookAt(const Float3 &eye, const Float3 &center,
@@ -70,9 +52,7 @@ Eigen::Matrix4f perspectiveFromFov(float fovY, float aspectRatio, float nearZ,
   result(1, 1) = f;
   result(2, 2) = (farZ + nearZ) / (nearZ - farZ);
   result(3, 2) = -1.0f;
-  // translation component along Z
   result(2, 3) = (2.0f * farZ * nearZ) / (nearZ - farZ);
-
   return result;
 }
 

@@ -1,6 +1,7 @@
 find_package(SDL3 3.1.3 REQUIRED)
 find_package(assimp REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(FFmpeg COMPONENTS avformat avcodec swscale)
 
 set(
   PRIMITIVE_SOURCES
@@ -22,6 +23,9 @@ add_library(
   candlewick/utils/MeshData.cpp
   candlewick/utils/MeshDataView.cpp
   candlewick/utils/MeshTransforms.cpp
+  candlewick/utils/PixelFormatConversion.cpp
+  candlewick/utils/VideoRecorder.cpp
+  candlewick/utils/WriteTextureToImage.cpp
   ${PRIMITIVE_SOURCES}
   candlewick/third-party/sbti_lib.cpp
 )
@@ -30,6 +34,17 @@ target_link_libraries(
   candlewick_core
   PUBLIC SDL3::SDL3 SDL3::Headers assimp::assimp Eigen3::Eigen
 )
+
+if(FFmpeg_FOUND)
+  message(STATUS "FFmpeg found. Building video module.")
+  target_compile_definitions(candlewick_core PUBLIC CANDLEWICK_HAS_FFMPEG)
+  target_link_libraries(
+    candlewick_core
+    PRIVATE FFmpeg::avformat FFmpeg::avcodec FFmpeg::swscale
+  )
+  target_sources(candlewick_core PRIVATE candlewick/utils/VideoRecorder.cpp)
+endif()
+
 target_include_directories(candlewick_core PUBLIC ./)
 
 add_subdirectory(candlewick/gui)
@@ -39,10 +54,8 @@ add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_core)
 target_include_directories(${PROJECT_NAME} INTERFACE candlewick)
 
-cmake_policy(SET CMP0167 NEW)
-find_package(pinocchio)
-set(BUILD_WITH_PINOCCHIO ${pinocchio_FOUND})
-if(${BUILD_WITH_PINOCCHIO})
+if(BUILD_PINOCCHIO_VISUALIZER)
+  find_package(pinocchio REQUIRED)
   find_package(robot_descriptions_cpp REQUIRED)
   add_library(
     candlewick_multibody

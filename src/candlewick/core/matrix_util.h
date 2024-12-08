@@ -8,19 +8,16 @@ inline double deg2rad(double t) { return t * M_PI / 180.0; }
 inline float deg2rad(float t) { return t * M_PIf / 180.0f; }
 inline float rad2deg(float t) { return t * 180.0f / M_PIf; }
 
-Eigen::Vector3i hexToRgbi(unsigned long hex);
+Vec3u8 hexToRgbi(unsigned long hex);
 
-Eigen::Vector4i hexToRgbai(unsigned long hex);
+Vec4u8 hexToRgbai(unsigned long hex);
 
 inline Float3 hexToRgbf(unsigned long hex) {
-  Eigen::Vector3i res = hexToRgbi(hex);
-  return res.cast<float>() / 255.f;
+  return hexToRgbi(hex).cast<float>() / 255.f;
 };
 
 inline Float4 hexToRgbaf(unsigned long hex) {
-  Eigen::Vector4i res = hexToRgbai(hex);
-  Float4 out = res.cast<float>() / 255.f;
-  return out;
+  return hexToRgbai(hex).cast<float>() / 255.f;
 };
 
 inline Rad<float> operator""_radf(long double t) {

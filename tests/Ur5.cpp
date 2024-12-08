@@ -5,6 +5,7 @@
 #include "candlewick/core/matrix_util.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
+#include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"
@@ -224,7 +225,6 @@ int main() {
   robot_descriptions::loadModelFromSpec(robot_spec, model);
   robot_descriptions::loadGeomFromSpec(robot_spec, model, geom_model,
                                        pin::VISUAL);
-  SDL_assert(model.nq == 7);
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
@@ -294,7 +294,6 @@ int main() {
         .props = 0,
     };
 
-    SDL_Log("Creating pipeline...");
     mesh_pipeline = SDL_CreateGPUGraphicsPipeline(device, &mesh_pipeline_desc);
     if (mesh_pipeline == NULL) {
       SDL_Log("Failed to create pipeline: %s", SDL_GetError());
@@ -316,6 +315,8 @@ int main() {
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
+
+  media::VideoRecorder recorder{wWidth, wHeight, "ur5.mp4"};
 
   while (frameNo < 5000 && !quitRequested) {
     // logic
@@ -466,6 +467,11 @@ int main() {
                                      swapchain);
 
     SDL_SubmitGPUCommandBuffer(command_buffer);
+
+    auto swapchainFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
+    media::videoWriteTextureToFrame(device, recorder, swapchain,
+                                    swapchainFormat, wWidth, wHeight);
+
     frameNo++;
   }
 

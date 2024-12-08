@@ -16,6 +16,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(DOXYGEN_USE_MATHJAX NO)
 set(DOXYGEN_USE_TEMPLATE_CSS YES)
 
+# The following was copied over from https://github.com/Simple-Robotics/aligator:
+# Use BoostConfig module distributed by boost library instead of using FindBoost module distributed
+# by CMake
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+  # find_package(SDFormat14) reset this policy (with cmake_minimum_required) and redefine the find_dependency macro.
+  # Then, futur call of this macro don't use the right version of this policy.
+  # To avoid that, we define the CMP0167 default value.
+  set(CMAKE_POLICY_DEFAULT_CMP0167 NEW)
+endif()
 include(cmake/base.cmake)
 compute_project_args(PROJECT_ARGS LANGUAGES CXX)
 project(${PROJECT_NAME} ${PROJECT_ARGS})
@@ -24,7 +34,16 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/bin)
 set(CMAKE_VERBOSE_MAKEFILE False)
 
+option(BUILD_PYTHON_BINDINGS "Build Python bindings." OFF)
+option(BUILD_PINOCCHIO_VISUALIZER "Build the Pinocchio visualizer." ON)
 set(INSTALL_DOCUMENTATION OFF CACHE BOOL "" FORCE)
+
+set(
+  CMAKE_MODULE_PATH
+  "${PROJECT_SOURCE_DIR}/cmake/find-external/Simde"
+  "${PROJECT_SOURCE_DIR}/modules"
+  ${CMAKE_MODULE_PATH}
+)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
@@ -41,3 +60,6 @@ set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(external/pinocchio-visualizers)
+if(BUILD_PYTHON_BINDINGS)
+  add_subdirectory(python)
+endif()

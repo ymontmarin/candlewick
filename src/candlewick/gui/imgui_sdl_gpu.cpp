@@ -333,7 +333,9 @@ static void ImGui_ImplSDLGPU3_SetupRenderState(
   ImGui_ImplSDLGPU3_Data *bd = ImGui_ImplSDLGPU3_GetBackendData();
 
   // Bind pipeline:
-  { SDL_BindGPUGraphicsPipeline(render_pass, pipeline); }
+  {
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
+  }
 
   // Bind Vertex And Index Buffer:
   if (draw_data->TotalVtxCount > 0) {

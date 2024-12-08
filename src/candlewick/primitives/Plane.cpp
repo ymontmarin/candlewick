@@ -26,7 +26,7 @@ MeshData loadPlaneTiled(float scale, Uint32 xrepeat, Uint32 yrepeat,
   MeshData dataOwned = toOwningMeshData(loadPlane());
   {
     // normalize to (-1,-1) -- (1,1)
-    const Eigen::Translation3f tr{0.5, 0.5};
+    const Eigen::Translation3f tr{0.5, 0.5, 0.};
     apply3DTransformInPlace(dataOwned, Eigen::Affine3f(tr).scale(0.5));
   }
   std::vector<MeshData> meshes;
