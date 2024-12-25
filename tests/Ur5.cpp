@@ -74,6 +74,11 @@ static DirectionalLightUniform myLight{
     .intensity = 4.0,
 };
 
+struct alignas(16) light_ubo_t {
+  DirectionalLightUniform a;
+  alignas(16) GpuVec3 viewPos;
+};
+
 void updateFov(Rad<float> newFov) {
   fov = newFov;
   projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
@@ -371,10 +376,6 @@ int main() {
       Matrix4f modelView;
       Matrix4f projViewMat;
 
-      struct alignas(16) light_ubo_t {
-        DirectionalLightUniform a;
-        alignas(16) GpuVec3 viewPos;
-      };
       const light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
 
       SDL_BindGPUGraphicsPipeline(render_pass, mesh_pipeline);
@@ -453,7 +454,7 @@ int main() {
 
       // render grid
       if (add_grid) {
-        SDL_BindGPUGraphicsPipeline(render_pass, ctx.hudEltPipeline);
+        SDL_BindGPUGraphicsPipeline(render_pass, ctx.hudElemPipeline);
         drawGrid(command_buffer, render_pass, projectionMat * viewMat);
       }
 

@@ -9,7 +9,7 @@
 bool ExampleInit(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return false;
-  new (&ctx.device) Device{SDL_GPU_SHADERFORMAT_SPIRV, true};
+  ::new (&ctx.device) Device{SDL_GPU_SHADERFORMAT_SPIRV, true};
 
   ctx.window =
       SDL_CreateWindow("candlewick: examples", int(wWidth), int(wHeight), 0);
@@ -24,8 +24,8 @@ bool ExampleInit(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
 void ExampleTeardown(Context &ctx) {
   SDL_ReleaseWindowFromGPUDevice(ctx.device, ctx.window);
   SDL_DestroyWindow(ctx.window);
-  if (ctx.hudEltPipeline) {
-    SDL_ReleaseGPUGraphicsPipeline(ctx.device, ctx.hudEltPipeline);
+  if (ctx.hudElemPipeline) {
+    SDL_ReleaseGPUGraphicsPipeline(ctx.device, ctx.hudElemPipeline);
   }
   ctx.device.destroy();
   SDL_Quit();
@@ -65,7 +65,7 @@ void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
                    .has_depth_stencil_target = true},
       .props = 0,
   };
-  ctx.hudEltPipeline = SDL_CreateGPUGraphicsPipeline(ctx.device, &createInfo);
+  ctx.hudElemPipeline = SDL_CreateGPUGraphicsPipeline(ctx.device, &createInfo);
   vertexShader.release();
   fragmentShader.release();
 }
