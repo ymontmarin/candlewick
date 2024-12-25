@@ -57,7 +57,6 @@ constexpr Uint64 vertexElementSize(SDL_GPUVertexElementFormat format) {
 }
 
 /// Struct which defines the layout of a mesh's vertices.
-/// This is a clever wrapper around
 struct MeshLayout {
   constexpr explicit MeshLayout() = default;
 
