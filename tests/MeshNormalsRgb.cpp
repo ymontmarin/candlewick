@@ -121,7 +121,7 @@ int main() {
   SDL_GPUTexture *swapchain;
 
   Radf fov = 70._radf;
-  Matrix4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.1, 40.0);
+  Matrix4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.1f, 40.0f);
 
   Uint32 frameNo = 0;
   bool quitRequested = false;
@@ -145,7 +145,7 @@ int main() {
         break;
       }
       case SDL_EVENT_KEY_DOWN: {
-        const float step_size = 0.06;
+        const float step_size = 0.06f;
         switch (event.key.key) {
         case SDLK_UP:
           cameraWorldTranslateZ(viewMat, +step_size);
@@ -165,10 +165,10 @@ int main() {
           else
             cylinderCameraViewportDrag(
                 viewMat, Float2{event.motion.xrel, event.motion.yrel},
-                5e-3 * pixelDensity, 1e-2 * pixelDensity);
+                5e-3f * pixelDensity, 1e-2f * pixelDensity);
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
-          float camXLocRotSpeed = 0.01 * pixelDensity;
+          float camXLocRotSpeed = 0.01f * pixelDensity;
           cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
         }
         break;
