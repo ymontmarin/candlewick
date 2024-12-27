@@ -162,8 +162,11 @@ void drawMyImguiMenu() {
   projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
   ImGui::Checkbox("Render plane", &add_plane);
   ImGui::Checkbox("Render grid", &add_grid);
+  ImGui::SeparatorText("light");
+  ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 6.0f);
+  ImGui::ColorEdit3("color", myLight.color.data());
   ImGui::End();
-  ImGui::SetNextWindowCollapsed(true, ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
   ImGui::ShowDemoWindow(&demo_window_open);
 }
 
