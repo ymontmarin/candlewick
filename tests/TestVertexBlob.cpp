@@ -31,7 +31,7 @@ GTEST_TEST(TestErasedBlob, default_vertex) {
   }
 }
 
-struct CustomVertex {
+struct alignas(16) CustomVertex {
   GpuVec4 pos;
   alignas(16) GpuVec3 color;
   alignas(16) GpuVec2 uv;
