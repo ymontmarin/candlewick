@@ -1,4 +1,3 @@
-find_package(SDL3 3.1.3 REQUIRED)
 find_package(assimp REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(FFmpeg COMPONENTS avformat avcodec swscale)
@@ -47,8 +46,7 @@ endif()
 
 target_include_directories(candlewick_core PUBLIC ./)
 
-add_subdirectory(candlewick/gui)
-target_link_libraries(candlewick_core PUBLIC candlewick_imgui)
+target_link_libraries(candlewick_core PUBLIC imgui)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_core)

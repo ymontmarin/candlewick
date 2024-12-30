@@ -56,11 +56,11 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   )
 endif()
 
-set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
+find_package(SDL3 3.1.3 REQUIRED)
 
+add_subdirectory(external)
 add_subdirectory(src)
 add_subdirectory(tests)
-add_subdirectory(external/pinocchio-visualizers)
 if(BUILD_PYTHON_BINDINGS)
   add_subdirectory(python)
 endif()

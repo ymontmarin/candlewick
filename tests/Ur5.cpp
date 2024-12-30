@@ -14,8 +14,9 @@
 #include "candlewick/primitives/Plane.h"
 #include "candlewick/primitives/Grid.h"
 
-#include "candlewick/gui/imgui_impl_sdl3_extend.h"
-#include "candlewick/gui/imgui_sdl_gpu.h"
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlgpu3.h>
 
 #include <robot_descriptions_cpp/robot_spec.hpp>
 #include <robot_descriptions_cpp/robot_load.hpp>
@@ -60,7 +61,7 @@ static struct {
     .color = 0xE0A236ff_rgbaf,
 };
 
-Context ctx;
+static Context ctx;
 
 struct alignas(16) TransformUniformData {
   GpuMat4 model;
@@ -76,7 +77,7 @@ static DirectionalLightUniform myLight{
 
 struct alignas(16) light_ubo_t {
   DirectionalLightUniform a;
-  alignas(16) GpuVec3 viewPos;
+  GpuVec3 viewPos;
 };
 
 void updateFov(Rad<float> newFov) {
@@ -154,6 +155,7 @@ void drawMyImguiMenu() {
   const float minFov = 15.f;
   const float maxFov = 90.f;
 
+  ImGui::SetNextWindowSize({0, 0}, ImGuiCond_Once);
   ImGui::Begin("Camera", nullptr);
   Deg<float> _fovdeg{fov};
   ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, minFov, maxFov, "%.3f",
@@ -202,16 +204,19 @@ bool GuiInit() {
   io.IniFilename = nullptr;
 
   ImGui::StyleColorsDark();
-  if (!ImGui_ImplSDL3_InitForSDLGPU3(ctx.window, ctx.device)) {
-    SDL_Log("Failed to init ImGui for SDL");
-    return false;
-  }
-  return ImGui_ImplSDLGPU3_Init(ctx.device, ctx.window);
+  ImGui_ImplSDL3_InitForOther(ctx.window);
+  ImGui_ImplSDLGPU_InitInfo imguiInfo{
+      .GpuDevice = ctx.device,
+      .ColorTargetFormat =
+          SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window),
+      .MSAASamples = SDL_GPU_SAMPLECOUNT_1,
+  };
+  return ImGui_ImplSDLGPU_Init(&imguiInfo);
 }
 
 void GuiTeardown() {
-  ImGui_ImplSDLGPU3_Shutdown();
   ImGui_ImplSDL3_Shutdown();
+  ImGui_ImplSDLGPU_Shutdown();
   ImGui::DestroyContext();
 }
 
@@ -275,13 +280,15 @@ int main() {
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
   SDL_GPUTexture *depthTexture = createDepthTexture(
       device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
-  SDL_GPUGraphicsPipeline *mesh_pipeline = NULL;
+  SDL_GPUGraphicsPipeline *mesh_pipeline = nullptr;
+  const auto swapchain_format =
+      SDL_GetGPUSwapchainTextureFormat(device, window);
   {
     Shader vertexShader{device, "PbrBasic.vert", 1};
     Shader fragmentShader{device, "PbrBasic.frag", 2};
 
-    SDL_GPUColorTargetDescription colorTarget{
-        .format = SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window)};
+    SDL_GPUColorTargetDescription colorTarget;
+    colorTarget.format = swapchain_format;
     SDL_zero(colorTarget.blend_state);
     SDL_Log("Mesh pipeline color target format: %d", colorTarget.format);
 
@@ -303,7 +310,7 @@ int main() {
     };
 
     mesh_pipeline = SDL_CreateGPUGraphicsPipeline(device, &mesh_pipeline_desc);
-    if (mesh_pipeline == NULL) {
+    if (mesh_pipeline == nullptr) {
       SDL_Log("Failed to create pipeline: %s", SDL_GetError());
       return 1;
     }
@@ -334,12 +341,13 @@ int main() {
     pin::forwardKinematics(model, pin_data, q);
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
 
-    ImGui_ImplSDLGPU3_NewFrame();
+    ImGui_ImplSDLGPU_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
     drawMyImguiMenu();
     ImGui::Render();
+    ImDrawData *draw_data = ImGui::GetDrawData();
 
     // render pass
 
@@ -348,9 +356,8 @@ int main() {
     SDL_GPURenderPass *render_pass;
 
     command_buffer = SDL_AcquireGPUCommandBuffer(device);
-    SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain, NULL,
-                                   NULL);
-    // SDL_Log("Frame [%u]", frameNo);
+    SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain, nullptr,
+                                   nullptr);
 
     if (swapchain) {
 
@@ -467,14 +474,29 @@ int main() {
       break;
     }
 
-    ImGui_ImplSDLGPU3_RenderDrawData(ImGui::GetDrawData(), command_buffer,
-                                     swapchain);
+    // TODO: fix init new render pass
+    {
+      SDL_GPUColorTargetInfo target_info = {
+          .texture = swapchain,
+          .mip_level = 0,
+          .layer_or_depth_plane = 0,
+          .clear_color = SDL_FColor{0., 0., 0., 0.},
+          .load_op = SDL_GPU_LOADOP_LOAD,
+          .store_op = SDL_GPU_STOREOP_STORE,
+          .cycle = false,
+      };
+      Imgui_ImplSDLGPU_PrepareDrawData(draw_data, command_buffer);
+      // Call AFTER preparing draw data (which creates a copy pass)
+      render_pass =
+          SDL_BeginGPURenderPass(command_buffer, &target_info, 1, nullptr);
+      ImGui_ImplSDLGPU_RenderDrawData(draw_data, command_buffer, render_pass);
+      SDL_EndGPURenderPass(render_pass);
+    }
 
     SDL_SubmitGPUCommandBuffer(command_buffer);
 
-    auto swapchainFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
     media::videoWriteTextureToFrame(device, recorder, swapchain,
-                                    swapchainFormat, wWidth, wHeight);
+                                    swapchain_format, wWidth, wHeight);
 
     frameNo++;
   }
