@@ -9,5 +9,7 @@ struct alignas(16) DirectionalLightUniform {
   alignas(16) GpuVec3 color;
   float intensity;
 };
+static_assert(std::is_standard_layout_v<DirectionalLightUniform>);
+static_assert(offsetof(DirectionalLightUniform, color) == 16);
 
 } // namespace candlewick
