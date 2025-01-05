@@ -37,15 +37,19 @@ using namespace candlewick;
 using Eigen::Matrix3f;
 using Eigen::Matrix4f;
 
-const Uint32 wWidth = 1600;
-const Uint32 wHeight = 900;
-const float aspectRatio = float(wWidth) / float(wHeight);
+/// Application constants
 
-static bool add_plane = true;
-static bool add_grid = true;
+constexpr Uint32 wWidth = 1600;
+constexpr Uint32 wHeight = 900;
+constexpr float aspectRatio = float(wWidth) / float(wHeight);
+
+/// Application state
+
+static bool renderPlane = true;
+static bool renderGrid = true;
 static Matrix4f viewMat;
 static Matrix4f projectionMat;
-static Rad<float> fov = 55.0_radf;
+static Radf fov = 55.0_radf;
 static bool quitRequested = false;
 
 static float pixelDensity;
@@ -80,12 +84,13 @@ struct alignas(16) light_ubo_t {
   GpuVec3 viewPos;
 };
 
-void updateFov(Rad<float> newFov) {
+void updateFov(Radf newFov) {
   fov = newFov;
   projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
 }
 
 void eventLoop() {
+  // update pixel density and display scale
   pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
   displayScale = SDL_GetWindowDisplayScale(ctx.window);
   const float rotSensitivity = 5e-3f * pixelDensity;
@@ -157,13 +162,13 @@ void drawMyImguiMenu() {
 
   ImGui::SetNextWindowSize({0, 0}, ImGuiCond_Once);
   ImGui::Begin("Camera", nullptr);
-  Deg<float> _fovdeg{fov};
+  Degf _fovdeg{fov};
   ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, minFov, maxFov, "%.3f",
                    ImGuiSliderFlags_AlwaysClamp);
   updateFov(Radf(_fovdeg));
   projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
-  ImGui::Checkbox("Render plane", &add_plane);
-  ImGui::Checkbox("Render grid", &add_grid);
+  ImGui::Checkbox("Render plane", &renderPlane);
+  ImGui::Checkbox("Render grid", &renderGrid);
   ImGui::SeparatorText("light");
   ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 6.0f);
   ImGui::ColorEdit3("color", myLight.color.data());
@@ -432,7 +437,7 @@ int main() {
       }
 
       // RENDER PLANE
-      if (add_plane) {
+      if (renderPlane) {
         Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
         modelView = viewMat * plane_transform.matrix();
         projViewMat = projectionMat * modelView;
@@ -463,7 +468,7 @@ int main() {
       }
 
       // render grid
-      if (add_grid) {
+      if (renderGrid) {
         SDL_BindGPUGraphicsPipeline(render_pass, ctx.hudElemPipeline);
         drawGrid(command_buffer, render_pass, projectionMat * viewMat);
       }
