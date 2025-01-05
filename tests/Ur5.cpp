@@ -49,7 +49,7 @@ static bool renderPlane = true;
 static bool renderGrid = true;
 static Matrix4f viewMat;
 static Matrix4f projectionMat;
-static Radf fov = 55.0_radf;
+static Radf currentFov = 55.0_radf;
 static bool quitRequested = false;
 
 static float pixelDensity;
@@ -85,8 +85,8 @@ struct alignas(16) light_ubo_t {
 };
 
 void updateFov(Radf newFov) {
-  fov = newFov;
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
+  currentFov = newFov;
+  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
 }
 
 void eventLoop() {
@@ -112,7 +112,7 @@ void eventLoop() {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
       // orthographicZoom(projectionMat, scaleFac);
-      updateFov(Radf(std::min(fov * scaleFac, 170.0_radf)));
+      updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
       break;
     }
     case SDL_EVENT_KEY_DOWN: {
@@ -162,11 +162,11 @@ void drawMyImguiMenu() {
 
   ImGui::SetNextWindowSize({0, 0}, ImGuiCond_Once);
   ImGui::Begin("Camera", nullptr);
-  Degf _fovdeg{fov};
+  Degf _fovdeg{currentFov};
   ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, minFov, maxFov, "%.3f",
                    ImGuiSliderFlags_AlwaysClamp);
   updateFov(Radf(_fovdeg));
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
+  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
   ImGui::Checkbox("Render plane", &renderPlane);
   ImGui::Checkbox("Render grid", &renderGrid);
   ImGui::SeparatorText("light");
@@ -179,11 +179,8 @@ void drawMyImguiMenu() {
 
 void drawGrid(SDL_GPUCommandBuffer *command_buffer,
               SDL_GPURenderPass *render_pass, Matrix4f projViewMat) {
-  struct {
-    GpuMat4 mvp;
-  } cameraUniform{.mvp = projViewMat};
-  SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
-                               sizeof(cameraUniform));
+  GpuMat4 mvp{projViewMat};
+  SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp, sizeof(mvp));
   struct {
     alignas(16) GpuVec4 color;
   } colorUniform{gridMesh.color};
@@ -330,7 +327,7 @@ int main() {
 
   Uint32 frameNo = 0;
 
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
+  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
   viewMat = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);
