@@ -6,7 +6,7 @@
 #include <SDL3/SDL_log.h>
 #include <new>
 
-bool ExampleInit(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
+bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return false;
   ::new (&ctx.device) Device{SDL_GPU_SHADERFORMAT_SPIRV, true};
@@ -21,7 +21,7 @@ bool ExampleInit(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
   return true;
 }
 
-void ExampleTeardown(Context &ctx) {
+void teardownExample(Context &ctx) {
   SDL_ReleaseWindowFromGPUDevice(ctx.device, ctx.window);
   SDL_DestroyWindow(ctx.window);
   if (ctx.hudElemPipeline) {

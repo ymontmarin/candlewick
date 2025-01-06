@@ -34,7 +34,7 @@ struct alignas(16) TransformUniformData {
 };
 
 int main() {
-  if (!ExampleInit(ctx, wWidth, wHeight)) {
+  if (!initExample(ctx, wWidth, wHeight)) {
     return 1;
   }
   Device &device = ctx.device;
@@ -232,6 +232,6 @@ int main() {
   }
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 
-  ExampleTeardown(ctx);
+  teardownExample(ctx);
   return 0;
 }

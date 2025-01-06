@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
   argv = app.ensure_utf8(argv);
   app.add_flag("-r,--record", performRecording, "Record output");
   CLI11_PARSE(app, argc, argv);
-  if (!ExampleInit(ctx, wWidth, wHeight)) {
+  if (!initExample(ctx, wWidth, wHeight)) {
     return 1;
   }
   Device &device = ctx.device;
@@ -518,6 +518,6 @@ int main(int argc, char **argv) {
   SDL_ReleaseGPUGraphicsPipeline(device, mesh_pipeline);
 
   GuiTeardown();
-  ExampleTeardown(ctx);
+  teardownExample(ctx);
   return 0;
 }

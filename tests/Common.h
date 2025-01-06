@@ -14,8 +14,8 @@ struct Context {
   SDL_GPUGraphicsPipeline *hudElemPipeline;
 };
 
-bool ExampleInit(Context &ctx, Uint32 wWidth, Uint32 wHeight);
-void ExampleTeardown(Context &ctx);
+bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight);
+void teardownExample(Context &ctx);
 
 void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
                       SDL_GPUTextureFormat depth_stencil_format);
