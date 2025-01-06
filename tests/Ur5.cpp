@@ -239,11 +239,8 @@ int main(int argc, char **argv) {
 
   pin::Model model;
   pin::GeometryModel geom_model;
-  auto robot_spec =
-      robot_descriptions::loadRobotSpecFromToml("ur.toml", "ur5_gripper");
-  robot_descriptions::loadModelFromSpec(robot_spec, model);
-  robot_descriptions::loadGeomFromSpec(robot_spec, model, geom_model,
-                                       pin::VISUAL);
+  robot_descriptions::loadModelsFromToml("ur.toml", "ur5_gripper", model,
+                                         &geom_model, NULL);
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
