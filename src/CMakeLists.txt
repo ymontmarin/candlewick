@@ -20,6 +20,7 @@ add_library(
   candlewick/utils/VideoRecorder.cpp
   candlewick/utils/WriteTextureToImage.cpp
   candlewick/primitives/Cube.cpp
+  candlewick/primitives/Heightfield.cpp
   candlewick/primitives/Grid.cpp
   candlewick/primitives/Plane.cpp
   candlewick/third-party/sbti_lib.cpp
