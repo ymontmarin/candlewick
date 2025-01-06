@@ -37,24 +37,20 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
   printf("Processing GeometryObject %s.\t", gobj.name.c_str());
   printf("Got object type %s\n", obj_type_str(objType));
 
-  std::vector<MeshData> newMeshes;
-
   switch (objType) {
   case OT_BVH: {
-    loadSceneMeshes(gobj.meshPath.c_str(), newMeshes);
+    loadSceneMeshes(gobj.meshPath.c_str(), meshData);
     break;
   }
   case OT_GEOM: {
-    newMeshes.push_back(loadCoalPrimitive(collgom, gobj.meshColor.cast<float>(),
-                                          gobj.meshScale.cast<float>()));
+    meshData.push_back(loadCoalPrimitive(collgom, gobj.meshColor.cast<float>(),
+                                         gobj.meshScale.cast<float>()));
     break;
   }
   default:
     throw std::runtime_error("Unsupported object type.");
     break;
   }
-  meshData.insert(meshData.end(), std::make_move_iterator(newMeshes.begin()),
-                  std::make_move_iterator(newMeshes.end()));
 }
 
 void loadGeometryModel(const pin::GeometryModel &model,

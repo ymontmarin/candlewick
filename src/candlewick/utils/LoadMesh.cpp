@@ -80,14 +80,13 @@ LoadMeshReturn loadSceneMeshes(const char *path,
 
   LoadMeshReturn ret = LoadMeshReturn::OK;
   aiMatrix4x4 transform = scene->mRootNode->mTransformation;
-  // meshData.resize(scene->mNumMeshes);
   for (std::size_t i = 0; i < scene->mNumMeshes; i++) {
     aiMesh *inMesh = scene->mMeshes[i];
-    meshData.push_back(loadAiMesh(inMesh, transform));
+    MeshData &md = meshData.emplace_back(loadAiMesh(inMesh, transform));
     Uint32 materialId = inMesh->mMaterialIndex;
     if (scene->HasMaterials()) {
       aiMaterial *material = scene->mMaterials[materialId];
-      meshData[i].material = loadFromAssimpMaterial(material);
+      md.material = loadFromAssimpMaterial(material);
       ret = LoadMeshReturn::HasMaterials;
     }
   }
