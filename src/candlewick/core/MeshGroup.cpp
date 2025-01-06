@@ -13,6 +13,8 @@ void MeshGroup::releaseBuffers(const Device &device) {
   }
 }
 
+MeshGroup::MeshGroup(NoInitT) : meshes(), meshDatas() {}
+
 MeshGroup::MeshGroup(const Device &device, std::span<MeshData> meshDatas)
     : meshes(), meshDatas(meshDatas) {
   using IndexType = MeshData::IndexType;

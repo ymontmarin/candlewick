@@ -13,6 +13,7 @@ struct MeshGroup {
   std::vector<Mesh> meshes;
   std::span<MeshData> meshDatas;
 
+  explicit MeshGroup(NoInitT);
   MeshGroup(const Device &device, std::span<MeshData> meshDatas);
   void releaseBuffers(const Device &device);
   size_t size() const { return meshes.size(); }
