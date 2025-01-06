@@ -3,6 +3,7 @@
 #include <SDL3/SDL_gpu.h>
 #include <string>
 #include <memory>
+#include "candlewick/core/Tags.h"
 
 extern "C" {
 #include <libavutil/pixfmt.h>
@@ -26,6 +27,9 @@ public:
     int outputHeight;
   };
 
+  /// \brief Constructor which will not open the file or stream.
+  explicit VideoRecorder(NoInitT);
+  bool isInitialized() const { return impl_ != nullptr; }
   VideoRecorder(Uint32 width, Uint32 height, const std::string &filename,
                 Settings settings);
 

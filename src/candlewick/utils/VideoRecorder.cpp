@@ -173,7 +173,9 @@ void VideoRecorderImpl::writeFrame(const Uint8 *data, size_t payloadSize,
   sws_freeContext(swsContext);
 }
 
-// WRAPPED CLASS
+// WRAPPING CLASS
+VideoRecorder::VideoRecorder(NoInitT) : impl_() {}
+
 VideoRecorder::VideoRecorder(Uint32 width, Uint32 height,
                              const std::string &filename, Settings settings)
     : impl_(std::make_unique<VideoRecorderImpl>(width, height, filename,
