@@ -30,6 +30,7 @@ using GpuMat4 = Eigen::Matrix<float, 4, 4, Eigen::ColMajor | Eigen::DontAlign>;
 float deg2rad(float);
 float rad2deg(float);
 
+template <typename T> struct Rad;
 template <typename T> struct Deg;
 
 template <typename T> struct Rad {
@@ -38,9 +39,17 @@ template <typename T> struct Rad {
   constexpr operator T &() { return _value; }
   constexpr operator T() const { return _value; }
   explicit constexpr operator T *() { return &_value; }
+  template <typename U> constexpr bool operator==(const Rad<U> &other) const {
+    return _value == other._value;
+  }
+  template <typename U> constexpr bool operator==(const Deg<U> &other) const {
+    return (*this) == Rad(other);
+  }
 
+private:
   T _value;
 };
+template <typename T> Rad(T) -> Rad<T>;
 
 template <typename T> struct Deg {
   constexpr Deg(T value) : _value(value) {}
@@ -48,9 +57,17 @@ template <typename T> struct Deg {
   constexpr operator T &() { return _value; }
   constexpr operator T() const { return _value; }
   explicit constexpr operator T *() { return &_value; }
+  template <typename U> constexpr bool operator==(const Deg<U> &other) const {
+    return _value == other._value;
+  }
+  template <typename U> constexpr bool operator==(const Rad<U> &other) const {
+    return _value == Deg(other);
+  }
 
+private:
   T _value;
 };
+template <typename T> Deg(T) -> Deg<T>;
 
 template <typename T>
 constexpr Rad<T> operator*(const Rad<T> &left, const T &right) {
