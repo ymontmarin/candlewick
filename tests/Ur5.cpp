@@ -32,6 +32,10 @@
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_gpu.h>
 
+#include <CLI/App.hpp>
+#include <CLI/Formatter.hpp>
+#include <CLI/Config.hpp>
+
 namespace pin = pinocchio;
 using namespace candlewick;
 using Eigen::Matrix3f;
@@ -58,11 +62,9 @@ static float displayScale;
 static struct {
   MeshData data;
   Mesh mesh;
-  Float4 color;
 } gridMesh{
     .data = loadGrid(10),
     .mesh{NoInit},
-    .color = 0xE0A236ff_rgbaf,
 };
 
 static Context ctx;
@@ -162,10 +164,10 @@ void drawMyImguiMenu() {
 
   ImGui::SetNextWindowSize({0, 0}, ImGuiCond_Once);
   ImGui::Begin("Camera", nullptr);
-  Degf _fovdeg{currentFov};
-  ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, minFov, maxFov, "%.3f",
+  Degf newFov{currentFov};
+  ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
                    ImGuiSliderFlags_AlwaysClamp);
-  updateFov(Radf(_fovdeg));
+  updateFov(Radf(newFov));
   projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
   ImGui::Checkbox("Render plane", &renderPlane);
   ImGui::Checkbox("Render grid", &renderGrid);
@@ -181,12 +183,9 @@ void drawGrid(SDL_GPUCommandBuffer *command_buffer,
               SDL_GPURenderPass *render_pass, Matrix4f projViewMat) {
   GpuMat4 mvp{projViewMat};
   SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp, sizeof(mvp));
-  struct {
-    alignas(16) GpuVec4 color;
-  } colorUniform{gridMesh.color};
-  static_assert(IsVertexType<decltype(colorUniform)>, "");
-  SDL_PushGPUFragmentUniformData(command_buffer, 0, &colorUniform,
-                                 sizeof(colorUniform));
+  GpuVec4 gridColor = 0xE0A236ff_rgbaf;
+  SDL_PushGPUFragmentUniformData(command_buffer, 0, &gridColor,
+                                 sizeof(gridColor));
   auto vertex_binding = gridMesh.mesh.getVertexBinding(0);
   auto index_binding = gridMesh.mesh.getIndexBinding();
 
@@ -222,7 +221,12 @@ void GuiTeardown() {
   ImGui::DestroyContext();
 }
 
-int main() {
+int main(int argc, char **argv) {
+  CLI::App app{"Ur5 example"};
+  bool performRecording{false};
+  argv = app.ensure_utf8(argv);
+  app.add_flag("-r,--record", performRecording, "Record output");
+  CLI11_PARSE(app, argc, argv);
   if (!ExampleInit(ctx, wWidth, wHeight)) {
     return 1;
   }
@@ -334,6 +338,11 @@ int main() {
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
 
   media::VideoRecorder recorder{wWidth, wHeight, "ur5.mp4"};
+  auto record_callback = [=, &recorder](const auto &swapchain,
+                                        auto swapchain_format) {
+    media::videoWriteTextureToFrame(device, recorder, swapchain,
+                                    swapchain_format, wWidth, wHeight);
+  };
 
   while (frameNo < 5000 && !quitRequested) {
     // logic
@@ -497,9 +506,9 @@ int main() {
 
     SDL_SubmitGPUCommandBuffer(command_buffer);
 
-    media::videoWriteTextureToFrame(device, recorder, swapchain,
-                                    swapchain_format, wWidth, wHeight);
-
+    if (performRecording) {
+      record_callback(swapchain, swapchain_format);
+    }
     frameNo++;
   }
 
