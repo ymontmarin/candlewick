@@ -1,3 +1,5 @@
+#pragma once
+
 #include "candlewick/core/Mesh.h"
 #include "candlewick/utils/MaterialData.h"
 

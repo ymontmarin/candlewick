@@ -59,13 +59,7 @@ static bool quitRequested = false;
 static float pixelDensity;
 static float displayScale;
 
-static struct {
-  MeshData data;
-  Mesh mesh;
-} gridMesh{
-    .data = loadGrid(10),
-    .mesh{NoInit},
-};
+static Mesh gridMesh{NoInit};
 
 static Context ctx;
 
@@ -186,13 +180,13 @@ void drawGrid(SDL_GPUCommandBuffer *command_buffer,
   GpuVec4 gridColor = 0xE0A236ff_rgbaf;
   SDL_PushGPUFragmentUniformData(command_buffer, 0, &gridColor,
                                  sizeof(gridColor));
-  auto vertex_binding = gridMesh.mesh.getVertexBinding(0);
-  auto index_binding = gridMesh.mesh.getIndexBinding();
+  auto vertex_binding = gridMesh.getVertexBinding(0);
+  auto index_binding = gridMesh.getIndexBinding();
 
   SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
   SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                          SDL_GPU_INDEXELEMENTSIZE_32BIT);
-  SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.mesh.count, 1, 0, 0, 0);
+  SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.count, 1, 0, 0, 0);
 }
 
 bool GuiInit() {
@@ -273,19 +267,14 @@ int main(int argc, char **argv) {
   SDL_Log("Created %zu robot mesh groups.", robotShapes.size());
 
   // Load plane
-  struct {
-    MeshData data;
-    Mesh mesh;
-  } plane{
-      .data = loadPlaneTiled(0.25f, 5, 5),
-      .mesh{NoInit},
-  };
-  plane.mesh = convertToMesh(device, plane.data);
-  uploadMeshToDevice(device, plane.mesh, plane.data);
+  MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
+  Mesh plane = convertToMesh(device, plane_data);
+  uploadMeshToDevice(device, plane, plane_data);
 
   // Load grid
-  gridMesh.mesh = convertToMesh(device, gridMesh.data);
-  uploadMeshToDevice(device, gridMesh.mesh, gridMesh.data);
+  MeshData grid_data = loadGrid(10);
+  gridMesh = convertToMesh(device, grid_data);
+  uploadMeshToDevice(device, gridMesh, grid_data);
 
   /** CREATE PIPELINES **/
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
@@ -330,7 +319,7 @@ int main(int argc, char **argv) {
     fragmentShader.release();
   }
 
-  initGridPipeline(ctx, gridMesh.mesh.layout(), depth_stencil_format);
+  initGridPipeline(ctx, gridMesh.layout(), depth_stencil_format);
 
   // MAIN APPLICATION LOOP
 
@@ -455,7 +444,7 @@ int main(int argc, char **argv) {
             plane_transform.linear().inverse().transpose();
         TransformUniformData cameraUniform{plane_transform.matrix(),
                                            projViewMat, normalMatrix};
-        const auto material = plane.data.material.toUniform();
+        const auto material = plane_data.material.toUniform();
         SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                      sizeof(cameraUniform));
         SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
@@ -463,17 +452,16 @@ int main(int argc, char **argv) {
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
                                        sizeof(PbrMaterialUniform));
 
-        SDL_GPUBufferBinding vertex_binding = plane.mesh.getVertexBinding(0);
+        SDL_GPUBufferBinding vertex_binding = plane.getVertexBinding(0);
         SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
 
-        if (plane.mesh.isIndexed()) {
-          SDL_GPUBufferBinding index_binding = plane.mesh.getIndexBinding();
+        if (plane.isIndexed()) {
+          SDL_GPUBufferBinding index_binding = plane.getIndexBinding();
           SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                                  SDL_GPU_INDEXELEMENTSIZE_32BIT);
-          SDL_DrawGPUIndexedPrimitives(render_pass, plane.mesh.count, 1, 0, 0,
-                                       0);
+          SDL_DrawGPUIndexedPrimitives(render_pass, plane.count, 1, 0, 0, 0);
         } else {
-          SDL_DrawGPUPrimitives(render_pass, plane.mesh.count, 1, 0, 0);
+          SDL_DrawGPUPrimitives(render_pass, plane.count, 1, 0, 0);
         }
       }
 
