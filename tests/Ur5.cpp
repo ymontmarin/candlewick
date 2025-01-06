@@ -19,7 +19,6 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlgpu3.h>
 
-#include <robot_descriptions_cpp/robot_spec.hpp>
 #include <robot_descriptions_cpp/robot_load.hpp>
 
 #include <pinocchio/multibody/data.hpp>
@@ -173,7 +172,7 @@ void drawMyImguiMenu() {
   ImGui::Checkbox("Render plane", &renderPlane);
   ImGui::Checkbox("Render grid", &renderGrid);
   ImGui::SeparatorText("light");
-  ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 6.0f);
+  ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
   ImGui::ColorEdit3("color", myLight.color.data());
   ImGui::End();
   ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
