@@ -271,7 +271,10 @@ int main(int argc, char **argv) {
   struct {
     MeshData data;
     Mesh mesh;
-  } plane{loadPlaneTiled(0.25f, 5, 5), Mesh{NoInit}};
+  } plane{
+      .data = loadPlaneTiled(0.25f, 5, 5),
+      .mesh{NoInit},
+  };
   plane.mesh = convertToMesh(device, plane.data);
   uploadMeshToDevice(device, plane.mesh, plane.data);
 
@@ -283,6 +286,7 @@ int main(int argc, char **argv) {
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
   SDL_GPUTexture *depthTexture = createDepthTexture(
       device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
+  // Robot mesh pipeline
   SDL_GPUGraphicsPipeline *mesh_pipeline = nullptr;
   const auto swapchain_format =
       SDL_GetGPUSwapchainTextureFormat(device, window);
