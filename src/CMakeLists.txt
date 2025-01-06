@@ -8,10 +8,12 @@ add_library(
   candlewick/core/Device.cpp
   candlewick/core/matrix_util.cpp
   candlewick/core/Mesh.cpp
+  candlewick/core/MeshGroup.cpp
+  candlewick/core/Scene.cpp
   candlewick/core/Shader.cpp
   candlewick/core/Texture2D.cpp
-  candlewick/core/MeshGroup.cpp
   candlewick/utils/LoadMesh.cpp
+  candlewick/utils/MaterialData.cpp
   candlewick/utils/MeshData.cpp
   candlewick/utils/MeshDataView.cpp
   candlewick/utils/MeshTransforms.cpp
