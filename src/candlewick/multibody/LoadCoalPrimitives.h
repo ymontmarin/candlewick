@@ -10,4 +10,6 @@ namespace candlewick {
 MeshData loadCoalPrimitive(const hpp::fcl::CollisionGeometry &geometry,
                            const Float4 &meshColor, const Float3 &meshScale);
 
-}
+MeshData loadCoalHeightField(const coal::CollisionGeometry &collGeom);
+
+} // namespace candlewick

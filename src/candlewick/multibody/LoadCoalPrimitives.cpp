@@ -4,9 +4,11 @@
 
 #include "../primitives/Plane.h"
 #include "../primitives/Cube.h"
+#include "../primitives/Heightfield.h"
 #include "../utils/MeshTransforms.h"
 
-#include <hpp/fcl/shape/geometric_shapes.h>
+#include <coal/shape/geometric_shapes.h>
+#include <coal/hfield.h>
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_log.h>
 
@@ -73,4 +75,34 @@ MeshData loadCoalPrimitive(const hpp::fcl::CollisionGeometry &geometry,
   return meshData;
 }
 
+namespace detail {
+template <typename BV>
+MeshData load_coal_heightfield_impl(const coal::HeightField<BV> &hf) {
+  Eigen::MatrixXf heights = hf.getHeights().template cast<float>();
+  Eigen::VectorXf xgrid = hf.getXGrid().template cast<float>();
+  Eigen::VectorXf ygrid = hf.getYGrid().template cast<float>();
+
+  return loadHeightfield(heights, xgrid, ygrid);
+}
+
+} // namespace detail
+
+MeshData loadCoalHeightField(const coal::CollisionGeometry &collGeom) {
+  SDL_assert(collGeom.getObjectType() == coal::OT_HFIELD);
+  const coal::NODE_TYPE nodeType = collGeom.getNodeType();
+  switch (nodeType) {
+  case coal::HF_AABB:
+  case coal::BV_AABB: {
+    auto &geom = static_cast<const coal::HeightField<coal::AABB> &>(collGeom);
+    return detail::load_coal_heightfield_impl(geom);
+  }
+  case coal::HF_OBBRSS:
+  case coal::BV_OBBRSS: {
+    auto &geom = static_cast<const coal::HeightField<coal::OBBRSS> &>(collGeom);
+    return detail::load_coal_heightfield_impl(geom);
+  }
+  default:
+    throw std::runtime_error("Unsupported nodeType.");
+  }
+}
 } // namespace candlewick

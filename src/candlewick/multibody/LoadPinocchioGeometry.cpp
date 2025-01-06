@@ -37,14 +37,21 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
   printf("Processing GeometryObject %s.\t", gobj.name.c_str());
   printf("Got object type %s\n", obj_type_str(objType));
 
+  Float4 meshColor = gobj.meshColor.cast<float>();
+  Float3 meshScale = gobj.meshScale.cast<float>();
+
   switch (objType) {
   case OT_BVH: {
     loadSceneMeshes(gobj.meshPath.c_str(), meshData);
     break;
   }
   case OT_GEOM: {
-    meshData.push_back(loadCoalPrimitive(collgom, gobj.meshColor.cast<float>(),
-                                         gobj.meshScale.cast<float>()));
+    meshData.push_back(loadCoalPrimitive(collgom, meshColor, meshScale));
+    break;
+  }
+  case OT_HFIELD: {
+    MeshData &md = meshData.emplace_back(loadCoalHeightField(collgom));
+    md.material.baseColor = meshColor;
     break;
   }
   default:
