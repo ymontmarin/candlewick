@@ -60,8 +60,9 @@ if(BUILD_PINOCCHIO_VISUALIZER)
   target_link_libraries(
     candlewick_multibody
     PUBLIC
-      pinocchio::pinocchio_default
+      candlewick_core
       robot_descriptions_cpp::robot_descriptions_cpp
+      pinocchio::pinocchio_default
       pinocchio-visualizers
   )
   target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_multibody)
