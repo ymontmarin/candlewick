@@ -7,6 +7,7 @@ namespace candlewick {
 struct MeshData;
 
 /// \brief A grouping of meshes with single shared vertex and index buffers.
+/// This is non-owning of the mesh underlying MeshData objects.
 struct MeshGroup {
   SDL_GPUBuffer *masterVertexBuffer;
   SDL_GPUBuffer *masterIndexBuffer;
