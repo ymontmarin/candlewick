@@ -66,7 +66,7 @@ if(BUILD_PINOCCHIO_VISUALIZER)
   target_link_libraries(
     candlewick_multibody
     PUBLIC
-      pinocchio::pinocchio
+      pinocchio::pinocchio_default
       robot_descriptions_cpp::robot_descriptions_cpp
       pinocchio-visualizers
   )
