@@ -2,13 +2,6 @@ find_package(assimp REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(FFmpeg COMPONENTS avformat avcodec swscale)
 
-set(
-  PRIMITIVE_SOURCES
-  candlewick/primitives/Cube.cpp
-  candlewick/primitives/Grid.cpp
-  candlewick/primitives/Plane.cpp
-)
-
 add_library(
   candlewick_core
   SHARED
@@ -25,14 +18,17 @@ add_library(
   candlewick/utils/PixelFormatConversion.cpp
   candlewick/utils/VideoRecorder.cpp
   candlewick/utils/WriteTextureToImage.cpp
-  ${PRIMITIVE_SOURCES}
+  candlewick/primitives/Cube.cpp
+  candlewick/primitives/Grid.cpp
+  candlewick/primitives/Plane.cpp
   candlewick/third-party/sbti_lib.cpp
 )
 
 target_link_libraries(
   candlewick_core
-  PUBLIC SDL3::SDL3 SDL3::Headers assimp::assimp Eigen3::Eigen
+  PUBLIC SDL3::SDL3 SDL3::Headers assimp::assimp Eigen3::Eigen imgui
 )
+target_include_directories(candlewick_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(FFmpeg_FOUND)
   message(STATUS "FFmpeg found. Building video module.")
@@ -43,10 +39,6 @@ if(FFmpeg_FOUND)
   )
   target_sources(candlewick_core PRIVATE candlewick/utils/VideoRecorder.cpp)
 endif()
-
-target_include_directories(candlewick_core PUBLIC ./)
-
-target_link_libraries(candlewick_core PUBLIC imgui)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_core)
