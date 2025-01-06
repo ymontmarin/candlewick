@@ -6,18 +6,10 @@
 
 namespace candlewick {
 
-void MeshGroup::releaseBuffers(const Device &device) {
-  SDL_ReleaseGPUBuffer(device, masterVertexBuffer);
-  if (masterIndexBuffer) {
-    SDL_ReleaseGPUBuffer(device, masterIndexBuffer);
-  }
-}
-
-MeshGroup::MeshGroup(NoInitT) : meshes(), meshDatas() {}
-
-MeshGroup::MeshGroup(const Device &device, std::span<MeshData> meshDatas)
-    : meshes(), meshDatas(meshDatas) {
+MeshGroup createMeshGroup(const Device &device, std::span<MeshData> meshDatas,
+                          bool uploadToDevice) {
   using IndexType = MeshData::IndexType;
+  MeshGroup meshes;
   const auto &layout = meshDatas[0].layout();
   Uint32 numVertices = 0, numIndices = 0;
   for (size_t i = 0; i < meshDatas.size(); i++) {
@@ -36,8 +28,8 @@ MeshGroup::MeshGroup(const Device &device, std::span<MeshData> meshDatas)
                .props = 0};
   }
 
-  masterVertexBuffer = SDL_CreateGPUBuffer(device, &vtxInfo);
-  masterIndexBuffer =
+  SDL_GPUBuffer *masterVertexBuffer = SDL_CreateGPUBuffer(device, &vtxInfo);
+  SDL_GPUBuffer *masterIndexBuffer =
       (numIndices > 0) ? SDL_CreateGPUBuffer(device, &idxInfo) : NULL;
 
   Uint32 vertexOffset = 0, indexOffset = 0;
@@ -48,11 +40,20 @@ MeshGroup::MeshGroup(const Device &device, std::span<MeshData> meshDatas)
     vertexOffset += meshDatas[i].numVertices() * layout.vertexSize();
     indexOffset += meshDatas[i].numIndices() * sizeof(IndexType);
   }
+
+  if (uploadToDevice) {
+    for (size_t i = 0; i < meshes.size(); i++) {
+      uploadMeshToDevice(device, meshes[i], meshDatas[i]);
+    }
+  }
+
+  return meshes;
 }
 
-void uploadMeshGroupToDevice(const Device &device, const MeshGroup &group) {
-  for (size_t i = 0; i < group.meshes.size(); i++) {
-    uploadMeshToDevice(device, group.meshes[i], group.meshDatas[i]);
+void releaseMeshGroup(const Device &device, MeshGroup &group) {
+  for (auto &mesh : group) {
+    mesh.releaseOwnedBuffers(device);
   }
 }
+
 } // namespace candlewick

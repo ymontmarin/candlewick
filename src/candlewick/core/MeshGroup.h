@@ -1,3 +1,5 @@
+/// \file
+/// \brief Grouped operations on sets of meshes.
 #include "Mesh.h"
 #include <span>
 
@@ -6,20 +8,12 @@ namespace candlewick {
 // fwd
 struct MeshData;
 
-/// \brief A grouping of meshes with single shared vertex and index buffers.
-/// This is non-owning of the mesh underlying MeshData objects.
-struct MeshGroup {
-  SDL_GPUBuffer *masterVertexBuffer;
-  SDL_GPUBuffer *masterIndexBuffer;
-  std::vector<Mesh> meshes;
-  std::span<MeshData> meshDatas;
+using MeshGroup = std::vector<Mesh>;
 
-  explicit MeshGroup(NoInitT);
-  MeshGroup(const Device &device, std::span<MeshData> meshDatas);
-  void releaseBuffers(const Device &device);
-  size_t size() const { return meshes.size(); }
-};
+/// Create a group of meshes and optionally upload to device.
+MeshGroup createMeshGroup(const Device &device, std::span<MeshData> meshDatas,
+                          bool uploadToDevice);
 
-void uploadMeshGroupToDevice(const Device &device, const MeshGroup &group);
+void releaseMeshGroup(const Device &device, MeshGroup &group);
 
 } // namespace candlewick
