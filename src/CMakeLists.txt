@@ -9,7 +9,6 @@ add_library(
   candlewick/core/matrix_util.cpp
   candlewick/core/Mesh.cpp
   candlewick/core/MeshGroup.cpp
-  candlewick/core/Scene.cpp
   candlewick/core/Shader.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/MaterialData.cpp
