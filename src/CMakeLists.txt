@@ -8,6 +8,7 @@ add_library(
   candlewick/core/Device.cpp
   candlewick/core/matrix_util.cpp
   candlewick/core/errors.cpp
+  candlewick/core/GuiSystem.cpp
   candlewick/core/Mesh.cpp
   candlewick/core/Renderer.cpp
   candlewick/core/Shader.cpp
