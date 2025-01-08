@@ -1,6 +1,5 @@
 #include "Common.h"
 
-#include "candlewick/core/MeshGroup.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/Shape.h"
 #include "candlewick/core/matrix_util.h"
@@ -8,6 +7,7 @@
 #include "candlewick/core/MaterialUniform.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
+#include "candlewick/utils/MeshGroup.h"
 #include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"
 #include "candlewick/multibody/LoadPinocchioGeometry.h"

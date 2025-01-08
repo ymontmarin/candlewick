@@ -1,6 +1,6 @@
 /// \file
 /// \brief Grouped operations on sets of meshes.
-#include "Mesh.h"
+#include "../core/Mesh.h"
 #include <span>
 
 namespace candlewick {

@@ -1,6 +1,6 @@
-#include "Device.h"
+#include "../core/Device.h"
 #include "MeshGroup.h"
-#include "../utils/MeshData.h"
+#include "MeshData.h"
 
 #include <SDL3/SDL_assert.h>
 
