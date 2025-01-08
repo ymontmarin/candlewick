@@ -382,7 +382,6 @@ int main(int argc, char **argv) {
       depthTarget.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
       depthTarget.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
       depthTarget.texture = depthTexture;
-      depthTarget.cycle = true;
 
       render_pass =
           SDL_BeginGPURenderPass(command_buffer, &ctinfo, 1, &depthTarget);
