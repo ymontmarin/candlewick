@@ -1,5 +1,7 @@
 #include "Common.h"
 
+#include "candlewick/core/Renderer.h"
+#include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/Shape.h"
 #include "candlewick/core/matrix_util.h"
@@ -28,6 +30,7 @@
 #include <pinocchio/algorithm/geometry.hpp>
 
 #include <SDL3/SDL_log.h>
+#include <SDL3/SDL_init.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_gpu.h>
@@ -61,8 +64,6 @@ static float displayScale;
 
 static Mesh gridMesh{NoInit};
 
-static Context ctx;
-
 struct alignas(16) TransformUniformData {
   GpuMat4 model;
   alignas(16) GpuMat4 mvp;
@@ -85,10 +86,10 @@ void updateFov(Radf newFov) {
   projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
 }
 
-void eventLoop() {
+void eventLoop(const Renderer &renderer) {
   // update pixel density and display scale
-  pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
-  displayScale = SDL_GetWindowDisplayScale(ctx.window);
+  pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
+  displayScale = SDL_GetWindowDisplayScale(renderer.window);
   const float rotSensitivity = 5e-3f * pixelDensity;
   const float panSensitivity = 1e-2f * pixelDensity;
   SDL_Event event;
@@ -151,28 +152,6 @@ void eventLoop() {
   }
 }
 
-void drawMyImguiMenu() {
-  static bool demo_window_open = true;
-  const float minFov = 15.f;
-  const float maxFov = 90.f;
-
-  ImGui::SetNextWindowSize({0, 0}, ImGuiCond_Once);
-  ImGui::Begin("Camera", nullptr);
-  Degf newFov{currentFov};
-  ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
-                   ImGuiSliderFlags_AlwaysClamp);
-  updateFov(Radf(newFov));
-  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
-  ImGui::Checkbox("Render plane", &renderPlane);
-  ImGui::Checkbox("Render grid", &renderGrid);
-  ImGui::SeparatorText("light");
-  ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
-  ImGui::ColorEdit3("color", myLight.color.data());
-  ImGui::End();
-  ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
-  ImGui::ShowDemoWindow(&demo_window_open);
-}
-
 void drawGrid(SDL_GPUCommandBuffer *command_buffer,
               SDL_GPURenderPass *render_pass, Matrix4f projViewMat) {
   GpuMat4 mvp{projViewMat};
@@ -189,7 +168,7 @@ void drawGrid(SDL_GPUCommandBuffer *command_buffer,
   SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.count, 1, 0, 0, 0);
 }
 
-bool GuiInit() {
+bool GuiInit(const Renderer &ctx) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
 
@@ -215,21 +194,51 @@ void GuiTeardown() {
   ImGui::DestroyContext();
 }
 
+Renderer createRenderer(Uint32 width, Uint32 height) {
+  Device dev{SDL_GPU_SHADERFORMAT_SPIRV, true};
+  SDL_Window *window = SDL_CreateWindow(__FILE__, width, height, 0);
+  return Renderer{std::move(dev), window};
+}
+
 int main(int argc, char **argv) {
+  SDL_GPUGraphicsPipeline *hudElemPipeline;
   CLI::App app{"Ur5 example"};
   bool performRecording{false};
   argv = app.ensure_utf8(argv);
   app.add_flag("-r,--record", performRecording, "Record output");
   CLI11_PARSE(app, argc, argv);
-  if (!initExample(ctx, wWidth, wHeight)) {
-    return 1;
-  }
-  Device &device = ctx.device;
-  SDL_Window *window = ctx.window;
 
-  if (!GuiInit()) {
+  if (!SDL_Init(SDL_INIT_VIDEO))
+    return 1;
+
+  Renderer renderer = createRenderer(wWidth, wHeight);
+  Device &device = renderer.device;
+  SDL_Window *window = renderer.window;
+
+  if (!GuiInit(renderer)) {
     return 1;
   }
+
+  GuiSystem guiSys{[](Renderer &) {
+    static bool demo_window_open = true;
+    const float minFov = 15.f;
+    const float maxFov = 90.f;
+
+    ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    Degf newFov{currentFov};
+    ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
+                     ImGuiSliderFlags_AlwaysClamp);
+    updateFov(Radf(newFov));
+    projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+    ImGui::Checkbox("Render plane", &renderPlane);
+    ImGui::Checkbox("Render grid", &renderGrid);
+    ImGui::SeparatorText("light");
+    ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
+    ImGui::ColorEdit3("color", myLight.color.data());
+    ImGui::End();
+    ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+    ImGui::ShowDemoWindow(&demo_window_open);
+  }};
 
   pin::Model model;
   pin::GeometryModel geom_model;
@@ -319,7 +328,8 @@ int main(int argc, char **argv) {
     fragmentShader.release();
   }
 
-  initGridPipeline(ctx, gridMesh.layout(), depth_stencil_format);
+  hudElemPipeline =
+      initGridPipeline(renderer, gridMesh.layout(), depth_stencil_format);
 
   // MAIN APPLICATION LOOP
 
@@ -335,42 +345,30 @@ int main(int argc, char **argv) {
   if (performRecording)
     ::new (&recorder) media::VideoRecorder{wWidth, wHeight, "ur5.mp4"};
 
-  auto record_callback = [=, &recorder](const auto &swapchain,
-                                        auto swapchain_format) {
-    media::videoWriteTextureToFrame(device, recorder, swapchain,
-                                    swapchain_format, wWidth, wHeight);
+  auto record_callback = [=, &renderer, &recorder](auto swapchain_format) {
+    media::videoWriteTextureToFrame(renderer.device, recorder,
+                                    renderer.swapchain, swapchain_format,
+                                    wWidth, wHeight);
   };
 
   while (frameNo < 5000 && !quitRequested) {
     // logic
-    eventLoop();
+    eventLoop(renderer);
     double phi = 0.5 * (1. + std::sin(frameNo * 1e-2));
     Eigen::VectorXd q = pin::interpolate(model, q0, q1, phi);
     pin::forwardKinematics(model, pin_data, q);
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
 
-    ImGui_ImplSDLGPU_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-    ImGui::NewFrame();
-
-    drawMyImguiMenu();
-    ImGui::Render();
-    ImDrawData *draw_data = ImGui::GetDrawData();
-
-    // render pass
-
-    SDL_GPUCommandBuffer *command_buffer;
-    SDL_GPUTexture *swapchain;
+    // acquire command buffer and swapchain
+    renderer.beginFrame();
+    renderer.acquireSwapchain();
+    SDL_GPUCommandBuffer *command_buffer = renderer.command_buffer;
     SDL_GPURenderPass *render_pass;
 
-    command_buffer = SDL_AcquireGPUCommandBuffer(device);
-    SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain, nullptr,
-                                   nullptr);
-
-    if (swapchain) {
+    if (renderer.swapchain) {
 
       SDL_GPUColorTargetInfo ctinfo{
-          .texture = swapchain,
+          .texture = renderer.swapchain,
           .clear_color = SDL_FColor{0., 0., 0., 0.},
           .load_op = SDL_GPU_LOADOP_CLEAR,
           .store_op = SDL_GPU_STOREOP_STORE,
@@ -467,7 +465,7 @@ int main(int argc, char **argv) {
 
       // render grid
       if (renderGrid) {
-        SDL_BindGPUGraphicsPipeline(render_pass, ctx.hudElemPipeline);
+        SDL_BindGPUGraphicsPipeline(render_pass, hudElemPipeline);
         drawGrid(command_buffer, render_pass, projectionMat * viewMat);
       }
 
@@ -477,29 +475,12 @@ int main(int argc, char **argv) {
       break;
     }
 
-    // TODO: fix init new render pass
-    {
-      SDL_GPUColorTargetInfo target_info = {
-          .texture = swapchain,
-          .mip_level = 0,
-          .layer_or_depth_plane = 0,
-          .clear_color = SDL_FColor{0., 0., 0., 0.},
-          .load_op = SDL_GPU_LOADOP_LOAD,
-          .store_op = SDL_GPU_STOREOP_STORE,
-          .cycle = false,
-      };
-      Imgui_ImplSDLGPU_PrepareDrawData(draw_data, command_buffer);
-      // Call AFTER preparing draw data (which creates a copy pass)
-      render_pass =
-          SDL_BeginGPURenderPass(command_buffer, &target_info, 1, nullptr);
-      ImGui_ImplSDLGPU_RenderDrawData(draw_data, command_buffer, render_pass);
-      SDL_EndGPURenderPass(render_pass);
-    }
+    guiSys.render(renderer);
 
-    SDL_SubmitGPUCommandBuffer(command_buffer);
+    renderer.endFrame();
 
     if (performRecording) {
-      record_callback(swapchain, swapchain_format);
+      record_callback(swapchain_format);
     }
     frameNo++;
   }
@@ -508,8 +489,11 @@ int main(int argc, char **argv) {
     releaseMeshGroup(device, shape.meshes);
   }
   SDL_ReleaseGPUGraphicsPipeline(device, mesh_pipeline);
+  SDL_ReleaseGPUGraphicsPipeline(device, hudElemPipeline);
 
   GuiTeardown();
-  teardownExample(ctx);
+  renderer.destroy();
+  SDL_DestroyWindow(window);
+  SDL_Quit();
   return 0;
 }
