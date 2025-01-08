@@ -194,10 +194,11 @@ void GuiTeardown() {
   ImGui::DestroyContext();
 }
 
-Renderer createRenderer(Uint32 width, Uint32 height) {
+Renderer createRenderer(Uint32 width, Uint32 height,
+                        SDL_GPUTextureFormat depth_stencil_format) {
   Device dev{SDL_GPU_SHADERFORMAT_SPIRV, true};
-  SDL_Window *window = SDL_CreateWindow(__FILE__, width, height, 0);
-  return Renderer{std::move(dev), window};
+  SDL_Window *window = SDL_CreateWindow(__FILE__, int(width), int(height), 0);
+  return Renderer{std::move(dev), window, depth_stencil_format};
 }
 
 int main(int argc, char **argv) {
@@ -211,7 +212,8 @@ int main(int argc, char **argv) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return 1;
 
-  Renderer renderer = createRenderer(wWidth, wHeight);
+  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
+  Renderer renderer = createRenderer(wWidth, wHeight, depth_stencil_format);
   Device &device = renderer.device;
   SDL_Window *window = renderer.window;
 
@@ -286,9 +288,6 @@ int main(int argc, char **argv) {
   uploadMeshToDevice(device, gridMesh, grid_data);
 
   /** CREATE PIPELINES **/
-  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
-  SDL_GPUTexture *depthTexture = createDepthTexture(
-      device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
   // Robot mesh pipeline
   SDL_GPUGraphicsPipeline *mesh_pipeline = nullptr;
   const auto swapchain_format =
@@ -381,7 +380,7 @@ int main(int argc, char **argv) {
       depthTarget.store_op = SDL_GPU_STOREOP_DONT_CARE;
       depthTarget.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
       depthTarget.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
-      depthTarget.texture = depthTexture;
+      depthTarget.texture = renderer.depth_texture;
 
       render_pass =
           SDL_BeginGPURenderPass(command_buffer, &ctinfo, 1, &depthTarget);
