@@ -15,10 +15,9 @@ Mesh::Mesh(MeshLayout layout) : _layout(std::move(layout)) {
   vertexBufferOwnerships.resize(count);
 }
 
-std::size_t Mesh::addVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
-                                      Uint32 offset) {
-  auto max = _layout.toVertexInputState().num_vertex_buffers;
-  for (std::size_t i = 0; i < max; i++) {
+std::size_t Mesh::bindVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
+                                       Uint32 offset) {
+  for (std::size_t i = 0; i < _layout.numBuffers(); i++) {
     if (_layout.toVertexInputState().vertex_buffer_descriptions[i].slot ==
         slot) {
       vertexBuffers[i] = buffer;
@@ -30,9 +29,9 @@ std::size_t Mesh::addVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
   return ~std::size_t{};
 }
 
-Mesh &Mesh::addVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
-                            bool takeOwnership) {
-  std::size_t idx = addVertexBufferImpl(slot, buffer, offset);
+Mesh &Mesh::bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
+                             bool takeOwnership) {
+  std::size_t idx = bindVertexBufferImpl(slot, buffer, offset);
   vertexBufferOwnerships[idx] = takeOwnership ? Owned : Borrowed;
   return *this;
 }

@@ -39,7 +39,7 @@ Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                    Uint64 indexOffset, bool takeOwnership) {
   Mesh mesh{meshData.layout()};
 
-  mesh.addVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership);
+  mesh.bindVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership);
   if (meshData.isIndexed()) {
     mesh.setIndexBuffer(indexBuffer, indexOffset, takeOwnership);
     mesh.count = Uint32(meshData.numIndices());

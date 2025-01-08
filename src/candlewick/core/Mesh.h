@@ -21,8 +21,8 @@ struct Mesh {
 
   const MeshLayout &layout() const { return _layout; }
 
-  Mesh &addVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
-                        bool takeOwnership = false);
+  Mesh &bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
+                         bool takeOwnership = false);
   Mesh &setIndexBuffer(SDL_GPUBuffer *buffer, Uint32 offset,
                        bool takeOwnership = false);
 
@@ -42,8 +42,8 @@ struct Mesh {
 private:
   /// Add a vertex buffer corresponding to binding slot @p binding,
   /// using the pre-allocated @p buffer.
-  std::size_t addVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
-                                  Uint32 offset);
+  std::size_t bindVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
+                                   Uint32 offset);
 
   MeshLayout _layout;
 
