@@ -24,21 +24,20 @@ bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
 void teardownExample(Context &ctx) {
   SDL_ReleaseWindowFromGPUDevice(ctx.device, ctx.window);
   SDL_DestroyWindow(ctx.window);
-  if (ctx.hudElemPipeline) {
-    SDL_ReleaseGPUGraphicsPipeline(ctx.device, ctx.hudElemPipeline);
-  }
   ctx.device.destroy();
   SDL_Quit();
 }
 
-void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
-                      SDL_GPUTextureFormat depth_stencil_format) {
+SDL_GPUGraphicsPipeline *
+initGridPipeline(const Device &device, SDL_Window *window,
+                 const candlewick::MeshLayout &layout,
+                 SDL_GPUTextureFormat depth_stencil_format) {
   using namespace candlewick;
-  Shader vertexShader{ctx.device, "Hud3dElement.vert", 1};
-  Shader fragmentShader{ctx.device, "Hud3dElement.frag", 1};
+  Shader vertexShader{device, "Hud3dElement.vert", 1};
+  Shader fragmentShader{device, "Hud3dElement.frag", 1};
 
   SDL_GPUColorTargetDescription colorTarget{
-      .format = SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window),
+      .format = SDL_GetGPUSwapchainTextureFormat(device, window),
       .blend_state = {
           .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
           .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
@@ -65,9 +64,11 @@ void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
                    .has_depth_stencil_target = true},
       .props = 0,
   };
-  ctx.hudElemPipeline = SDL_CreateGPUGraphicsPipeline(ctx.device, &createInfo);
+  SDL_GPUGraphicsPipeline *hudElemPipeline =
+      SDL_CreateGPUGraphicsPipeline(device, &createInfo);
   vertexShader.release();
   fragmentShader.release();
+  return hudElemPipeline;
 }
 
 SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
