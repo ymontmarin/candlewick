@@ -113,7 +113,7 @@ int main() {
     return 1;
   }
   SDL_SetGPUBufferName(device, buf_vertex, "vertex_buf");
-  mesh.bindVertexBuffer(0, buf_vertex, 0, true);
+  mesh.bindVertexBuffer(0, buf_vertex, 0, Mesh::Owned);
 
   SDL_GPUTransferBufferCreateInfo transfer_buffer_desc{
       .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,

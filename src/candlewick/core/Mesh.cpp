@@ -30,17 +30,17 @@ std::size_t Mesh::bindVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
 }
 
 Mesh &Mesh::bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
-                             bool takeOwnership) {
+                             BufferOwnership owned) {
   std::size_t idx = bindVertexBufferImpl(slot, buffer, offset);
-  vertexBufferOwnerships[idx] = takeOwnership ? Owned : Borrowed;
+  vertexBufferOwnerships[idx] = owned;
   return *this;
 }
 
 Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer, Uint32 offset,
-                           bool takeOwnership) {
+                           BufferOwnership owned) {
   indexBuffer = buffer;
   indexBufferOffset = offset;
-  indexBufferOwnership = takeOwnership ? Owned : Borrowed;
+  indexBufferOwnership = owned;
   return *this;
 }
 

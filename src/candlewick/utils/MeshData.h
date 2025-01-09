@@ -53,11 +53,13 @@ MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
 /// vertex buffer and index buffer (if required).
 Mesh convertToMesh(const Device &device, const MeshData &meshData);
 
+/// \p vertexOffset Vertex buffer offset (in bytes)
+/// \p indexOffset Index buffer offset (in bytes)
 Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                    Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
                    Uint64 indexOffset, bool takeOwnership = false);
 
-/// \brief Upload mesh contents to GPU device.
+/// \brief Upload the contents of a single, individual mesh to the GPU device.
 void uploadMeshToDevice(const Device &device, const Mesh &mesh,
                         const MeshData &meshData);
 } // namespace candlewick

@@ -10,6 +10,11 @@ namespace candlewick {
 /// \brief Convenience class for handling meshes: manages vertex and index
 /// buffers.
 struct Mesh {
+  enum BufferOwnership {
+    Owned,
+    Borrowed,
+  };
+
   explicit Mesh(MeshLayout layout);
 
   Mesh(NoInitT);
@@ -22,9 +27,9 @@ struct Mesh {
   const MeshLayout &layout() const { return _layout; }
 
   Mesh &bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
-                         bool takeOwnership = false);
+                         BufferOwnership ownership = Borrowed);
   Mesh &setIndexBuffer(SDL_GPUBuffer *buffer, Uint32 offset,
-                       bool takeOwnership = false);
+                       BufferOwnership ownership = Borrowed);
 
   bool isIndexed() const { return indexBuffer != NULL; }
   bool isCountSet() const { return count != ~Uint32{}; }
@@ -50,11 +55,8 @@ private:
 public:
   /// Either the vertex count or, for indexed meshes, the index count;
   Uint32 count = ~Uint32{};
-
-  enum BufferOwnership {
-    Owned,
-    Borrowed,
-  };
+  // Having the vertex count is always useful, e.g. for batched ops.
+  Uint32 vertexCount;
 
   std::vector<SDL_GPUBuffer *> vertexBuffers;
   std::vector<Uint32> vertexBufferOffsets;

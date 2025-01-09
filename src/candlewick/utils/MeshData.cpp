@@ -39,12 +39,15 @@ Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
                    Uint64 indexOffset, bool takeOwnership) {
   Mesh mesh{meshData.layout()};
 
-  mesh.bindVertexBuffer(0, vertexBuffer, vertexOffset, takeOwnership);
+  mesh.bindVertexBuffer(0, vertexBuffer, vertexOffset,
+                        takeOwnership ? Mesh::Owned : Mesh::Borrowed);
+  mesh.vertexCount = Uint32(meshData.numVertices());
   if (meshData.isIndexed()) {
-    mesh.setIndexBuffer(indexBuffer, indexOffset, takeOwnership);
+    mesh.setIndexBuffer(indexBuffer, indexOffset,
+                        takeOwnership ? Mesh::Owned : Mesh::Borrowed);
     mesh.count = Uint32(meshData.numIndices());
   } else {
-    mesh.count = Uint32(meshData.numVertices());
+    mesh.count = mesh.vertexCount;
   }
   return mesh;
 }
