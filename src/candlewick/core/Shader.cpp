@@ -49,8 +49,10 @@ Shader::Shader(SDL_GPUDevice *device, const char *filename,
 }
 
 void Shader::release() {
-  if (_device)
+  if (_device && _shader) {
     SDL_ReleaseGPUShader(_device, _shader);
+    _shader = NULL;
+  }
 }
 
 } // namespace candlewick
