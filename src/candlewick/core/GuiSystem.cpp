@@ -14,7 +14,7 @@ bool GuiSystem::init(const Renderer &renderer) {
   io.IniFilename = nullptr;
 
   ImGui::StyleColorsDark();
-  ImGui_ImplSDL3_InitForOther(renderer.window);
+  ImGui_ImplSDL3_InitForSDLGPU(renderer.window);
   ImGui_ImplSDLGPU3_InitInfo imguiInfo{
       .GpuDevice = renderer.device,
       .ColorTargetFormat =
