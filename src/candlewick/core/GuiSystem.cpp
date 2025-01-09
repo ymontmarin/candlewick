@@ -15,17 +15,17 @@ bool GuiSystem::init(const Renderer &renderer) {
 
   ImGui::StyleColorsDark();
   ImGui_ImplSDL3_InitForOther(renderer.window);
-  ImGui_ImplSDLGPU_InitInfo imguiInfo{
+  ImGui_ImplSDLGPU3_InitInfo imguiInfo{
       .GpuDevice = renderer.device,
       .ColorTargetFormat =
           SDL_GetGPUSwapchainTextureFormat(renderer.device, renderer.window),
       .MSAASamples = SDL_GPU_SAMPLECOUNT_1,
   };
-  return ImGui_ImplSDLGPU_Init(&imguiInfo);
+  return ImGui_ImplSDLGPU3_Init(&imguiInfo);
 }
 
 void GuiSystem::render(Renderer &renderer) {
-  ImGui_ImplSDLGPU_NewFrame();
+  ImGui_ImplSDLGPU3_NewFrame();
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
 
@@ -33,7 +33,7 @@ void GuiSystem::render(Renderer &renderer) {
 
   ImGui::Render();
   ImDrawData *draw_data = ImGui::GetDrawData();
-  Imgui_ImplSDLGPU_PrepareDrawData(draw_data, renderer.command_buffer);
+  Imgui_ImplSDLGPU3_PrepareDrawData(draw_data, renderer.command_buffer);
 
   SDL_GPUColorTargetInfo info{
       .texture = renderer.swapchain,
@@ -43,15 +43,15 @@ void GuiSystem::render(Renderer &renderer) {
   };
   auto render_pass =
       SDL_BeginGPURenderPass(renderer.command_buffer, &info, 1, NULL);
-  ImGui_ImplSDLGPU_RenderDrawData(draw_data, renderer.command_buffer,
-                                  render_pass);
+  ImGui_ImplSDLGPU3_RenderDrawData(draw_data, renderer.command_buffer,
+                                   render_pass);
 
   SDL_EndGPURenderPass(render_pass);
 }
 
 void GuiSystem::release() {
   ImGui_ImplSDL3_Shutdown();
-  ImGui_ImplSDLGPU_Shutdown();
+  ImGui_ImplSDLGPU3_Shutdown();
   ImGui::DestroyContext();
 }
 
