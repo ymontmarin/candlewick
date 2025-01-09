@@ -33,6 +33,34 @@ struct Renderer {
 
   bool hasDepthTexture() const { return depth_texture != nullptr; }
 
+  /// Render an individual mesh as part of a render pass, using a provided first
+  /// index or vertex offset.
+  /// \details This routine will bind the vertex and index buffer. Prefer one of
+  /// the other routines to e.g. batch draw calls that use the same buffer
+  /// bindings.
+  void renderMesh(SDL_GPURenderPass *pass, const Mesh &mesh,
+                  Uint32 firstIndexOrVertex = 0) {
+    const MeshLayout &layout = mesh.layout();
+    std::vector<SDL_GPUBufferBinding> vertex_bindings;
+    vertex_bindings.reserve(layout.numBuffers());
+    for (Uint32 j = 0; j < layout.numBuffers(); j++) {
+      vertex_bindings.push_back(mesh.getVertexBinding(j));
+    }
+    SDL_GPUBufferBinding index_binding = mesh.getIndexBinding();
+
+    SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(),
+                             layout.numBuffers());
+    SDL_BindGPUIndexBuffer(pass, &index_binding,
+                           SDL_GPU_INDEXELEMENTSIZE_32BIT);
+
+    if (mesh.isIndexed()) {
+      SDL_DrawGPUIndexedPrimitives(pass, mesh.count, 1, firstIndexOrVertex, 0,
+                                   0);
+    } else {
+      SDL_DrawGPUPrimitives(pass, mesh.count, 1, firstIndexOrVertex, 0);
+    }
+  }
+
   /// Render a collection of \c Mesh collected in a \c Shape object, which
   /// satisfies the necessary invariants to allow for batching. We only have to
   /// bind the vertex and index buffers once, here.
