@@ -15,6 +15,7 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
 
   int width, height;
   SDL_GetWindowSize(window, &width, &height);
+  this->depth_format = depth_tex_format;
   SDL_GPUTextureCreateInfo texInfo{
       .type = SDL_GPU_TEXTURETYPE_2D,
       .format = depth_tex_format,

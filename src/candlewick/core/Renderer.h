@@ -14,6 +14,7 @@ struct Renderer {
   SDL_Window *window = nullptr;
   SDL_GPUTexture *swapchain;
   SDL_GPUTexture *depth_texture = nullptr;
+  SDL_GPUTextureFormat depth_format;
   SDL_GPUCommandBuffer *command_buffer;
 
   Renderer(Device &&device, SDL_Window *window);
