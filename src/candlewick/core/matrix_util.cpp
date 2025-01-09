@@ -43,7 +43,7 @@ Eigen::Matrix4f lookAt(const Float3 &eye, const Float3 &center,
   return mat;
 }
 
-Eigen::Matrix4f perspectiveFromFov(float fovY, float aspectRatio, float nearZ,
+Eigen::Matrix4f perspectiveFromFov(Radf fovY, float aspectRatio, float nearZ,
                                    float farZ) {
   float f = 1.0f / std::tan(fovY * 0.5f);
 

@@ -27,17 +27,19 @@ inline Float4 operator""_rgbaf(unsigned long long hex) {
 Eigen::Matrix4f lookAt(const Float3 &eye, const Float3 &center,
                        const Float3 &up = Float3::UnitZ());
 
-/// Compute orthographic projection matrix, from clipping plane parameters
-/// (left, right, top, bottom).
+/// \brief Compute orthographic projection matrix, from clipping plane
+/// parameters (left, right, top, bottom).
 Eigen::Matrix4f perspectiveMatrix(float left, float right, float top,
                                   float bottom, float near, float far);
 
-Eigen::Matrix4f
-perspectiveFromFov(float fovY,        // Vertical field of view in radians
-                   float aspectRatio, // Width / Height
-                   float nearZ,       // Near clipping plane
-                   float farZ         // Far clipping plane
-);
+/// \brief Get perspective projection matrix given fov, aspect ratio, and
+/// clipping planes.
+/// \p fovY Vertical field of view in radians
+/// \p aspectRatio Width / Height
+/// \p nearZ Near clipping plane
+/// \p farZ Far clipping plane
+Eigen::Matrix4f perspectiveFromFov(Radf fovY, float aspectRatio, float nearZ,
+                                   float farZ);
 
 Eigen::Matrix4f orthographicMatrix(const Float2 &size, float, float far);
 
