@@ -167,7 +167,7 @@ void drawGrid(SDL_GPUCommandBuffer *command_buffer,
   SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.count, 1, 0, 0, 0);
 }
 
-bool GuiInit(const Renderer &ctx) {
+bool GuiInit(const Renderer &renderer) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
 
@@ -177,11 +177,11 @@ bool GuiInit(const Renderer &ctx) {
   io.IniFilename = nullptr;
 
   ImGui::StyleColorsDark();
-  ImGui_ImplSDL3_InitForOther(ctx.window);
+  ImGui_ImplSDL3_InitForOther(renderer.window);
   ImGui_ImplSDLGPU_InitInfo imguiInfo{
-      .GpuDevice = ctx.device,
+      .GpuDevice = renderer.device,
       .ColorTargetFormat =
-          SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window),
+          SDL_GetGPUSwapchainTextureFormat(renderer.device, renderer.window),
       .MSAASamples = SDL_GPU_SAMPLECOUNT_1,
   };
   return ImGui_ImplSDLGPU_Init(&imguiInfo);
@@ -201,7 +201,9 @@ Renderer createRenderer(Uint32 width, Uint32 height,
 }
 
 int main(int argc, char **argv) {
-  SDL_GPUGraphicsPipeline *hudElemPipeline;
+  SDL_GPUGraphicsPipeline *debugLinePipeline;
+  SDL_GPUGraphicsPipeline *meshPipeline;
+
   CLI::App app{"Ur5 example"};
   bool performRecording{false};
   argv = app.ensure_utf8(argv);
@@ -214,7 +216,6 @@ int main(int argc, char **argv) {
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
   Renderer renderer = createRenderer(wWidth, wHeight, depth_stencil_format);
   Device &device = renderer.device;
-  SDL_Window *window = renderer.window;
 
   if (!GuiInit(renderer)) {
     return 1;
@@ -284,9 +285,8 @@ int main(int argc, char **argv) {
 
   /** CREATE PIPELINES **/
   // Robot mesh pipeline
-  SDL_GPUGraphicsPipeline *mesh_pipeline = nullptr;
   const auto swapchain_format =
-      SDL_GetGPUSwapchainTextureFormat(device, window);
+      SDL_GetGPUSwapchainTextureFormat(device, renderer.window);
   {
     Shader vertexShader{device, "PbrBasic.vert", 1};
     Shader fragmentShader{device, "PbrBasic.frag", 2};
@@ -311,8 +311,8 @@ int main(int argc, char **argv) {
         .props = 0,
     };
 
-    mesh_pipeline = SDL_CreateGPUGraphicsPipeline(device, &mesh_pipeline_desc);
-    if (mesh_pipeline == nullptr) {
+    meshPipeline = SDL_CreateGPUGraphicsPipeline(device, &mesh_pipeline_desc);
+    if (meshPipeline == nullptr) {
       SDL_Log("Failed to create pipeline: %s", SDL_GetError());
       return 1;
     }
@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
     fragmentShader.release();
   }
 
-  hudElemPipeline =
+  debugLinePipeline =
       initGridPipeline(renderer, gridMesh.layout(), depth_stencil_format);
 
   // MAIN APPLICATION LOOP
@@ -386,13 +386,11 @@ int main(int argc, char **argv) {
 
       const light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
 
-      SDL_BindGPUGraphicsPipeline(render_pass, mesh_pipeline);
+      SDL_BindGPUGraphicsPipeline(render_pass, meshPipeline);
 
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
         const pin::SE3 &placement = geom_data.oMg[i];
-        const Shape &shape = robotShapes[i];
-
         Matrix4f modelMat = placement.toHomogeneousMatrix().cast<float>();
         modelView = viewMat * modelMat.matrix();
         projViewMat = projectionMat * modelView;
@@ -408,21 +406,7 @@ int main(int argc, char **argv) {
                                      sizeof(cameraUniform));
         SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
                                        sizeof(lightUbo));
-
-        for (size_t j = 0; j < shape.meshes().size(); j++) {
-          const auto material = shape.materials()[j].toUniform();
-          SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
-                                         sizeof(PbrMaterialUniform));
-          SDL_GPUBufferBinding vertex_binding =
-              shape.meshes()[j].getVertexBinding(0);
-          SDL_GPUBufferBinding index_binding =
-              shape.meshes()[j].getIndexBinding();
-          SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
-          SDL_BindGPUIndexBuffer(render_pass, &index_binding,
-                                 SDL_GPU_INDEXELEMENTSIZE_32BIT);
-          SDL_DrawGPUIndexedPrimitives(render_pass, shape.meshes()[j].count, 1,
-                                       0, 0, 0);
-        }
+        renderer.renderShape(render_pass, robotShapes[i]);
       }
 
       // RENDER PLANE
@@ -457,7 +441,7 @@ int main(int argc, char **argv) {
 
       // render grid
       if (renderGrid) {
-        SDL_BindGPUGraphicsPipeline(render_pass, hudElemPipeline);
+        SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
         drawGrid(command_buffer, render_pass, projectionMat * viewMat);
       }
 
@@ -480,12 +464,12 @@ int main(int argc, char **argv) {
   for (auto &shape : robotShapes) {
     shape.release();
   }
-  SDL_ReleaseGPUGraphicsPipeline(device, mesh_pipeline);
-  SDL_ReleaseGPUGraphicsPipeline(device, hudElemPipeline);
+  SDL_ReleaseGPUGraphicsPipeline(device, meshPipeline);
+  SDL_ReleaseGPUGraphicsPipeline(device, debugLinePipeline);
 
   GuiTeardown();
   renderer.destroy();
-  SDL_DestroyWindow(window);
+  SDL_DestroyWindow(renderer.window);
   SDL_Quit();
   return 0;
 }
