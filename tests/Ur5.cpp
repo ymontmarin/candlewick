@@ -150,22 +150,6 @@ void eventLoop(const Renderer &renderer) {
   }
 }
 
-void drawGrid(SDL_GPUCommandBuffer *command_buffer,
-              SDL_GPURenderPass *render_pass, Matrix4f projViewMat) {
-  GpuMat4 mvp{projViewMat};
-  SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp, sizeof(mvp));
-  GpuVec4 gridColor = 0xE0A236ff_rgbaf;
-  SDL_PushGPUFragmentUniformData(command_buffer, 0, &gridColor,
-                                 sizeof(gridColor));
-  auto vertex_binding = gridMesh.getVertexBinding(0);
-  auto index_binding = gridMesh.getIndexBinding();
-
-  SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
-  SDL_BindGPUIndexBuffer(render_pass, &index_binding,
-                         SDL_GPU_INDEXELEMENTSIZE_32BIT);
-  SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.count, 1, 0, 0, 0);
-}
-
 Renderer createRenderer(Uint32 width, Uint32 height,
                         SDL_GPUTextureFormat depth_stencil_format) {
   Device dev{SDL_GPU_SHADERFORMAT_SPIRV, true};
@@ -385,8 +369,8 @@ int main(int argc, char **argv) {
       // RENDER PLANE
       if (renderPlane) {
         Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-        modelView = viewMat * plane_transform.matrix();
-        projViewMat = projectionMat * modelView;
+        modelView.noalias() = viewMat * plane_transform.matrix();
+        projViewMat.noalias() = projectionMat * modelView;
         const Matrix3f normalMatrix =
             plane_transform.linear().inverse().transpose();
         TransformUniformData cameraUniform{plane_transform.matrix(),
@@ -398,24 +382,18 @@ int main(int argc, char **argv) {
                                        sizeof(lightUbo));
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
                                        sizeof(PbrMaterialUniform));
-
-        SDL_GPUBufferBinding vertex_binding = plane.getVertexBinding(0);
-        SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
-
-        if (plane.isIndexed()) {
-          SDL_GPUBufferBinding index_binding = plane.getIndexBinding();
-          SDL_BindGPUIndexBuffer(render_pass, &index_binding,
-                                 SDL_GPU_INDEXELEMENTSIZE_32BIT);
-          SDL_DrawGPUIndexedPrimitives(render_pass, plane.count, 1, 0, 0, 0);
-        } else {
-          SDL_DrawGPUPrimitives(render_pass, plane.count, 1, 0, 0);
-        }
+        renderer.renderMesh(render_pass, plane);
       }
 
       // render grid
       if (renderGrid) {
         SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
-        drawGrid(command_buffer, render_pass, projectionMat * viewMat);
+        GpuMat4 mvp{projViewMat};
+        GpuVec4 gridColor = 0xE0A236ff_rgbaf;
+        SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp, sizeof(mvp));
+        SDL_PushGPUFragmentUniformData(command_buffer, 0, &gridColor,
+                                       sizeof(gridColor));
+        renderer.renderMesh(render_pass, gridMesh);
       }
 
       SDL_EndGPURenderPass(render_pass);
