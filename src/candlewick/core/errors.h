@@ -16,4 +16,10 @@ public:
   RAIIException(const char *upstreamMsg)
       : std::runtime_error(error_string(upstreamMsg)) {}
 };
+
+class InvalidArgument : public std::invalid_argument {
+public:
+  InvalidArgument(const std::string &msg) : std::invalid_argument(msg) {}
+};
+
 } // namespace candlewick
