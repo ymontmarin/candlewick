@@ -18,6 +18,7 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
   SDL_GPUTextureCreateInfo texInfo{
       .type = SDL_GPU_TEXTURETYPE_2D,
       .format = depth_tex_format,
+      .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
       .width = Uint32(width),
       .height = Uint32(height),
       .layer_count_or_depth = 1,
