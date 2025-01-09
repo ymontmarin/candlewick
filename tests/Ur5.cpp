@@ -18,7 +18,6 @@
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
-#include <imgui_impl_sdlgpu3.h>
 
 #include <robot_descriptions_cpp/robot_load.hpp>
 
@@ -167,32 +166,6 @@ void drawGrid(SDL_GPUCommandBuffer *command_buffer,
   SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.count, 1, 0, 0, 0);
 }
 
-bool GuiInit(const Renderer &renderer) {
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-
-  ImGuiIO &io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-  io.IniFilename = nullptr;
-
-  ImGui::StyleColorsDark();
-  ImGui_ImplSDL3_InitForOther(renderer.window);
-  ImGui_ImplSDLGPU_InitInfo imguiInfo{
-      .GpuDevice = renderer.device,
-      .ColorTargetFormat =
-          SDL_GetGPUSwapchainTextureFormat(renderer.device, renderer.window),
-      .MSAASamples = SDL_GPU_SAMPLECOUNT_1,
-  };
-  return ImGui_ImplSDLGPU_Init(&imguiInfo);
-}
-
-void GuiTeardown() {
-  ImGui_ImplSDL3_Shutdown();
-  ImGui_ImplSDLGPU_Shutdown();
-  ImGui::DestroyContext();
-}
-
 Renderer createRenderer(Uint32 width, Uint32 height,
                         SDL_GPUTextureFormat depth_stencil_format) {
   Device dev{SDL_GPU_SHADERFORMAT_SPIRV, true};
@@ -217,10 +190,6 @@ int main(int argc, char **argv) {
   Renderer renderer = createRenderer(wWidth, wHeight, depth_stencil_format);
   Device &device = renderer.device;
 
-  if (!GuiInit(renderer)) {
-    return 1;
-  }
-
   GuiSystem guiSys{[](Renderer &) {
     static bool demo_window_open = true;
     const float minFov = 15.f;
@@ -241,6 +210,10 @@ int main(int argc, char **argv) {
     ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
     ImGui::ShowDemoWindow(&demo_window_open);
   }};
+
+  if (!guiSys.init(renderer)) {
+    return 1;
+  }
 
   pin::Model model;
   pin::GeometryModel geom_model;
@@ -467,7 +440,7 @@ int main(int argc, char **argv) {
   SDL_ReleaseGPUGraphicsPipeline(device, meshPipeline);
   SDL_ReleaseGPUGraphicsPipeline(device, debugLinePipeline);
 
-  GuiTeardown();
+  guiSys.release();
   renderer.destroy();
   SDL_DestroyWindow(renderer.window);
   SDL_Quit();

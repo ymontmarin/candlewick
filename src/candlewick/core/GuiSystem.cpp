@@ -4,29 +4,55 @@
 
 namespace candlewick {
 
-void GuiSystem::render(Renderer &render) {
+bool GuiSystem::init(const Renderer &renderer) {
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+
+  ImGuiIO &io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+  io.IniFilename = nullptr;
+
+  ImGui::StyleColorsDark();
+  ImGui_ImplSDL3_InitForOther(renderer.window);
+  ImGui_ImplSDLGPU_InitInfo imguiInfo{
+      .GpuDevice = renderer.device,
+      .ColorTargetFormat =
+          SDL_GetGPUSwapchainTextureFormat(renderer.device, renderer.window),
+      .MSAASamples = SDL_GPU_SAMPLECOUNT_1,
+  };
+  return ImGui_ImplSDLGPU_Init(&imguiInfo);
+}
+
+void GuiSystem::render(Renderer &renderer) {
   ImGui_ImplSDLGPU_NewFrame();
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
 
-  this->callback_(render);
+  this->callback_(renderer);
 
   ImGui::Render();
   ImDrawData *draw_data = ImGui::GetDrawData();
-  Imgui_ImplSDLGPU_PrepareDrawData(draw_data, render.command_buffer);
+  Imgui_ImplSDLGPU_PrepareDrawData(draw_data, renderer.command_buffer);
 
   SDL_GPUColorTargetInfo info{
-      .texture = render.swapchain,
+      .texture = renderer.swapchain,
       .clear_color{},
       .load_op = SDL_GPU_LOADOP_LOAD,
       .store_op = SDL_GPU_STOREOP_STORE,
   };
   auto render_pass =
-      SDL_BeginGPURenderPass(render.command_buffer, &info, 1, NULL);
-  ImGui_ImplSDLGPU_RenderDrawData(draw_data, render.command_buffer,
+      SDL_BeginGPURenderPass(renderer.command_buffer, &info, 1, NULL);
+  ImGui_ImplSDLGPU_RenderDrawData(draw_data, renderer.command_buffer,
                                   render_pass);
 
   SDL_EndGPURenderPass(render_pass);
+}
+
+void GuiSystem::release() {
+  ImGui_ImplSDL3_Shutdown();
+  ImGui_ImplSDLGPU_Shutdown();
+  ImGui::DestroyContext();
 }
 
 } // namespace candlewick

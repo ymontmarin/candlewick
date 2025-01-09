@@ -8,7 +8,9 @@ public:
 
   GuiSystem(GuiBehavior behav) : callback_(behav) {}
 
-  void render(Renderer &render);
+  bool init(const Renderer &renderer);
+  void render(Renderer &renderer);
+  void release();
 
   GuiBehavior callback_;
 };
