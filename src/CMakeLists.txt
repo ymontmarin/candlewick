@@ -12,11 +12,11 @@ add_library(
   candlewick/core/Mesh.cpp
   candlewick/core/Renderer.cpp
   candlewick/core/Shader.cpp
+  candlewick/core/Shape.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/MaterialData.cpp
   candlewick/utils/MeshData.cpp
   candlewick/utils/MeshDataView.cpp
-  candlewick/utils/MeshGroup.cpp
   candlewick/utils/MeshTransforms.cpp
   candlewick/utils/PixelFormatConversion.cpp
   candlewick/utils/VideoRecorder.cpp

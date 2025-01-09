@@ -9,7 +9,6 @@
 #include "candlewick/core/MaterialUniform.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
-#include "candlewick/utils/MeshGroup.h"
 #include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"
 #include "candlewick/multibody/LoadPinocchioGeometry.h"
@@ -256,18 +255,14 @@ int main(int argc, char **argv) {
     multibody::loadGeometryObject(gobj, meshDatas);
     meshDataIdx.push_back(meshDatas.size());
   }
-  std::vector<ShapeData> robotShapes;
-  robotShapes.reserve(geom_model.ngeoms);
+
+  std::vector<Shape> robotShapes;
   for (size_t i = 0; i < geom_model.ngeoms; i++) {
     std::span<MeshData> slice{meshDatas.begin() + meshDataIdx[i],
                               meshDatas.begin() + meshDataIdx[i + 1]};
     /// Create group of meshes, upload to device
-    MeshGroup mg = createMeshGroup(device, slice, true);
-    std::vector<PbrMaterialData> materials;
-    for (auto &md : slice) {
-      materials.push_back(md.material);
-    }
-    robotShapes.push_back({std::move(mg), std::move(materials)});
+    auto shape = Shape::createShapeFromDatas(device, slice, true);
+    robotShapes.push_back(std::move(shape));
   }
 
   SDL_Log("Loaded %zu MeshData objects.", meshDatas.size());
@@ -304,8 +299,7 @@ int main(int argc, char **argv) {
     SDL_GPUGraphicsPipelineCreateInfo mesh_pipeline_desc{
         .vertex_shader = vertexShader,
         .fragment_shader = fragmentShader,
-        .vertex_input_state =
-            robotShapes[0].meshes[0].layout().toVertexInputState(),
+        .vertex_input_state = robotShapes[0].layout().toVertexInputState(),
         .primitive_type = meshDatas[0].primitiveType,
         .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
                              .enable_depth_test = true,
@@ -397,7 +391,7 @@ int main(int argc, char **argv) {
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
         const pin::SE3 &placement = geom_data.oMg[i];
-        const ShapeData &shape = robotShapes[i];
+        const Shape &shape = robotShapes[i];
 
         Matrix4f modelMat = placement.toHomogeneousMatrix().cast<float>();
         modelView = viewMat * modelMat.matrix();
@@ -415,19 +409,19 @@ int main(int argc, char **argv) {
         SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
                                        sizeof(lightUbo));
 
-        for (size_t j = 0; j < shape.meshes.size(); j++) {
-          const auto material = shape.materials[j].toUniform();
+        for (size_t j = 0; j < shape.meshes().size(); j++) {
+          const auto material = shape.materials()[j].toUniform();
           SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
                                          sizeof(PbrMaterialUniform));
           SDL_GPUBufferBinding vertex_binding =
-              shape.meshes[j].getVertexBinding(0);
+              shape.meshes()[j].getVertexBinding(0);
           SDL_GPUBufferBinding index_binding =
-              shape.meshes[j].getIndexBinding();
+              shape.meshes()[j].getIndexBinding();
           SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
           SDL_BindGPUIndexBuffer(render_pass, &index_binding,
                                  SDL_GPU_INDEXELEMENTSIZE_32BIT);
-          SDL_DrawGPUIndexedPrimitives(render_pass, shape.meshes[j].count, 1, 0,
-                                       0, 0);
+          SDL_DrawGPUIndexedPrimitives(render_pass, shape.meshes()[j].count, 1,
+                                       0, 0, 0);
         }
       }
 
@@ -484,7 +478,7 @@ int main(int argc, char **argv) {
   }
 
   for (auto &shape : robotShapes) {
-    releaseMeshGroup(device, shape.meshes);
+    shape.release();
   }
   SDL_ReleaseGPUGraphicsPipeline(device, mesh_pipeline);
   SDL_ReleaseGPUGraphicsPipeline(device, hudElemPipeline);
