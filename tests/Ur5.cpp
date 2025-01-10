@@ -57,11 +57,10 @@ static Matrix4f projectionMat;
 static Radf currentFov = 55.0_radf;
 static bool quitRequested = false;
 
-static GpuVec4 gridColor = 0xE0A236ff_rgbaf;
-
 static float pixelDensity;
 static float displayScale;
 
+static GpuVec4 gridColor = 0xE0A236ff_rgbaf;
 static Mesh gridMesh{NoInit};
 
 struct alignas(16) TransformUniformData {
@@ -176,7 +175,17 @@ int main(int argc, char **argv) {
       createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D24_UNORM);
   Device &device = renderer.device;
 
-  GuiSystem guiSys{[](Renderer &r) {
+  // Load plane
+  MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
+  Mesh plane = convertToMesh(device, plane_data);
+  uploadMeshToDevice(device, plane, plane_data);
+
+  // Load grid
+  MeshData grid_data = loadGrid(10);
+  gridMesh = convertToMesh(device, grid_data);
+  uploadMeshToDevice(device, gridMesh, grid_data);
+
+  GuiSystem guiSys{[&plane_data](Renderer &r) {
     static bool demo_window_open = true;
     const float minFov = 15.f;
     const float maxFov = 90.f;
@@ -199,6 +208,7 @@ int main(int argc, char **argv) {
     ImGui::Separator();
     ImGui::ColorEdit4("grid color", gridColor.data(),
                       ImGuiColorEditFlags_AlphaPreview);
+    ImGui::ColorEdit4("plane color", plane_data.material.baseColor.data());
     ImGui::End();
     ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
     ImGui::ShowDemoWindow(&demo_window_open);
@@ -208,6 +218,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  // Load robot
   pin::Model model;
   pin::GeometryModel geom_model;
   robot_descriptions::loadModelsFromToml("ur.toml", "ur5_gripper", model,
@@ -229,16 +240,6 @@ int main(int argc, char **argv) {
     }
   }
   SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
-
-  // Load plane
-  MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
-  Mesh plane = convertToMesh(device, plane_data);
-  uploadMeshToDevice(device, plane, plane_data);
-
-  // Load grid
-  MeshData grid_data = loadGrid(10);
-  gridMesh = convertToMesh(device, grid_data);
-  uploadMeshToDevice(device, gridMesh, grid_data);
 
   /** CREATE PIPELINES **/
   // Robot mesh pipeline
