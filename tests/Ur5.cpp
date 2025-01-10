@@ -176,12 +176,15 @@ int main(int argc, char **argv) {
       createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D24_UNORM);
   Device &device = renderer.device;
 
-  GuiSystem guiSys{[](Renderer &) {
+  GuiSystem guiSys{[](Renderer &r) {
     static bool demo_window_open = true;
     const float minFov = 15.f;
     const float maxFov = 90.f;
 
-    ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Renderer info & controls", nullptr,
+                 ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("Device driver: %s", r.device.driverName());
+    ImGui::SeparatorText("Camera");
     Degf newFov{currentFov};
     ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
                      ImGuiSliderFlags_AlwaysClamp);
@@ -189,7 +192,8 @@ int main(int argc, char **argv) {
     projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
     ImGui::Checkbox("Render plane", &renderPlane);
     ImGui::Checkbox("Render grid", &renderGrid);
-    ImGui::SeparatorText("light");
+
+    ImGui::SeparatorText("Lights");
     ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
     ImGui::ColorEdit3("color", myLight.color.data());
     ImGui::Separator();
