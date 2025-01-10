@@ -27,6 +27,7 @@ private:
         meshes_(std::move(m)), materials_(std::move(mat)), layout_(l) {}
 
 public:
+  enum { TRANSFORM_SLOT = 0 };
   enum { MATERIAL_SLOT = 0 };
 
   Shape(const Shape &) = delete;

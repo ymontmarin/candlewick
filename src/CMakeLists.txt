@@ -57,6 +57,7 @@ if(BUILD_PINOCCHIO_VISUALIZER)
     candlewick/multibody/InstantiatePinViz.cpp
     candlewick/multibody/LoadCoalPrimitives.cpp
     candlewick/multibody/LoadPinocchioGeometry.cpp
+    candlewick/multibody/RobotScene.cpp
     candlewick/multibody/Visualizer.cpp
   )
   target_link_libraries(
