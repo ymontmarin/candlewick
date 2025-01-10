@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Core>
+#include <concepts>
 
 namespace candlewick {
 
@@ -12,7 +13,9 @@ using Vec4u8 = Eigen::Matrix<uint8_t, 4, 1>;
 /** GPU typedefs and adapters **/
 
 using GpuVec2 = Eigen::Matrix<float, 2, 1, Eigen::DontAlign>;
-using GpuVec3 = Eigen::Matrix<float, 3, 1, Eigen::DontAlign>;
+struct GpuVec3 : public Eigen::Matrix<float, 3, 1, Eigen::DontAlign> {
+  using Matrix::Matrix;
+};
 using GpuVec4 = Eigen::Matrix<float, 4, 1, Eigen::DontAlign>;
 // adapter type instead of typedef, to fit GLSL layout
 struct GpuMat3 {
@@ -30,10 +33,10 @@ using GpuMat4 = Eigen::Matrix<float, 4, 4, Eigen::ColMajor | Eigen::DontAlign>;
 float deg2rad(float);
 float rad2deg(float);
 
-template <typename T> struct Rad;
-template <typename T> struct Deg;
+template <std::floating_point T> struct Rad;
+template <std::floating_point T> struct Deg;
 
-template <typename T> struct Rad {
+template <std::floating_point T> struct Rad {
   constexpr Rad(T value) : _value(value) {}
   explicit constexpr Rad(Deg<T> value) : _value(deg2rad(value)) {}
   constexpr operator T &() { return _value; }
@@ -49,9 +52,9 @@ template <typename T> struct Rad {
 private:
   T _value;
 };
-template <typename T> Rad(T) -> Rad<T>;
+template <std::floating_point T> Rad(T) -> Rad<T>;
 
-template <typename T> struct Deg {
+template <std::floating_point T> struct Deg {
   constexpr Deg(T value) : _value(value) {}
   explicit constexpr Deg(Rad<T> value) : _value(rad2deg(value)) {}
   constexpr operator T &() { return _value; }
@@ -67,14 +70,14 @@ template <typename T> struct Deg {
 private:
   T _value;
 };
-template <typename T> Deg(T) -> Deg<T>;
+template <std::floating_point T> Deg(T) -> Deg<T>;
 
-template <typename T>
+template <std::floating_point T>
 constexpr Rad<T> operator*(const Rad<T> &left, const T &right) {
   return Rad<T>{T(left) * right};
 }
 
-template <typename T>
+template <std::floating_point T>
 constexpr Rad<T> operator*(const T &left, const Rad<T> &right) {
   return Rad<T>{left * T(right)};
 }
