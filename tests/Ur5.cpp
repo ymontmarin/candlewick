@@ -57,6 +57,8 @@ static Matrix4f projectionMat;
 static Radf currentFov = 55.0_radf;
 static bool quitRequested = false;
 
+static GpuVec4 gridColor = 0xE0A236ff_rgbaf;
+
 static float pixelDensity;
 static float displayScale;
 
@@ -170,8 +172,8 @@ int main(int argc, char **argv) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return 1;
 
-  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
-  Renderer renderer = createRenderer(wWidth, wHeight, depth_stencil_format);
+  Renderer renderer =
+      createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D24_UNORM);
   Device &device = renderer.device;
 
   GuiSystem guiSys{[](Renderer &) {
@@ -190,6 +192,9 @@ int main(int argc, char **argv) {
     ImGui::SeparatorText("light");
     ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
     ImGui::ColorEdit3("color", myLight.color.data());
+    ImGui::Separator();
+    ImGui::ColorEdit4("grid color", gridColor.data(),
+                      ImGuiColorEditFlags_AlphaPreview);
     ImGui::End();
     ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
     ImGui::ShowDemoWindow(&demo_window_open);
@@ -263,7 +268,7 @@ int main(int argc, char **argv) {
                              .enable_depth_write = true},
         .target_info{.color_target_descriptions = &colorTarget,
                      .num_color_targets = 1,
-                     .depth_stencil_format = depth_stencil_format,
+                     .depth_stencil_format = renderer.depth_format,
                      .has_depth_stencil_target = true},
         .props = 0,
     };
@@ -279,7 +284,7 @@ int main(int argc, char **argv) {
   }
 
   debugLinePipeline =
-      initGridPipeline(renderer, gridMesh.layout(), depth_stencil_format);
+      initGridPipeline(renderer, gridMesh.layout(), renderer.depth_format);
 
   // MAIN APPLICATION LOOP
 
@@ -389,7 +394,6 @@ int main(int argc, char **argv) {
       if (renderGrid) {
         SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
         GpuMat4 mvp{projViewMat};
-        GpuVec4 gridColor = 0xE0A236ff_rgbaf;
         SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp, sizeof(mvp));
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &gridColor,
                                        sizeof(gridColor));
