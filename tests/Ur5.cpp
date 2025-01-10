@@ -215,29 +215,20 @@ int main(int argc, char **argv) {
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
-  std::vector<MeshData> meshDatas;
-  std::vector<size_t> meshDataIdx = {0UL};
-  for (size_t i = 0; i < geom_model.ngeoms; i++) {
-    const auto &gobj = geom_model.geometryObjects[i];
-    multibody::loadGeometryObject(gobj, meshDatas);
-    meshDataIdx.push_back(meshDatas.size());
-  }
-
   std::vector<Shape> robotShapes;
   for (size_t i = 0; i < geom_model.ngeoms; i++) {
-    std::span<MeshData> slice{meshDatas.begin() + meshDataIdx[i],
-                              meshDatas.begin() + meshDataIdx[i + 1]};
+    const auto &gobj = geom_model.geometryObjects[i];
+    auto meshDatas = multibody::loadGeometryObject(gobj);
     /// Create group of meshes, upload to device
-    auto shape = Shape::createShapeFromDatas(device, slice, true);
+    auto shape = Shape::createShapeFromDatas(device, meshDatas, true);
     robotShapes.push_back(std::move(shape));
+    SDL_Log("Loaded %zu MeshData objects. Meshes:", meshDatas.size());
+    for (size_t i = 0; i < meshDatas.size(); i++) {
+      SDL_Log("   [%zu] %zu vertices, %zu indices", i,
+              meshDatas[i].numVertices(), meshDatas[i].numIndices());
+    }
   }
-
-  SDL_Log("Loaded %zu MeshData objects.", meshDatas.size());
-  for (size_t i = 0; i < meshDatas.size(); i++) {
-    SDL_Log("Mesh %zu: %zu vertices, %zu indices", i,
-            meshDatas[i].numVertices(), meshDatas[i].numIndices());
-  }
-  SDL_Log("Created %zu robot mesh groups.", robotShapes.size());
+  SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
 
   // Load plane
   MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
@@ -266,7 +257,7 @@ int main(int argc, char **argv) {
         .vertex_shader = vertexShader,
         .fragment_shader = fragmentShader,
         .vertex_input_state = robotShapes[0].layout().toVertexInputState(),
-        .primitive_type = meshDatas[0].primitiveType,
+        .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
         .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
                              .enable_depth_test = true,
                              .enable_depth_write = true},
