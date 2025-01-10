@@ -30,8 +30,11 @@ private:
 };
 using GpuMat4 = Eigen::Matrix<float, 4, 4, Eigen::ColMajor | Eigen::DontAlign>;
 
-float deg2rad(float);
-float rad2deg(float);
+/* ANGLES */
+
+inline double deg2rad(double t) { return t * M_PI / 180.0; }
+inline float deg2rad(float t) { return t * M_PIf / 180.0f; }
+inline float rad2deg(float t) { return t * 180.0f / M_PIf; }
 
 template <std::floating_point T> struct Rad;
 template <std::floating_point T> struct Deg;
@@ -80,6 +83,14 @@ constexpr Rad<T> operator*(const Rad<T> &left, const T &right) {
 template <std::floating_point T>
 constexpr Rad<T> operator*(const T &left, const Rad<T> &right) {
   return Rad<T>{left * T(right)};
+}
+
+inline auto operator""_radf(long double t) {
+  return Rad<float>(deg2rad(static_cast<float>(t)));
+}
+
+inline auto operator""_rad(long double t) {
+  return Rad<double>(deg2rad(static_cast<double>(t)));
 }
 
 using Radf = Rad<float>;
