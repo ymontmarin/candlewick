@@ -19,5 +19,6 @@ create_test(ColoredCube.cpp Common)
 create_test(MeshNormalsRgb.cpp Common)
 create_test(LitMesh.cpp Common)
 create_test(Ur5.cpp Common candlewick_multibody CLI11::CLI11)
+create_test(Ur5WithSystems.cpp Common candlewick_multibody CLI11::CLI11)
 
 create_test(TestVertexBlob.cpp candlewick_core GTest::gtest_main)
