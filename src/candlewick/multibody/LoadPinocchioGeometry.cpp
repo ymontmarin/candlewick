@@ -43,14 +43,4 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
   }
 }
 
-void loadGeometryModel(const pin::GeometryModel &model,
-                       std::vector<MeshData> &meshData) {
-  const size_t ngeoms = model.ngeoms;
-
-  for (size_t i = 0; i < ngeoms; i++) {
-    const pin::GeometryObject &gobj = model.geometryObjects[i];
-    loadGeometryObject(gobj, meshData);
-  }
-}
-
 } // namespace candlewick::multibody
