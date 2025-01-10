@@ -10,10 +10,10 @@
 
 namespace candlewick {
 class RAIIException : public std::runtime_error {
-  static std::string error_string(const char *upstreamMsg);
+  static std::string error_string(std::string_view upstreamMsg);
 
 public:
-  RAIIException(const char *upstreamMsg)
+  RAIIException(std::string_view upstreamMsg)
       : std::runtime_error(error_string(upstreamMsg)) {}
 };
 

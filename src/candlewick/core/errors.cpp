@@ -1,10 +1,8 @@
 #include "errors.h"
-#include <sstream>
+#include <format>
 
 namespace candlewick {
-std::string RAIIException::error_string(const char *upstreamMsg) {
-  std::ostringstream ss;
-  ss << "RAIIException: SDL error \'" << upstreamMsg << "\'";
-  return ss.str();
+std::string RAIIException::error_string(std::string_view upstreamMsg) {
+  return std::format("RAIIException: SDL error \'%s\'", upstreamMsg);
 }
 } // namespace candlewick
