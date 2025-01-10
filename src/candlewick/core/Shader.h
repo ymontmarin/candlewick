@@ -6,6 +6,7 @@ namespace candlewick {
 
 SDL_GPUShaderStage detect_shader_stage(const char *filename);
 
+/// \brief RAII wrapper around \c SDL_GPUShader, with loading utilities.
 struct Shader {
   Shader(SDL_GPUDevice *device, const char *filename,
          Uint32 uniformBufferCount);
