@@ -29,7 +29,8 @@ Shader::Shader(SDL_GPUDevice *device, const char *filename,
   size_t code_size;
   void *code = SDL_LoadFile(path, &code_size);
   if (!code) {
-    SDL_Log("Failed to load file: %s", SDL_GetError());
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load file: %s",
+                 SDL_GetError());
   }
   SDL_GPUShaderCreateInfo info{.code_size = code_size,
                                .code = reinterpret_cast<Uint8 *>(code),
@@ -43,7 +44,8 @@ Shader::Shader(SDL_GPUDevice *device, const char *filename,
                                .props = 0U};
   _shader = SDL_CreateGPUShader(device, &info);
   if (!_shader) {
-    SDL_Log("Failed to create shader, %s", SDL_GetError());
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create shader, %s",
+                 SDL_GetError());
   }
   SDL_free(code);
 }

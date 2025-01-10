@@ -73,7 +73,7 @@ struct alignas(16) TransformUniformData {
 static DirectionalLightUniform myLight{
     .direction = {0., -1., -1.},
     .color = {1.0, 1.0, 1.0},
-    .intensity = 4.0,
+    .intensity = 8.0,
 };
 
 struct alignas(16) light_ubo_t {
