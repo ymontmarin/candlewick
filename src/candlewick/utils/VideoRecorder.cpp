@@ -175,6 +175,8 @@ void VideoRecorderImpl::writeFrame(const Uint8 *data, size_t payloadSize,
 
 // WRAPPING CLASS
 VideoRecorder::VideoRecorder(NoInitT) : impl_() {}
+VideoRecorder::VideoRecorder(VideoRecorder &&) = default;
+VideoRecorder &VideoRecorder::operator=(VideoRecorder &&) = default;
 
 VideoRecorder::VideoRecorder(Uint32 width, Uint32 height,
                              const std::string &filename, Settings settings)

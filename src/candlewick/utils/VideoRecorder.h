@@ -29,6 +29,9 @@ public:
 
   /// \brief Constructor which will not open the file or stream.
   explicit VideoRecorder(NoInitT);
+  VideoRecorder(VideoRecorder &&);
+  VideoRecorder &operator=(VideoRecorder &&);
+
   bool isInitialized() const { return impl_ != nullptr; }
   VideoRecorder(Uint32 width, Uint32 height, const std::string &filename,
                 Settings settings);
