@@ -1,30 +1,13 @@
 #include "LoadPinocchioGeometry.h"
 #include "LoadCoalPrimitives.h"
+#include "../core/errors.h"
 #include "../utils/LoadMesh.h"
+#include "../third-party/magic_enum.hpp"
 
 #include <pinocchio/multibody/geometry.hpp>
-#include <pinocchio/multibody/geometry-object.hpp>
 
 namespace candlewick::multibody {
 using hpp::fcl::CollisionGeometry;
-
-constexpr const char *obj_type_str(hpp::fcl::OBJECT_TYPE type) {
-  using enum hpp::fcl::OBJECT_TYPE;
-  switch (type) {
-  case OT_UNKNOWN:
-    return "unknown";
-  case OT_BVH:
-    return "bvh";
-  case OT_GEOM:
-    return "geom";
-  case OT_OCTREE:
-    return "octree";
-  case OT_HFIELD:
-    return "hfield";
-  case OT_COUNT:
-    return "count";
-  }
-}
 
 void loadGeometryObject(const pin::GeometryObject &gobj,
                         std::vector<MeshData> &meshData) {
@@ -34,8 +17,8 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
 
   const CollisionGeometry &collgom = *gobj.geometry.get();
   const OBJECT_TYPE objType = collgom.getObjectType();
-  printf("Processing GeometryObject %s.\t", gobj.name.c_str());
-  printf("Got object type %s\n", obj_type_str(objType));
+  SDL_Log("Processing GeometryObject %s (object type %s)", gobj.name.c_str(),
+          magic_enum::enum_name(objType).data());
 
   Float4 meshColor = gobj.meshColor.cast<float>();
   Float3 meshScale = gobj.meshScale.cast<float>();
@@ -55,7 +38,7 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
     break;
   }
   default:
-    throw std::runtime_error("Unsupported object type.");
+    throw InvalidArgument("Unsupported object type.");
     break;
   }
 }

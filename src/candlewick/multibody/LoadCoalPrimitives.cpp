@@ -6,6 +6,7 @@
 #include "../primitives/Cube.h"
 #include "../primitives/Heightfield.h"
 #include "../utils/MeshTransforms.h"
+#include "../third-party/magic_enum.hpp"
 
 #include <coal/shape/geometric_shapes.h>
 #include <coal/hfield.h>
@@ -47,7 +48,8 @@ MeshData loadCoalPrimitive(const hpp::fcl::CollisionGeometry &geometry,
   MeshData meshData{NoInit};
   Eigen::Affine3f transform = Eigen::Affine3f::Identity();
   const NODE_TYPE nodeType = geometry.getNodeType();
-  SDL_Log("Loading Coal primitive of node type %d", nodeType);
+  SDL_Log("Loading Coal primitive of node type %s (%d)",
+          magic_enum::enum_name(nodeType).data(), nodeType);
   switch (nodeType) {
   case GEOM_BOX: {
     const Box &g = static_cast<const Box &>(geometry);
