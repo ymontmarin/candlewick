@@ -364,7 +364,7 @@ int main(int argc, char **argv) {
                                      sizeof(cameraUniform));
         SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
                                        sizeof(lightUbo));
-        renderer.renderShape(render_pass, robotShapes[i]);
+        renderer.render(render_pass, robotShapes[i]);
       }
 
       // RENDER PLANE
@@ -383,7 +383,7 @@ int main(int argc, char **argv) {
                                        sizeof(lightUbo));
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
                                        sizeof(PbrMaterialUniform));
-        renderer.renderMesh(render_pass, plane);
+        renderer.render(render_pass, plane);
       }
 
       // render grid
@@ -393,7 +393,7 @@ int main(int argc, char **argv) {
         SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp, sizeof(mvp));
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &gridColor,
                                        sizeof(gridColor));
-        renderer.renderMesh(render_pass, gridMesh);
+        renderer.render(render_pass, gridMesh);
       }
 
       SDL_EndGPURenderPass(render_pass);

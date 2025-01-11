@@ -86,14 +86,14 @@ void RobotScene::render(Renderer &renderer, RenderPostCallback post_callback) {
       .load_op = SDL_GPU_LOADOP_CLEAR,
       .store_op = SDL_GPU_STOREOP_STORE,
   };
-  SDL_GPUDepthStencilTargetInfo depth_target;
-  SDL_zero(depth_target);
-  depth_target.clear_depth = 1.0f;
-  depth_target.load_op = SDL_GPU_LOADOP_CLEAR;
-  depth_target.store_op = SDL_GPU_STOREOP_STORE;
-  depth_target.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
-  depth_target.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
-  depth_target.texture = renderer.depth_texture;
+  SDL_GPUDepthStencilTargetInfo depth_target{
+      .texture = renderer.depth_texture,
+      .clear_depth = 1.0f,
+      .load_op = SDL_GPU_LOADOP_CLEAR,
+      .store_op = SDL_GPU_STOREOP_STORE,
+      .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
+      .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
+  };
   SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
       renderer.command_buffer, &color_target, 1, &depth_target);
 
@@ -112,7 +112,7 @@ void RobotScene::render(Renderer &renderer, RenderPostCallback post_callback) {
         SDL_PushGPUFragmentUniformData(renderer.command_buffer, binding,
                                        payload.data(), payload.size());
       }
-      renderer.renderShape(render_pass, robotShapes[id]);
+      renderer.render(render_pass, robotShapes[id]);
     }
   }
 

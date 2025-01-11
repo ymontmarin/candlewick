@@ -39,8 +39,8 @@ struct Renderer {
   /// \details This routine will bind the vertex and index buffer. Prefer one of
   /// the other routines to e.g. batch draw calls that use the same buffer
   /// bindings.
-  void renderMesh(SDL_GPURenderPass *pass, const Mesh &mesh,
-                  Uint32 firstIndexOrVertex = 0) {
+  void render(SDL_GPURenderPass *pass, const Mesh &mesh,
+              Uint32 firstIndexOrVertex = 0) {
     const MeshLayout &layout = mesh.layout();
     std::vector<SDL_GPUBufferBinding> vertex_bindings;
     vertex_bindings.reserve(layout.numBuffers());
@@ -65,7 +65,8 @@ struct Renderer {
   /// Render a collection of \c Mesh collected in a \c Shape object, which
   /// satisfies the necessary invariants to allow for batching. We only have to
   /// bind the vertex and index buffers once, here.
-  void renderShape(SDL_GPURenderPass *pass, const Shape &shape) {
+  /// \overload render()
+  void render(SDL_GPURenderPass *pass, const Shape &shape) {
     if (shape.meshes().empty())
       return;
 
