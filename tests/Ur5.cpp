@@ -69,14 +69,14 @@ struct alignas(16) TransformUniformData {
   alignas(16) GpuMat3 normalMatrix;
 };
 
-static DirectionalLightUniform myLight{
+static DirectionalLight myLight{
     .direction = {0., -1., -1.},
     .color = {1.0, 1.0, 1.0},
     .intensity = 8.0,
 };
 
 struct alignas(16) light_ubo_t {
-  DirectionalLightUniform a;
+  DirectionalLight a;
   GpuVec3 viewPos;
 };
 

@@ -143,7 +143,7 @@ int main() {
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
   Matrix4f viewMat = lookAt({6.0, 0, 3.}, Float3::Zero());
 
-  DirectionalLightUniform myLight{
+  DirectionalLight myLight{
       .direction = {0., -1., 1.},
       .color = {1.0, 1.0, 1.0},
       .intensity = 4.0,
@@ -231,7 +231,7 @@ int main() {
           normalMatrix,
       };
       struct {
-        DirectionalLightUniform a;
+        DirectionalLight a;
         GpuVec3 viewPos;
       } lightUbo{myLight, cameraViewPos(viewMat)};
 
