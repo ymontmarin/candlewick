@@ -360,10 +360,8 @@ int main(int argc, char **argv) {
             normalMatrix,
         };
 
-        SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
-                                     sizeof(cameraUniform));
-        SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
-                                       sizeof(lightUbo));
+        renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
+        renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
         renderer.render(render_pass, robotShapes[i]);
       }
 
@@ -377,12 +375,9 @@ int main(int argc, char **argv) {
         TransformUniformData cameraUniform{plane_transform.matrix(),
                                            projViewMat, normalMatrix};
         const auto material = plane_data.material.toUniform();
-        SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
-                                     sizeof(cameraUniform));
-        SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
-                                       sizeof(lightUbo));
-        SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
-                                       sizeof(PbrMaterialUniform));
+        renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
+        renderer.pushFragmentUniform(0, &material, sizeof(PbrMaterialUniform));
+        renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
         renderer.render(render_pass, plane);
       }
 
@@ -390,9 +385,8 @@ int main(int argc, char **argv) {
       if (renderGrid) {
         SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
         GpuMat4 mvp{projViewMat};
-        SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp, sizeof(mvp));
-        SDL_PushGPUFragmentUniformData(command_buffer, 0, &gridColor,
-                                       sizeof(gridColor));
+        renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
+        renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
         renderer.render(render_pass, gridMesh);
       }
 

@@ -5,11 +5,19 @@
 #include "../core/Scene.h"
 #include "../core/Shader.h"
 #include "../core/Shape.h"
-#include "../core/Uniform.h"
+#include "../core/LightUniforms.h"
 
 #include <pinocchio/multibody/geometry.hpp>
 
-namespace candlewick::multibody {
+namespace candlewick {
+
+struct alignas(16) TransformUniformData {
+  GpuMat4 model;
+  alignas(16) GpuMat4 mvp;
+  alignas(16) GpuMat3 normalMatrix;
+};
+
+namespace multibody {
 
 class RobotScene {
 public:
@@ -18,7 +26,8 @@ public:
     PIPELINE_HEIGHTFIELD,
     PIPELINE_POINTCLOUD,
   };
-  using UniformProvider = std::function<UniformPayload(pin::GeomIndex)>;
+  enum VertexUniformSlots : Uint32 { TRANSFORM = 0 };
+  enum FragmentUniformSlots : Uint32 { LIGHTING = 1 };
   using RenderPostCallback = std::function<void(SDL_GPURenderPass *)>;
 
   /// Map hpp-fcl/coal collision geometry to desired pipeline type.
@@ -37,20 +46,16 @@ public:
     }
   }
 
-  std::vector<Shape> robotShapes;
-  std::unordered_map<PipelineType, std::vector<pin::GeomIndex>> shapeIndices;
+  std::vector<std::pair<PipelineType, Shape>> robotShapes;
   std::unordered_map<PipelineType, SDL_GPUGraphicsPipeline *> pipelines;
-  std::unordered_map<Uint32, UniformProvider> vertexUniformProviders,
-      fragmentUniformProviders;
-
-  RobotScene &setVertexUniform(Uint32 binding, UniformProvider &&provider) {
-    vertexUniformProviders[binding] = std::move(provider);
-    return *this;
-  }
-  RobotScene &setFragmentUniform(Uint32 binding, UniformProvider &&provider) {
-    fragmentUniformProviders[binding] = std::move(provider);
-    return *this;
-  }
+  struct EnvironmentData {
+    bool status;
+    Mesh mesh;
+    MeshData data;
+    Mat4f transform;
+  };
+  std::vector<EnvironmentData> environmentMeshes;
+  DirectionalLight directionalLight;
 
   struct Config {
     struct PipelineConfig {
@@ -79,52 +84,35 @@ public:
     SDL_GPUSampleCount msaa_samples = SDL_GPU_SAMPLECOUNT_1;
   };
 
+  EnvironmentData &addEnvironmentObject(Mesh &&mesh, MeshData &&data,
+                                        Mat4f placement) {
+    return environmentMeshes.emplace_back(true, std::move(mesh),
+                                          std::move(data), placement);
+  }
+  void setEnvironmentObjectStatus(size_t i, bool status) {
+    environmentMeshes[i].status = status;
+  }
+
   RobotScene(const Renderer &renderer, const pin::GeometryModel &geom_model,
-             Config config);
+             const pin::GeometryData &geom_data, Config config);
 
   static SDL_GPUGraphicsPipeline *
   createPipeline(const Device &dev, const MeshLayout &layout,
                  SDL_GPUTextureFormat render_target_format,
                  SDL_GPUTextureFormat depth_stencil_format, PipelineType type,
-                 const Config::PipelineConfig &config) {
+                 const Config::PipelineConfig &config);
 
-    Shader vertex_shader{dev, config.vertex_shader_path,
-                         config.num_vertex_uniforms};
-    Shader fragment_shader{dev, config.fragment_shader_path,
-                           config.num_frag_uniforms};
-
-    SDL_GPUColorTargetDescription color_target;
-    SDL_zero(color_target);
-    color_target.format = render_target_format;
-    SDL_GPUGraphicsPipelineCreateInfo desc{
-        .vertex_shader = vertex_shader,
-        .fragment_shader = fragment_shader,
-        .vertex_input_state = layout.toVertexInputState(),
-        .primitive_type = getPrimitiveTopologyForType(type),
-        .depth_stencil_state{
-            .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
-            .enable_depth_test = true,
-            .enable_depth_write = true,
-        },
-        .target_info{
-            .color_target_descriptions = &color_target,
-            .num_color_targets = 1,
-            .depth_stencil_format = depth_stencil_format,
-            .has_depth_stencil_target = true,
-        },
-    };
-    desc.rasterizer_state.cull_mode = config.cull_mode;
-    desc.rasterizer_state.fill_mode = config.fill_mode;
-    return SDL_CreateGPUGraphicsPipeline(dev, &desc);
-  }
-
-  void
-  render(Renderer &renderer, RenderPostCallback post_callback = [](auto *) {});
+  void render(
+      Renderer &renderer, const Camera &cameraState,
+      RenderPostCallback post_callback = [](auto *) {});
   void release();
 
 private:
-  SDL_GPUDevice *_device;
+  const Device &_device;
+  const pin::GeometryModel &_geomModel;
+  const pin::GeometryData &_geomData;
 };
 static_assert(Scene<RobotScene>);
 
-} // namespace candlewick::multibody
+} // namespace multibody
+} // namespace candlewick

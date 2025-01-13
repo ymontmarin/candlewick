@@ -5,7 +5,6 @@
 #include "candlewick/core/Shape.h"
 #include "candlewick/core/matrix_util.h"
 #include "candlewick/core/LightUniforms.h"
-#include "candlewick/core/MaterialUniform.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
@@ -38,8 +37,6 @@
 
 namespace pin = pinocchio;
 using namespace candlewick;
-using Eigen::Matrix3f;
-using Eigen::Matrix4f;
 
 /// Application constants
 
@@ -49,10 +46,8 @@ constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 /// Application state
 
-static bool renderPlane = true;
 static bool renderGrid = true;
-static Matrix4f viewMat;
-static Matrix4f projectionMat;
+static Camera camera;
 static Radf currentFov = 55.0_radf;
 static bool quitRequested = false;
 
@@ -62,29 +57,19 @@ static float displayScale;
 static GpuVec4 gridColor = 0xE0A236ff_rgbaf;
 static Mesh gridMesh{NoInit};
 
-struct alignas(16) TransformUniformData {
-  GpuMat4 model;
-  alignas(16) GpuMat4 mvp;
-  alignas(16) GpuMat3 normalMatrix;
-};
-
-static DirectionalLightUniform myLight{
+static DirectionalLight myLight{
     .direction = {0., -1., -1.},
     .color = {1.0, 1.0, 1.0},
     .intensity = 8.0,
 };
 
-struct alignas(16) light_ubo_t {
-  DirectionalLightUniform a;
-  GpuVec3 viewPos;
-};
-
 void updateFov(Radf newFov) {
   currentFov = newFov;
-  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
 }
 
 void eventLoop(const Renderer &renderer) {
+  auto viewMat = camera.viewMatrix();
   // update pixel density and display scale
   pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
   displayScale = SDL_GetWindowDisplayScale(renderer.window);
@@ -148,6 +133,7 @@ void eventLoop(const Renderer &renderer) {
     }
     }
   }
+  camera.setPoseFromView(viewMat);
 }
 
 Renderer createRenderer(Uint32 width, Uint32 height,
@@ -181,7 +167,23 @@ int main(int argc, char **argv) {
   gridMesh = convertToMesh(device, grid_data);
   uploadMeshToDevice(device, gridMesh, grid_data);
 
-  GuiSystem guiSys{[&plane_data](Renderer &r) {
+  // Load robot
+  pin::Model model;
+  pin::GeometryModel geom_model;
+  robot_descriptions::loadModelsFromToml("ur.toml", "ur5_gripper", model,
+                                         &geom_model, NULL);
+  pin::Data pin_data{model};
+  pin::GeometryData geom_data{geom_model};
+
+  multibody::RobotScene robot_scene{renderer, geom_model, geom_data, {}};
+  const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
+  auto &plane_obj = robot_scene.addEnvironmentObject(
+      std::move(plane), std::move(plane_data), plane_transform.matrix());
+  auto &robotShapes = robot_scene.robotShapes;
+  SDL_assert(robotShapes.size() == geom_model.ngeoms);
+  SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
+
+  GuiSystem guiSys{[&](Renderer &r) {
     static bool demo_window_open = true;
     const float minFov = 15.f;
     const float maxFov = 90.f;
@@ -194,8 +196,9 @@ int main(int argc, char **argv) {
     ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
                      ImGuiSliderFlags_AlwaysClamp);
     updateFov(Radf(newFov));
-    projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
-    ImGui::Checkbox("Render plane", &renderPlane);
+    camera.projection =
+        perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+    ImGui::Checkbox("Render plane", &plane_obj.status);
     ImGui::Checkbox("Render grid", &renderGrid);
 
     ImGui::SeparatorText("Lights");
@@ -214,19 +217,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  // Load robot
-  pin::Model model;
-  pin::GeometryModel geom_model;
-  robot_descriptions::loadModelsFromToml("ur.toml", "ur5_gripper", model,
-                                         &geom_model, NULL);
-  pin::Data pin_data{model};
-  pin::GeometryData geom_data{geom_model};
-
-  multibody::RobotScene robot_scene{renderer, geom_model, {}};
-  std::vector<Shape> &robotShapes = robot_scene.robotShapes;
-  SDL_assert(robotShapes.size() == geom_model.ngeoms);
-  SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
-
   /** CREATE PIPELINES **/
 
   SDL_GPUGraphicsPipeline *debugLinePipeline =
@@ -236,8 +226,8 @@ int main(int argc, char **argv) {
 
   Uint32 frameNo = 0;
 
-  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
-  viewMat = lookAt({2.0, 0, 2.}, Float3::Zero());
+  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+  camera.setPoseFromView(lookAt({2.0, 0, 2.}, Float3::Zero()));
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
@@ -263,65 +253,39 @@ int main(int argc, char **argv) {
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
 
     // acquire command buffer and swapchain
+    robot_scene.directionalLight = myLight;
     renderer.beginFrame();
     renderer.acquireSwapchain();
 
     if (renderer.swapchain) {
 
-      Matrix4f projViewMat;
-      const light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
-
-      robot_scene
-          .setVertexUniform(
-              Shape::TRANSFORM_SLOT,
-              [&](pin::GeomIndex i) {
-                const pin::SE3 &placement = geom_data.oMg[i];
-                Matrix4f modelMat =
-                    placement.cast<float>().toHomogeneousMatrix();
-                const Matrix3f normalMatrix =
-                    modelMat.topLeftCorner<3, 3>().inverse().transpose();
-                Matrix4f modelView = viewMat * modelMat;
-                projViewMat.noalias() = projectionMat * modelView;
-                TransformUniformData cameraUniform{
-                    modelMat,
-                    projViewMat,
-                    normalMatrix,
-                };
-                return cameraUniform;
-              })
-          .setFragmentUniform(1, [&](auto) { return lightUbo; });
-      SDL_GPUCommandBuffer *command_buffer = renderer.command_buffer;
-
-      robot_scene.render(renderer, [&](auto *render_pass) {
+      robot_scene.render(renderer, camera, [&](auto *render_pass) {
         // RENDER PLANE
-        if (renderPlane) {
-          Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-          Matrix4f modelView = viewMat * plane_transform.matrix();
-          projViewMat.noalias() = projectionMat * modelView;
-          const Matrix3f normalMatrix =
-              plane_transform.linear().inverse().transpose();
-          TransformUniformData cameraUniform{
-              plane_transform.matrix(),
-              projViewMat,
-              normalMatrix,
-          };
-          const auto material = plane_data.material.toUniform();
-          SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
-                                       sizeof(cameraUniform));
-          SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
-                                         sizeof(lightUbo));
-          SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
-                                         sizeof(PbrMaterialUniform));
-          renderer.render(render_pass, plane);
-        }
+        // if (renderPlane) {
+        //   Mat4f modelView = viewMat * plane_transform.matrix();
+        //   projViewMat.noalias() = projectionMat * modelView;
+        //   const Mat3f normalMatrix =
+        //       plane_transform.linear().inverse().transpose();
+        //   TransformUniformData cameraUniform{
+        //       plane_transform.matrix(),
+        //       projViewMat,
+        //       normalMatrix,
+        //   };
+        //   const auto material = plane_data.material.toUniform();
+        //   SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
+        //                                sizeof(cameraUniform));
+        //   SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
+        //                                  sizeof(PbrMaterialUniform));
+        //   renderer.render(render_pass, plane);
+        // }
 
         // render grid
+        Mat4f projViewMat = camera.projection * camera.viewMatrix();
         if (renderGrid) {
           SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
           GpuMat4 mvp{projViewMat};
-          SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp, sizeof(mvp));
-          SDL_PushGPUFragmentUniformData(command_buffer, 0, &gridColor,
-                                         sizeof(gridColor));
+          renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
+          renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
           renderer.render(render_pass, gridMesh);
         }
       });
@@ -342,7 +306,7 @@ int main(int argc, char **argv) {
   }
 
   for (auto &shape : robotShapes) {
-    shape.release();
+    shape.second.release();
   }
   SDL_ReleaseGPUGraphicsPipeline(device, debugLinePipeline);
 
