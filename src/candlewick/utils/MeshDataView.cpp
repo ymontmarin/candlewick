@@ -8,12 +8,6 @@ MeshDataView::MeshDataView(const MeshData &meshData)
                  meshData.numVertices() * layout.vertexSize()),
       indexData(meshData.indexData) {}
 
-// MeshDataView::MeshDataView(const MeshData &meshData, size_t offset, size_t
-// len)
-//     : primitiveType(meshData.primitiveType),
-//       vertexData(meshData.vertexData.begin() + offset, len),
-//       indexData(meshData.indexData.begin() + offset, len) {}
-
 MeshDataView::MeshDataView(SDL_GPUPrimitiveType primitiveType,
                            MeshLayout layout, std::span<const char> vertices,
                            std::span<const IndexType> indices)
