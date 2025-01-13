@@ -44,7 +44,7 @@ Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer, Uint32 offset,
   return *this;
 }
 
-void Mesh::releaseOwnedBuffers(const Device &device) {
+void Mesh::releaseOwnedBuffers(SDL_GPUDevice *device) {
   for (std::size_t i = 0; i < vertexBuffers.size(); i++) {
     switch (vertexBufferOwnerships[i]) {
     case Owned: {

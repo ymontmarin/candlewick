@@ -34,7 +34,7 @@ struct Mesh {
   bool isIndexed() const { return indexBuffer != NULL; }
   bool isCountSet() const { return count != ~Uint32{}; }
 
-  void releaseOwnedBuffers(const Device &device);
+  void releaseOwnedBuffers(SDL_GPUDevice *device);
 
   SDL_GPUBufferBinding getVertexBinding(Uint32 slot) const {
     return {.buffer = vertexBuffers[slot], .offset = vertexBufferOffsets[slot]};
