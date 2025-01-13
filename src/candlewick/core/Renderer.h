@@ -98,6 +98,13 @@ struct Renderer {
     }
   }
 
+  void pushVertexUniform(Uint32 slot_index, const void *data, Uint32 length) {
+    SDL_PushGPUVertexUniformData(command_buffer, slot_index, data, length);
+  }
+  void pushFragmentUniform(Uint32 slot_index, const void *data, Uint32 length) {
+    SDL_PushGPUFragmentUniformData(command_buffer, slot_index, data, length);
+  }
+
   void destroy() {
     SDL_ReleaseWindowFromGPUDevice(device, window);
     device.destroy();
