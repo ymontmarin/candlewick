@@ -5,37 +5,24 @@
 #include "../core/Device.h"
 #include "../core/GuiSystem.h"
 #include "../core/Renderer.h"
-#include "../utils/CameraControl.h"
-
 #include "../core/LightUniforms.h"
 
 #include <SDL3/SDL_init.h>
 
 namespace candlewick::multibody {
 
-using Eigen::Matrix3f;
-using Eigen::Matrix4f;
-
 struct VisualizerConfig {
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
 };
 
-struct alignas(16) TransformUniformData {
-  GpuMat4 model;
-  alignas(16) GpuMat4 mvp;
-  alignas(16) GpuMat3 normalMatrix;
-};
-
-struct alignas(16) light_ubo_t {
-  DirectionalLightUniform a;
-  GpuVec3 viewPos;
-};
-
+/// \brief A synchronous renderer. The display() function will perform the draw
+/// calls.
 class Visualizer : public pinocchio_visualizers::BaseVisualizer {
 public:
   Renderer renderer;
   GuiSystem guiSys;
   RobotScene robotScene;
+  Camera cameraState;
 
   struct Config {
     Uint32 width;
@@ -57,9 +44,16 @@ public:
              GuiSystem::GuiBehavior gui_callback)
       : pinocchio_visualizers::BaseVisualizer(model, visualModel),
         renderer(createRenderer(config)), guiSys(std::move(gui_callback)),
-        robotScene(renderer, visualModel, {}) {
+        robotScene(renderer, visualModel, visualData, {}) {
     guiSys.init(renderer);
+    robotScene.directionalLight = {
+        .direction = {0., -1., -1.},
+        .color = {1.0, 1.0, 1.0},
+        .intensity = 8.0,
+    };
   }
+
+  void loadViewerModel() override {}
 
   Visualizer(Config config, const pin::Model &model,
              const pin::GeometryModel &visualModel)

@@ -1,43 +1,37 @@
 #include "Visualizer.h"
+#include "../core/matrix_util.h"
 
 #include <imgui.h>
 
 namespace candlewick::multibody {
 
-void default_gui_exec(Visualizer &viz, Renderer &render) {
-  ImGui::Begin("Prout");
+void Visualizer::default_gui_exec(Renderer &render) {
+  static bool demo_window_open = true;
+  auto &light = this->robotScene.directionalLight;
+  ImGui::Begin("Renderer info & controls", nullptr,
+               ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::Text("Device driver: %s", render.device.driverName());
+  ImGui::SeparatorText("Dir. light");
+  ImGui::SliderFloat("Intensity", &light.intensity, 0.1f, 10.f);
   ImGui::End();
+
+  ImGui::ShowDemoWindow(&demo_window_open);
 }
 
 void Visualizer::displayImpl() {
 
-  DirectionalLightUniform myLight{
-      .direction = {0., -1., -1.},
-      .color = {1.0, 1.0, 1.0},
-      .intensity = 8.0,
-  };
-  Matrix4f projectionMat;
-  Matrix4f viewMat;
-  viewMat.setIdentity();
-  light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
-  auto &oMg = visualData.oMg;
-  robotScene
-      .setVertexUniform(
-          Shape::TRANSFORM_SLOT,
-          [&](pin::GeomIndex i) {
-            const pin::SE3 &placement = oMg[i];
-            Matrix4f modelMat = placement.cast<float>().toHomogeneousMatrix();
-            Matrix3f normalMatrix =
-                modelMat.topLeftCorner<3, 3>().inverse().transpose();
-            Matrix4f modelView = viewMat * modelMat;
-            Matrix4f mvp = projectionMat * modelView;
-            return TransformUniformData{
-                modelMat,
-                mvp,
-                normalMatrix,
-            };
-          })
-      .setFragmentUniform(1, [&](auto) { return lightUbo; });
-  robotScene.render(renderer);
+  static float angle{0.};
+  angle += 1e-2f;
+  float radius = 2.5f;
+  Float3 eye{std::cos(angle), std::sin(angle), 0.5f};
+  eye *= radius;
+  Mat4f viewMat = lookAt(eye, {0., 0., 0.});
+  Radf fov{45.0_degf};
+  int w, h;
+  SDL_GetWindowSize(renderer.window, &w, &h);
+  float aspectRatio = float(w) / float(h);
+  cameraState.setPoseFromView(viewMat);
+  cameraState.projection = perspectiveFromFov(fov, aspectRatio, 0.01f, 100.f);
+  robotScene.render(renderer, cameraState);
 }
 } // namespace candlewick::multibody
