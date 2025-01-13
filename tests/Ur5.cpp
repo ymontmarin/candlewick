@@ -13,6 +13,7 @@
 #include "candlewick/utils/CameraControl.h"
 #include "candlewick/multibody/LoadPinocchioGeometry.h"
 
+#include "candlewick/primitives/Arrow.h"
 #include "candlewick/primitives/Plane.h"
 #include "candlewick/primitives/Grid.h"
 
@@ -159,7 +160,6 @@ Renderer createRenderer(Uint32 width, Uint32 height,
 }
 
 int main(int argc, char **argv) {
-  SDL_GPUGraphicsPipeline *debugLinePipeline;
   SDL_GPUGraphicsPipeline *meshPipeline;
 
   CLI::App app{"Ur5 example"};
@@ -184,6 +184,14 @@ int main(int argc, char **argv) {
   MeshData grid_data = loadGrid(10);
   gridMesh = convertToMesh(device, grid_data);
   uploadMeshToDevice(device, gridMesh, grid_data);
+
+  std::array triad_data = createTriad();
+  std::vector<Mesh> triad_meshes;
+  for (auto &&arrow_data : std::move(triad_data)) {
+    Mesh arrow_mesh = convertToMesh(device, arrow_data);
+    uploadMeshToDevice(device, arrow_mesh, arrow_data);
+    triad_meshes.push_back(std::move(arrow_mesh));
+  }
 
   GuiSystem guiSys{[&plane_data](Renderer &r) {
     static bool demo_window_open = true;
@@ -279,9 +287,12 @@ int main(int argc, char **argv) {
     fragmentShader.release();
   }
 
-  debugLinePipeline =
+  SDL_GPUGraphicsPipeline *debugLinePipeline =
       initGridPipeline(renderer.device, renderer.window, gridMesh.layout(),
                        renderer.depth_format, SDL_GPU_PRIMITIVETYPE_LINELIST);
+  SDL_GPUGraphicsPipeline *debugTrianglePipeline = initGridPipeline(
+      renderer.device, renderer.window, triad_meshes[0].layout(),
+      renderer.depth_format, SDL_GPU_PRIMITIVETYPE_TRIANGLELIST);
 
   // MAIN APPLICATION LOOP
 
@@ -346,6 +357,7 @@ int main(int argc, char **argv) {
       const light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
 
       SDL_BindGPUGraphicsPipeline(render_pass, meshPipeline);
+      renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
 
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
@@ -362,7 +374,6 @@ int main(int argc, char **argv) {
         };
 
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
-        renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
         renderer.render(render_pass, robotShapes[i]);
       }
 
@@ -378,17 +389,25 @@ int main(int argc, char **argv) {
         const auto material = plane_data.material.toUniform();
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
         renderer.pushFragmentUniform(0, &material, sizeof(PbrMaterialUniform));
-        renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
         renderer.render(render_pass, plane);
       }
 
-      // render grid
+      // render 3d hud elements
+      projViewMat.noalias() = projectionMat * viewMat;
+      const GpuMat4 mvp{projViewMat};
+      renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
       if (renderGrid) {
         SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
-        GpuMat4 mvp{projViewMat};
-        renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
         renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
         renderer.render(render_pass, gridMesh);
+
+        SDL_BindGPUGraphicsPipeline(render_pass, debugTrianglePipeline);
+        for (size_t i = 0; i < 3; i++) {
+          Mesh &m = triad_meshes[i];
+          GpuVec4 triad_col{triad_data[i].material.baseColor};
+          renderer.pushFragmentUniform(0, &triad_col, sizeof(triad_col));
+          renderer.render(render_pass, m);
+        }
       }
 
       SDL_EndGPURenderPass(render_pass);
