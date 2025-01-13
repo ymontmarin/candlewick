@@ -27,7 +27,6 @@ private:
         meshes_(std::move(m)), materials_(std::move(mat)), layout_(l) {}
 
 public:
-  enum { TRANSFORM_SLOT = 0 };
   enum { MATERIAL_SLOT = 0 };
 
   Shape(const Shape &) = delete;
@@ -56,6 +55,8 @@ public:
                                     bool upload = false);
 };
 
+/// \brief Create a shape from a set of \c MeshData objects, optionally upload
+/// to GPU device.
 inline Shape Shape::createShapeFromDatas(const Device &device,
                                          std::span<MeshData> meshDatas,
                                          bool upload) {
