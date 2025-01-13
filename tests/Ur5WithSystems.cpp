@@ -37,6 +37,7 @@
 
 namespace pin = pinocchio;
 using namespace candlewick;
+using multibody::RobotScene;
 
 /// Application constants
 
@@ -175,7 +176,7 @@ int main(int argc, char **argv) {
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
-  multibody::RobotScene robot_scene{renderer, geom_model, geom_data, {}};
+  RobotScene robot_scene{renderer, geom_model, geom_data, {}};
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
   auto &plane_obj = robot_scene.addEnvironmentObject(
       std::move(plane), std::move(plane_data), plane_transform.matrix());
@@ -220,7 +221,8 @@ int main(int argc, char **argv) {
   /** CREATE PIPELINES **/
 
   SDL_GPUGraphicsPipeline *debugLinePipeline =
-      initGridPipeline(renderer, gridMesh.layout(), renderer.depth_format);
+      initGridPipeline(renderer.device, renderer.window, gridMesh.layout(),
+                       renderer.depth_format, SDL_GPU_PRIMITIVETYPE_LINELIST);
 
   // MAIN APPLICATION LOOP
 

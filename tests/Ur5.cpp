@@ -280,7 +280,8 @@ int main(int argc, char **argv) {
   }
 
   debugLinePipeline =
-      initGridPipeline(renderer, gridMesh.layout(), renderer.depth_format);
+      initGridPipeline(renderer.device, renderer.window, gridMesh.layout(),
+                       renderer.depth_format, SDL_GPU_PRIMITIVETYPE_LINELIST);
 
   // MAIN APPLICATION LOOP
 

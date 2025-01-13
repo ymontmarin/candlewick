@@ -31,7 +31,8 @@ void teardownExample(Context &ctx) {
 SDL_GPUGraphicsPipeline *
 initGridPipeline(const Device &device, SDL_Window *window,
                  const candlewick::MeshLayout &layout,
-                 SDL_GPUTextureFormat depth_stencil_format) {
+                 SDL_GPUTextureFormat depth_stencil_format,
+                 SDL_GPUPrimitiveType primitive_type) {
   using namespace candlewick;
   Shader vertexShader{device, "Hud3dElement.vert", 1};
   Shader fragmentShader{device, "Hud3dElement.frag", 1};
@@ -51,7 +52,7 @@ initGridPipeline(const Device &device, SDL_Window *window,
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
       .vertex_input_state = layout.toVertexInputState(),
-      .primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST,
+      .primitive_type = primitive_type,
       .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
                         .cull_mode = SDL_GPU_CULLMODE_NONE,
                         .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
@@ -66,8 +67,6 @@ initGridPipeline(const Device &device, SDL_Window *window,
   };
   SDL_GPUGraphicsPipeline *hudElemPipeline =
       SDL_CreateGPUGraphicsPipeline(device, &createInfo);
-  vertexShader.release();
-  fragmentShader.release();
   return hudElemPipeline;
 }
 

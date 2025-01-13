@@ -19,15 +19,8 @@ void teardownExample(Context &ctx);
 SDL_GPUGraphicsPipeline *
 initGridPipeline(const Device &device, SDL_Window *window,
                  const candlewick::MeshLayout &layout,
-                 SDL_GPUTextureFormat depth_stencil_format);
-
-inline SDL_GPUGraphicsPipeline *
-initGridPipeline(const candlewick::Renderer &renderer,
-                 const candlewick::MeshLayout &layout,
-                 SDL_GPUTextureFormat depth_stencil_format) {
-  return initGridPipeline(renderer.device, renderer.window, layout,
-                          depth_stencil_format);
-}
+                 SDL_GPUTextureFormat depth_stencil_format,
+                 SDL_GPUPrimitiveType primitive_type);
 
 SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
                                    SDL_GPUTextureFormat depth_tex_format,
