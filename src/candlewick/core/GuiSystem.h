@@ -1,4 +1,5 @@
-#include "Scene.h"
+#include "Core.h"
+#include <functional>
 
 namespace candlewick {
 
@@ -14,7 +15,5 @@ public:
 
   GuiBehavior callback_;
 };
-
-static_assert(Scene<GuiSystem>);
 
 } // namespace candlewick
