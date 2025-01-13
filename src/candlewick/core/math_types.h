@@ -95,6 +95,10 @@ inline auto operator""_rad(long double t) {
   return Rad<double>(deg2rad(static_cast<double>(t)));
 }
 
+inline auto operator""_degf(long double t) {
+  return Deg<float>{static_cast<float>(t)};
+}
+
 using Radf = Rad<float>;
 using Degf = Deg<float>;
 
