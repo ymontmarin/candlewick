@@ -3,20 +3,12 @@
 #include "Multibody.h"
 #include "../core/Device.h"
 #include "../core/Scene.h"
-#include "../core/Shader.h"
 #include "../core/Shape.h"
 #include "../core/LightUniforms.h"
 
 #include <pinocchio/multibody/geometry.hpp>
 
 namespace candlewick {
-
-struct alignas(16) TransformUniformData {
-  GpuMat4 model;
-  alignas(16) GpuMat4 mvp;
-  alignas(16) GpuMat3 normalMatrix;
-};
-
 namespace multibody {
 
 class RobotScene {
