@@ -53,6 +53,15 @@ public:
   static Shape createShapeFromDatas(const Device &device,
                                     std::span<MeshData> meshDatas,
                                     bool upload = false);
+
+  /// Create a \c Shape object from a rvalue vector of \c MeshData objects.
+  /// This will upload the data to the GPU straightaway.
+  /// \overload createShapeFromDatas()
+  static Shape createShapeFromDatas(const Device &device,
+                                    std::vector<MeshData> &&meshDatas) {
+    std::span<MeshData> view{meshDatas};
+    return createShapeFromDatas(device, view, true);
+  }
 };
 
 /// \brief Create a shape from a set of \c MeshData objects, optionally upload
