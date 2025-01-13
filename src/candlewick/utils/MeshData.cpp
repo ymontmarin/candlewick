@@ -35,8 +35,8 @@ Mesh convertToMesh(const Device &device, const MeshData &meshData) {
 }
 
 Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
-                   Uint64 vertexOffset, SDL_GPUBuffer *indexBuffer,
-                   Uint64 indexOffset, bool takeOwnership) {
+                   Uint32 vertexOffset, SDL_GPUBuffer *indexBuffer,
+                   Uint32 indexOffset, bool takeOwnership) {
   Mesh mesh{meshData.layout()};
 
   mesh.bindVertexBuffer(0, vertexBuffer, vertexOffset,
