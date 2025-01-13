@@ -11,6 +11,7 @@
 #include "candlewick/utils/CameraControl.h"
 #include "candlewick/multibody/RobotScene.h"
 
+#include "candlewick/primitives/Arrow.h"
 #include "candlewick/primitives/Plane.h"
 #include "candlewick/primitives/Grid.h"
 
@@ -180,6 +181,13 @@ int main(int argc, char **argv) {
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
   auto &plane_obj = robot_scene.addEnvironmentObject(
       std::move(plane), std::move(plane_data), plane_transform.matrix());
+  std::array triad_data = createTriad();
+  std::vector<Mesh> triad_meshes;
+  for (auto &&arrow_data : std::move(triad_data)) {
+    Mesh arrow_mesh = convertToMesh(device, arrow_data);
+    uploadMeshToDevice(device, arrow_mesh, arrow_data);
+    triad_meshes.push_back(std::move(arrow_mesh));
+  }
   auto &robotShapes = robot_scene.robotShapes;
   SDL_assert(robotShapes.size() == geom_model.ngeoms);
   SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
@@ -223,6 +231,9 @@ int main(int argc, char **argv) {
   SDL_GPUGraphicsPipeline *debugLinePipeline =
       initGridPipeline(renderer.device, renderer.window, gridMesh.layout(),
                        renderer.depth_format, SDL_GPU_PRIMITIVETYPE_LINELIST);
+  SDL_GPUGraphicsPipeline *debugTrianglePipeline = initGridPipeline(
+      renderer.device, renderer.window, triad_meshes[0].layout(),
+      renderer.depth_format, SDL_GPU_PRIMITIVETYPE_TRIANGLELIST);
 
   // MAIN APPLICATION LOOP
 
@@ -262,33 +273,22 @@ int main(int argc, char **argv) {
     if (renderer.swapchain) {
 
       robot_scene.render(renderer, camera, [&](auto *render_pass) {
-        // RENDER PLANE
-        // if (renderPlane) {
-        //   Mat4f modelView = viewMat * plane_transform.matrix();
-        //   projViewMat.noalias() = projectionMat * modelView;
-        //   const Mat3f normalMatrix =
-        //       plane_transform.linear().inverse().transpose();
-        //   TransformUniformData cameraUniform{
-        //       plane_transform.matrix(),
-        //       projViewMat,
-        //       normalMatrix,
-        //   };
-        //   const auto material = plane_data.material.toUniform();
-        //   SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
-        //                                sizeof(cameraUniform));
-        //   SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
-        //                                  sizeof(PbrMaterialUniform));
-        //   renderer.render(render_pass, plane);
-        // }
-
         // render grid
         Mat4f projViewMat = camera.projection * camera.viewMatrix();
+        const GpuMat4 mvp{projViewMat};
+        renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
         if (renderGrid) {
           SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
-          GpuMat4 mvp{projViewMat};
-          renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
           renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
           renderer.render(render_pass, gridMesh);
+
+          SDL_BindGPUGraphicsPipeline(render_pass, debugTrianglePipeline);
+          for (size_t i = 0; i < 3; i++) {
+            Mesh &m = triad_meshes[i];
+            GpuVec4 triad_col{triad_data[i].material.baseColor};
+            renderer.pushFragmentUniform(0, &triad_col, sizeof(triad_col));
+            renderer.render(render_pass, m);
+          }
         }
       });
 
