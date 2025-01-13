@@ -7,6 +7,8 @@ namespace candlewick {
 using Float2 = Eigen::Vector2f;
 using Float3 = Eigen::Vector3f;
 using Float4 = Eigen::Vector4f;
+using Mat3f = Eigen::Matrix3f;
+using Mat4f = Eigen::Matrix4f;
 using Vec3u8 = Eigen::Matrix<uint8_t, 3, 1>;
 using Vec4u8 = Eigen::Matrix<uint8_t, 4, 1>;
 
