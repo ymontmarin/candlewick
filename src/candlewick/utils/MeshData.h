@@ -37,9 +37,15 @@ struct MeshData : MeshDataBase<MeshData> {
   explicit MeshData(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
                     std::vector<char> vertexData,
                     std::vector<IndexType> indexData);
-  MeshData(const MeshData &) = delete;
   MeshData(MeshData &&) noexcept = default;
   MeshData &operator=(MeshData &&) noexcept = default;
+  MeshData &operator=(const MeshData &) noexcept = delete;
+
+  /// \brief Explicit copy function, uses private copy ctor.
+  static MeshData copy(const MeshData &other) { return MeshData{other}; };
+
+private:
+  MeshData(const MeshData &) = default;
 };
 
 template <IsVertexType VertexT>
