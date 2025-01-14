@@ -7,6 +7,7 @@
 #include "candlewick/core/matrix_util.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
+#include "candlewick/core/TransformUniforms.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
@@ -40,8 +41,6 @@
 
 namespace pin = pinocchio;
 using namespace candlewick;
-using Eigen::Matrix3f;
-using Eigen::Matrix4f;
 
 /// Application constants
 
@@ -53,8 +52,8 @@ constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 static bool renderPlane = true;
 static bool renderGrid = true;
-static Matrix4f viewMat;
-static Matrix4f projectionMat;
+static Mat4f viewMat;
+static Mat4f projectionMat;
 static Radf currentFov = 55.0_radf;
 static bool quitRequested = false;
 
@@ -63,12 +62,6 @@ static float displayScale;
 
 static GpuVec4 gridColor = 0xE0A236ff_rgbaf;
 static Mesh gridMesh{NoInit};
-
-struct alignas(16) TransformUniformData {
-  GpuMat4 model;
-  alignas(16) GpuMat4 mvp;
-  alignas(16) GpuMat3 normalMatrix;
-};
 
 static DirectionalLight myLight{
     .direction = {0., -1., -1.},
@@ -351,8 +344,8 @@ int main(int argc, char **argv) {
 
       SDL_assert(robotShapes.size() == geom_model.ngeoms);
 
-      Matrix4f modelView;
-      Matrix4f projViewMat;
+      Mat4f modelView;
+      Mat4f projViewMat;
 
       const light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
 
@@ -362,10 +355,10 @@ int main(int argc, char **argv) {
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
         const pin::SE3 &placement = geom_data.oMg[i];
-        Matrix4f modelMat = placement.toHomogeneousMatrix().cast<float>();
+        Mat4f modelMat = placement.toHomogeneousMatrix().cast<float>();
         modelView = viewMat * modelMat.matrix();
         projViewMat = projectionMat * modelView;
-        const Matrix3f normalMatrix =
+        const Mat3f normalMatrix =
             modelMat.topLeftCorner<3, 3>().inverse().transpose();
         TransformUniformData cameraUniform{
             modelMat,
@@ -382,7 +375,7 @@ int main(int argc, char **argv) {
         Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
         modelView.noalias() = viewMat * plane_transform.matrix();
         projViewMat.noalias() = projectionMat * modelView;
-        const Matrix3f normalMatrix =
+        const Mat3f normalMatrix =
             plane_transform.linear().inverse().transpose();
         TransformUniformData cameraUniform{plane_transform.matrix(),
                                            projViewMat, normalMatrix};
