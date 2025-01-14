@@ -45,9 +45,9 @@ Shape Shape::createShapeFromDatas(const Device &device,
 
   Uint32 vertexOffset = 0, indexOffset = 0;
   for (size_t i = 0; i < meshDatas.size(); i++) {
-    meshes.emplace_back(convertToMesh(meshDatas[i], masterVertexBuffer,
-                                      vertexOffset, masterIndexBuffer,
-                                      indexOffset, false));
+    meshes.emplace_back(createMesh(meshDatas[i], masterVertexBuffer,
+                                   vertexOffset, masterIndexBuffer, indexOffset,
+                                   false));
     materials.push_back(meshDatas[i].material);
     vertexOffset += meshDatas[i].numVertices() * layout.vertexSize();
     indexOffset += meshDatas[i].numIndices() * sizeof(IndexType);

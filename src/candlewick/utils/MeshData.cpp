@@ -14,7 +14,7 @@ MeshData::MeshData(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
     : primitiveType(primitiveType), vertexData(std::move(vertexData), layout),
       indexData(std::move(indexData)) {}
 
-Mesh convertToMesh(const Device &device, const MeshData &meshData) {
+Mesh createMesh(const Device &device, const MeshData &meshData) {
   using IndexType = MeshData::IndexType;
   auto &layout = meshData.layout();
   SDL_GPUBufferCreateInfo vtxInfo{
@@ -31,12 +31,12 @@ Mesh convertToMesh(const Device &device, const MeshData &meshData) {
         .props = 0};
     indexBuffer = SDL_CreateGPUBuffer(device, &indexInfo);
   }
-  return convertToMesh(meshData, vertexBuffer, 0, indexBuffer, 0, true);
+  return createMesh(meshData, vertexBuffer, 0, indexBuffer, 0, true);
 }
 
-Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
-                   Uint32 vertexOffset, SDL_GPUBuffer *indexBuffer,
-                   Uint32 indexOffset, bool takeOwnership) {
+Mesh createMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
+                Uint32 vertexOffset, SDL_GPUBuffer *indexBuffer,
+                Uint32 indexOffset, bool takeOwnership) {
   Mesh mesh{meshData.layout()};
 
   mesh.bindVertexBuffer(0, vertexBuffer, vertexOffset,

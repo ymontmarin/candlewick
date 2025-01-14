@@ -55,15 +55,21 @@ MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
     : primitiveType(primitiveType), vertexData(std::move(vertexData)),
       indexData(std::move(indexData)) {}
 
-/// \brief Convert @c MeshData to a @c Mesh. This creates the required
-/// vertex buffer and index buffer (if required).
-Mesh convertToMesh(const Device &device, const MeshData &meshData);
+/// \brief Convert \c MeshData to a GPU \c Mesh object. This creates the
+/// required vertex buffer and index buffer (if required).
+/// \warning This does *not* upload the mesh data to the vertex and index
+/// buffers.
+/// \sa uploadMeshToDevice()
+Mesh createMesh(const Device &device, const MeshData &meshData);
 
+/// \brief Create a \c Mesh object from given mesh data, as a view into existing
+/// vertex and index buffers.
 /// \p vertexOffset Vertex buffer offset (in bytes)
 /// \p indexOffset Index buffer offset (in bytes)
-Mesh convertToMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
-                   Uint32 vertexOffset, SDL_GPUBuffer *indexBuffer,
-                   Uint32 indexOffset, bool takeOwnership = false);
+/// \overload createMesh()
+Mesh createMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
+                Uint32 vertexOffset, SDL_GPUBuffer *indexBuffer,
+                Uint32 indexOffset, bool takeOwnership = false);
 
 /// \brief Upload the contents of a single, individual mesh to the GPU device.
 void uploadMeshToDevice(const Device &device, const Mesh &mesh,

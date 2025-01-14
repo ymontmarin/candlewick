@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
 
   // Load grid
   MeshData grid_data = loadGrid(10);
-  gridMesh = convertToMesh(device, grid_data);
+  gridMesh = createMesh(device, grid_data);
   uploadMeshToDevice(device, gridMesh, grid_data);
 
   // Load robot
@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
   std::array triad_data = createTriad();
   std::vector<Mesh> triad_meshes;
   for (auto &&arrow_data : std::move(triad_data)) {
-    Mesh arrow_mesh = convertToMesh(device, arrow_data);
+    Mesh arrow_mesh = createMesh(device, arrow_data);
     uploadMeshToDevice(device, arrow_mesh, arrow_data);
     triad_meshes.push_back(std::move(arrow_mesh));
   }

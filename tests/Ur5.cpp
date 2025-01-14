@@ -177,18 +177,18 @@ int main(int argc, char **argv) {
 
   // Load plane
   MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
-  Mesh plane = convertToMesh(device, plane_data);
+  Mesh plane = createMesh(device, plane_data);
   uploadMeshToDevice(device, plane, plane_data);
 
   // Load grid
   MeshData grid_data = loadGrid(10);
-  gridMesh = convertToMesh(device, grid_data);
+  gridMesh = createMesh(device, grid_data);
   uploadMeshToDevice(device, gridMesh, grid_data);
 
   std::array triad_data = createTriad();
   std::vector<Mesh> triad_meshes;
   for (auto &&arrow_data : std::move(triad_data)) {
-    Mesh arrow_mesh = convertToMesh(device, arrow_data);
+    Mesh arrow_mesh = createMesh(device, arrow_data);
     uploadMeshToDevice(device, arrow_mesh, arrow_data);
     triad_meshes.push_back(std::move(arrow_mesh));
   }
