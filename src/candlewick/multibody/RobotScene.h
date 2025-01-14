@@ -5,6 +5,8 @@
 #include "../core/Scene.h"
 #include "../core/Shape.h"
 #include "../core/LightUniforms.h"
+#include "../utils/MeshData.h"
+// #include "../core/DebugScene.h"
 
 #include <pinocchio/multibody/geometry.hpp>
 

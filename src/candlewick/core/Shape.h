@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Device.h"
 #include "Mesh.h"
-#include "../utils/MeshData.h"
+#include <span>
 #include "../utils/MaterialData.h"
 
 namespace candlewick {
@@ -13,7 +12,7 @@ namespace candlewick {
 /// index buffer, to allow batching of draw calls.
 class Shape {
 private:
-  SDL_GPUDevice *device;
+  Device const *device;
   SDL_GPUBuffer *masterVertexBuffer;
   SDL_GPUBuffer *masterIndexBuffer;
 
@@ -21,16 +20,16 @@ private:
   std::vector<PbrMaterialData> materials_;
   MeshLayout layout_;
 
-  Shape(SDL_GPUDevice *dev, SDL_GPUBuffer *vb, SDL_GPUBuffer *ib, MeshLayout l,
+  Shape(const Device &dev, SDL_GPUBuffer *vb, SDL_GPUBuffer *ib, MeshLayout l,
         std::vector<Mesh> &&m, std::vector<PbrMaterialData> &&mat)
-      : device(dev), masterVertexBuffer(vb), masterIndexBuffer(ib),
+      : device(&dev), masterVertexBuffer(vb), masterIndexBuffer(ib),
         meshes_(std::move(m)), materials_(std::move(mat)), layout_(l) {}
 
 public:
   enum { MATERIAL_SLOT = 0 };
 
   Shape(const Shape &) = delete;
-  Shape(Shape &&) = default;
+  Shape(Shape &&);
 
   SDL_GPUBufferBinding getVertexBinding() const {
     return {.buffer = masterVertexBuffer, .offset = 0};
@@ -43,13 +42,11 @@ public:
   const MeshLayout &layout() const { return layout_; }
   bool hasMaterials() const { return !materials_.empty(); }
 
-  friend class ShapeBuilder;
+  void release();
+  ~Shape() { release(); }
 
-  void release() {
-    SDL_ReleaseGPUBuffer(device, masterVertexBuffer);
-    SDL_ReleaseGPUBuffer(device, masterIndexBuffer);
-  }
-
+  /// \brief Create a shape from a set of \c MeshData objects, optionally upload
+  /// to GPU device.
   static Shape createShapeFromDatas(const Device &device,
                                     std::span<MeshData> meshDatas,
                                     bool upload = false);
@@ -58,58 +55,14 @@ public:
   /// This will upload the data to the GPU straightaway.
   /// \overload createShapeFromDatas()
   static Shape createShapeFromDatas(const Device &device,
-                                    std::vector<MeshData> &&meshDatas) {
+                                    std::vector<MeshData> &&meshDatas);
+
+  template <std::size_t Size>
+  static Shape createShapeFromDatas(const Device &device,
+                                    std::array<MeshData, Size> &&meshDatas) {
     std::span<MeshData> view{meshDatas};
     return createShapeFromDatas(device, view, true);
   }
 };
 
-/// \brief Create a shape from a set of \c MeshData objects, optionally upload
-/// to GPU device.
-inline Shape Shape::createShapeFromDatas(const Device &device,
-                                         std::span<MeshData> meshDatas,
-                                         bool upload) {
-  using IndexType = MeshData::IndexType;
-  std::vector<Mesh> meshes;
-  std::vector<PbrMaterialData> materials;
-  const auto &layout = meshDatas[0].layout();
-  Uint32 numVertices = 0, numIndices = 0;
-  for (size_t i = 0; i < meshDatas.size(); i++) {
-    numVertices += meshDatas[i].numVertices();
-    numIndices += meshDatas[i].numIndices();
-  }
-
-  SDL_GPUBufferCreateInfo vtxInfo{.usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-                                  .size = numVertices * layout.vertexSize(),
-                                  .props = 0};
-  SDL_GPUBufferCreateInfo idxInfo;
-
-  if (numIndices > 0) {
-    idxInfo = {.usage = SDL_GPU_BUFFERUSAGE_INDEX,
-               .size = Uint32(numIndices * sizeof(IndexType)),
-               .props = 0};
-  }
-
-  SDL_GPUBuffer *masterVertexBuffer = SDL_CreateGPUBuffer(device, &vtxInfo);
-  SDL_GPUBuffer *masterIndexBuffer =
-      (numIndices > 0) ? SDL_CreateGPUBuffer(device, &idxInfo) : NULL;
-
-  Uint32 vertexOffset = 0, indexOffset = 0;
-  for (size_t i = 0; i < meshDatas.size(); i++) {
-    meshes.emplace_back(convertToMesh(meshDatas[i], masterVertexBuffer,
-                                      vertexOffset, masterIndexBuffer,
-                                      indexOffset, false));
-    materials.push_back(meshDatas[i].material);
-    vertexOffset += meshDatas[i].numVertices() * layout.vertexSize();
-    indexOffset += meshDatas[i].numIndices() * sizeof(IndexType);
-  }
-
-  if (upload) {
-    for (size_t i = 0; i < meshes.size(); i++) {
-      uploadMeshToDevice(device, meshes[i], meshDatas[i]);
-    }
-  }
-  return Shape(device, masterVertexBuffer, masterIndexBuffer, layout,
-               std::move(meshes), std::move(materials));
-}
 } // namespace candlewick

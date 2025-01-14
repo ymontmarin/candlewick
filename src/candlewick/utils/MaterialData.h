@@ -2,6 +2,9 @@
 
 #include "../core/math_types.h"
 #include "../core/MaterialUniform.h"
+
+#include "Utils.h"
+
 #include <assimp/material.h>
 
 namespace candlewick {
