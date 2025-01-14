@@ -22,6 +22,7 @@ struct Device {
   const char *driverName() { return driver; }
 
   void destroy();
+  ~Device() { destroy(); }
 
 private:
   SDL_GPUDevice *_device;
