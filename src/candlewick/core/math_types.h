@@ -41,6 +41,9 @@ inline float rad2deg(float t) { return t * 180.0f / M_PIf; }
 template <std::floating_point T> struct Rad;
 template <std::floating_point T> struct Deg;
 
+/// \brief Strong type for floating-point variables representing angles (in
+/// **radians**).
+/// \sa Deg
 template <std::floating_point T> struct Rad {
   constexpr Rad(T value) : _value(value) {}
   explicit constexpr Rad(Deg<T> value) : _value(deg2rad(value)) {}
@@ -59,6 +62,9 @@ private:
 };
 template <std::floating_point T> Rad(T) -> Rad<T>;
 
+/// \brief Strong type for floating-point variables representing angles (in
+/// **degrees**).
+/// \sa Rad
 template <std::floating_point T> struct Deg {
   constexpr Deg(T value) : _value(value) {}
   explicit constexpr Deg(Rad<T> value) : _value(rad2deg(value)) {}
