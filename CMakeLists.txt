@@ -1,4 +1,4 @@
-# Copyright (c) 2024 ManifoldFR
+# Copyright (c) 2024-2025 ManifoldFR
 
 cmake_minimum_required(VERSION 3.20)
 
