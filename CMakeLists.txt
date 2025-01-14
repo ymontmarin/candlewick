@@ -15,7 +15,11 @@ set(CXX_DISABLE_WERROR True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(DOXYGEN_USE_MATHJAX NO)
-set(DOXYGEN_USE_TEMPLATE_CSS YES)
+set(DOXYGEN_HTML_STYLESHEET "")
+set(DOXYGEN_USE_TEMPLATE_CSS NO)
+set(DOXYGEN_HTML_HEADER "")
+set(DOXYGEN_HTML_FOOTER "")
+set(DOXYGEN_FILE_PATTERNS "*.h *.hh *.hpp *.hxx")
 
 # The following was copied over from https://github.com/Simple-Robotics/aligator:
 # Use BoostConfig module distributed by boost library instead of using FindBoost module distributed
@@ -34,6 +38,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/bin)
 set(CMAKE_VERBOSE_MAKEFILE False)
+
+set(AWESOME_CSS_DIR ${PROJECT_SOURCE_DIR}/doc/doxygen-awesome-css)
 
 option(BUILD_PYTHON_BINDINGS "Build Python bindings." OFF)
 option(BUILD_PINOCCHIO_VISUALIZER "Build the Pinocchio visualizer." ON)
