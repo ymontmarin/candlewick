@@ -3,9 +3,11 @@
 #include "../core/Shader.h"
 #include "../core/TransformUniforms.h"
 #include "../utils/CameraControl.h"
+// #include "../primitives/Arrow.h"
 #include "../third-party/magic_enum.hpp"
 
 #include <coal/BVH/BVH_model.h>
+#include <pinocchio/multibody/data.hpp>
 
 namespace candlewick::multibody {
 RobotScene::PipelineType
@@ -132,9 +134,11 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
       renderer.render(render_pass, shape);
     }
 
-    for (const auto &[status, mesh, meshData, modelMat] : environmentMeshes) {
-      if (!status)
+    for (const auto &[status, shape, modelMat, object_pipeline_type] :
+         environmentShapes) {
+      if (!status || (object_pipeline_type != pipeline_type))
         continue;
+
       const Mat3f normalMatrix =
           modelMat.topLeftCorner<3, 3>().inverse().transpose();
       const Mat4f mvp = projView * modelMat;
@@ -145,10 +149,7 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
       };
       renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
                                  sizeof(data));
-      auto materialUniform = meshData.material.toUniform();
-      renderer.pushFragmentUniform(Shape::MATERIAL_SLOT, &materialUniform,
-                                   sizeof(materialUniform));
-      renderer.render(render_pass, mesh);
+      renderer.render(render_pass, shape);
     }
 
     post_callback(render_pass);
@@ -157,16 +158,16 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
 }
 
 void RobotScene::release() {
-  for (auto &shape : robotShapes) {
-    shape.second.release();
+  for (auto &[type, shape] : robotShapes) {
+    shape.release();
+  }
+  for (auto &[_status, shape, _tr, _pipe_type] : environmentShapes) {
+    shape.release();
   }
   if (!_device)
     return;
   robotShapes.clear();
-  for (auto &[status, mesh, meshdata, tr] : environmentMeshes) {
-    mesh.releaseOwnedBuffers(_device);
-  }
-  environmentMeshes.clear();
+  environmentShapes.clear();
 
   for (auto &[primType, pipeline] : pipelines) {
     SDL_ReleaseGPUGraphicsPipeline(_device, pipeline);
@@ -210,4 +211,27 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
   desc.rasterizer_state.fill_mode = config.fill_mode;
   return SDL_CreateGPUGraphicsPipeline(dev, &desc);
 }
+
+///// ROBOT DEBUG MODULE
+
+// RobotDebugModule::RobotDebugModule(const pin::Data &data) : data(data) {}
+
+// void RobotDebugModule::addDrawCommands(DebugScene &scene,
+//                                        const Camera &camera) {
+//   const auto viewMat = camera.viewMatrix();
+//   const Mat4f projView = camera.projection * viewMat;
+
+//   for (pin::FrameIndex i = 0; i < data.oMf.size(); i++) {
+//     const auto pose = data.oMf[i].cast<float>();
+//     const Mat4f M = pose.toHomogeneousMatrix();
+//     const Mat3f N = M.topLeftCorner<3, 3>().inverse().transpose();
+//     for (int axis = 0; axis < 3; axis++) {
+//       scene.draw_commands.push_back(
+//           {.shape = &triad[axis],
+//            .transform = {.model = M, .mvp = projView * M, .normalMatrix =
+//            N}});
+//     }
+//   }
+// }
+
 } // namespace candlewick::multibody

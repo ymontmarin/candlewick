@@ -42,13 +42,13 @@ public:
 
   std::vector<std::pair<PipelineType, Shape>> robotShapes;
   std::unordered_map<PipelineType, SDL_GPUGraphicsPipeline *> pipelines;
-  struct EnvironmentData {
+  struct EnvironmentObject {
     bool status;
-    Mesh mesh;
-    MeshData data;
+    Shape shape;
     Mat4f transform;
+    PipelineType pipeline_type;
   };
-  std::vector<EnvironmentData> environmentMeshes;
+  std::vector<EnvironmentObject> environmentShapes;
   DirectionalLight directionalLight;
 
   struct Config {
@@ -78,13 +78,17 @@ public:
     SDL_GPUSampleCount msaa_samples = SDL_GPU_SAMPLECOUNT_1;
   };
 
-  EnvironmentData &addEnvironmentObject(Mesh &&mesh, MeshData &&data,
-                                        Mat4f placement) {
-    return environmentMeshes.emplace_back(true, std::move(mesh),
-                                          std::move(data), placement);
+  EnvironmentObject &
+  addEnvironmentObject(MeshData &&data, Mat4f placement,
+                       PipelineType pipe_type = PIPELINE_TRIANGLEMESH) {
+    Shape shape =
+        Shape::createShapeFromDatas(_device, std::array{std::move(data)});
+    return environmentShapes.emplace_back(true, std::move(shape), placement,
+                                          pipe_type);
   }
+
   void setEnvironmentObjectStatus(size_t i, bool status) {
-    environmentMeshes[i].status = status;
+    environmentShapes[i].status = status;
   }
 
   RobotScene(const Renderer &renderer, const pin::GeometryModel &geom_model,
@@ -107,6 +111,14 @@ private:
   const pin::GeometryData &_geomData;
 };
 static_assert(Scene<RobotScene>);
+
+// struct RobotDebugModule : DebugModule {
+//   const pin::Data &data;
+//   Shape triad[3];
+//   RobotDebugModule(const pin::Data &data);
+//   virtual void addDrawCommands(DebugScene &scene,
+//                                const Camera &camera) override;
+// };
 
 } // namespace multibody
 } // namespace candlewick

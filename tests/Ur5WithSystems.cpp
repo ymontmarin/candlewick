@@ -161,8 +161,6 @@ int main(int argc, char **argv) {
 
   // Load plane
   MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
-  Mesh plane = convertToMesh(device, plane_data);
-  uploadMeshToDevice(device, plane, plane_data);
 
   // Load grid
   MeshData grid_data = loadGrid(10);
@@ -179,8 +177,8 @@ int main(int argc, char **argv) {
 
   RobotScene robot_scene{renderer, geom_model, geom_data, {}};
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-  auto &plane_obj = robot_scene.addEnvironmentObject(
-      std::move(plane), std::move(plane_data), plane_transform.matrix());
+  auto &plane_obj = robot_scene.addEnvironmentObject(std::move(plane_data),
+                                                     plane_transform.matrix());
   std::array triad_data = createTriad();
   std::vector<Mesh> triad_meshes;
   for (auto &&arrow_data : std::move(triad_data)) {
