@@ -16,6 +16,11 @@ group.add_argument(
     action="store_true",
     help="Process all available shader stages.",
 )
+parser.add_argument(
+    "--cross",
+    action="store_true",
+    help="Use shadercross to transpile the SPIR-V shader to MSL and produce JSON metadata",
+)
 args = parser.parse_args()
 
 shader_name = args.shader_name
@@ -36,8 +41,8 @@ assert len(stages) > 0, "No stages found!"
 
 for stage_file in stages:
     assert os.path.exists(stage_file)
-    out_file = os.path.join(SHADER_OUT_DIR, os.path.relpath(stage_file, SHADER_SRC_DIR))
-    out_file = f"{out_file}.spv"
+    spv_file = os.path.join(SHADER_OUT_DIR, os.path.relpath(stage_file, SHADER_SRC_DIR))
+    spv_file = f"{spv_file}.spv"
     proc = subprocess.run(
         [
             "glslc",
@@ -46,8 +51,27 @@ for stage_file in stages:
             "--target-env=vulkan1.2",
             "-Werror",
             "-o",
-            out_file,
+            spv_file,
         ],
         shell=False,
     )
     print(proc.args)
+
+    if args.cross:
+        for ext in ("json", "msl"):
+            out_file = os.path.join(
+                SHADER_OUT_DIR, os.path.relpath(stage_file, SHADER_SRC_DIR)
+            )
+            out_file = f"{out_file}.{ext}"
+            proc2 = subprocess.run(
+                [
+                    "shadercross",
+                    spv_file,
+                    "-o",
+                    out_file,
+                    "-d",
+                    ext.upper(),
+                ],
+                shell=False,
+            )
+            print(proc2)

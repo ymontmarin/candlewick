@@ -1,0 +1,33 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct TranformBlock
+{
+    float4x4 model;
+    float4x4 mvp;
+    float3x3 normalMatrix;
+};
+
+struct main0_out
+{
+    float3 fragWorldPos [[user(locn0)]];
+    float3 fragWorldNormal [[user(locn1)]];
+    float4 gl_Position [[position]];
+};
+
+struct main0_in
+{
+    float3 inPosition [[attribute(0)]];
+    float3 inNormal [[attribute(1)]];
+};
+
+vertex main0_out main0(main0_in in [[stage_in]], constant TranformBlock& _15 [[buffer(0)]])
+{
+    main0_out out = {};
+    out.fragWorldPos = float3((_15.model * float4(in.inPosition, 1.0)).xyz);
+    out.fragWorldNormal = fast::normalize(_15.normalMatrix * in.inNormal);
+    out.gl_Position = _15.mvp * float4(in.inPosition, 1.0);
+    return out;
+}
