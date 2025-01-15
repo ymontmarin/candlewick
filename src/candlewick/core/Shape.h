@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Mesh.h"
-#include <span>
+#include "../utils/MeshData.h"
 #include "../utils/MaterialData.h"
+
+#include <span>
 
 namespace candlewick {
 
@@ -48,7 +50,7 @@ public:
   /// \brief Create a shape from a set of \c MeshData objects, optionally upload
   /// to GPU device.
   static Shape createShapeFromDatas(const Device &device,
-                                    std::span<MeshData> meshDatas,
+                                    std::span<const MeshData> meshDatas,
                                     bool upload = false);
 
   /// Create a \c Shape object from a rvalue vector of \c MeshData objects.
@@ -60,7 +62,7 @@ public:
   template <std::size_t Size>
   static Shape createShapeFromDatas(const Device &device,
                                     std::array<MeshData, Size> &&meshDatas) {
-    std::span<MeshData> view{meshDatas};
+    std::span<const MeshData> view{meshDatas};
     return createShapeFromDatas(device, view, true);
   }
 };

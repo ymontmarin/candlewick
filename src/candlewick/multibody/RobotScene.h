@@ -80,12 +80,7 @@ public:
 
   EnvironmentObject &
   addEnvironmentObject(MeshData &&data, Mat4f placement,
-                       PipelineType pipe_type = PIPELINE_TRIANGLEMESH) {
-    Shape shape =
-        Shape::createShapeFromDatas(_device, std::array{std::move(data)});
-    return environmentShapes.emplace_back(true, std::move(shape), placement,
-                                          pipe_type);
-  }
+                       PipelineType pipe_type = PIPELINE_TRIANGLEMESH);
 
   void setEnvironmentObjectStatus(size_t i, bool status) {
     environmentShapes[i].status = status;

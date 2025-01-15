@@ -1,6 +1,5 @@
 #include "Shape.h"
 #include "Device.h"
-#include "../utils/MeshData.h"
 
 namespace candlewick {
 
@@ -17,7 +16,8 @@ Shape::Shape(Shape &&other)
 }
 
 Shape Shape::createShapeFromDatas(const Device &device,
-                                  std::span<MeshData> meshDatas, bool upload) {
+                                  std::span<const MeshData> meshDatas,
+                                  bool upload) {
   using IndexType = MeshData::IndexType;
   std::vector<Mesh> meshes;
   std::vector<PbrMaterialData> materials;
@@ -64,7 +64,7 @@ Shape Shape::createShapeFromDatas(const Device &device,
 
 Shape Shape::createShapeFromDatas(const Device &device,
                                   std::vector<MeshData> &&meshDatas) {
-  std::span<MeshData> view{meshDatas};
+  std::span<const MeshData> view{meshDatas};
   return createShapeFromDatas(device, view, true);
 }
 

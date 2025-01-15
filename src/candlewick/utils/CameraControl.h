@@ -17,7 +17,8 @@ inline Float3 cameraViewPos(const Eigen::Matrix4f &viewMatrix) {
 
 inline void cameraLocalRotateX(Eigen::Matrix4f &viewMatrix, Rad<float> angle) {
   float c, s;
-  sincosf(angle, &s, &c);
+  c = std::cos(angle);
+  s = std::sin(angle);
   Eigen::Matrix3f R;
   R << 1., 0, 0, //
       0, c, -s,  //
@@ -28,7 +29,8 @@ inline void cameraLocalRotateX(Eigen::Matrix4f &viewMatrix, Rad<float> angle) {
 /// \brief Rotate the camera around the center by a given increment.
 inline void cameraWorldRotateZ(Eigen::Matrix4f &viewMatrix, Rad<float> angle) {
   float c, s;
-  sincosf(angle, &s, &c);
+  c = std::cos(angle);
+  s = std::sin(angle);
   Eigen::Matrix3f R;
   R << c, -s, 0., //
       s, +c, 0.,  //

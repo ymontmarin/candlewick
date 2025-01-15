@@ -1,5 +1,6 @@
 #include "RobotScene.h"
 #include "LoadPinocchioGeometry.h"
+#include "../core/errors.h"
 #include "../core/Shader.h"
 #include "../core/TransformUniforms.h"
 #include "../utils/CameraControl.h"
@@ -40,6 +41,15 @@ RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom) {
                  magic_enum::enum_name(objType).data());
     throw InvalidArgument(errbuf);
   }
+}
+
+auto RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
+                                      PipelineType pipe_type)
+    -> EnvironmentObject & {
+  Shape shape =
+      Shape::createShapeFromDatas(_device, std::array{std::move(data)});
+  return environmentShapes.emplace_back(true, std::move(shape), placement,
+                                        pipe_type);
 }
 
 RobotScene::RobotScene(const Renderer &renderer,
