@@ -147,7 +147,7 @@ void eventLoop(const Renderer &renderer) {
 
 Renderer createRenderer(Uint32 width, Uint32 height,
                         SDL_GPUTextureFormat depth_stencil_format) {
-  Device dev{SDL_GPU_SHADERFORMAT_SPIRV, true};
+  Device dev{auto_detect_shader_format_subset(), true};
   SDL_Window *window = SDL_CreateWindow(__FILE__, int(width), int(height), 0);
   return Renderer{std::move(dev), window, depth_stencil_format};
 }

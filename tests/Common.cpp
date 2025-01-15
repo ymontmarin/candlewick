@@ -9,7 +9,8 @@
 bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return false;
-  ::new (&ctx.device) Device{SDL_GPU_SHADERFORMAT_SPIRV, true};
+  ::new (&ctx.device)
+      Device{candlewick::auto_detect_shader_format_subset(), true};
 
   ctx.window =
       SDL_CreateWindow("candlewick: examples", int(wWidth), int(wHeight), 0);

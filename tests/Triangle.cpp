@@ -16,7 +16,7 @@ int main() {
   SDL_Log("Found %d GPU drivers.", numGpus);
 
   const char *title = __FILE_NAME__;
-  Device device{SDL_GPU_SHADERFORMAT_SPIRV, true};
+  Device device{auto_detect_shader_format_subset(), true};
   if (!device)
     return 1;
   SDL_Window *window = SDL_CreateWindow(title, 1280, 480, 0);

@@ -2,8 +2,23 @@
 
 #include "Tags.h"
 #include <SDL3/SDL_gpu.h>
+#include <initializer_list>
 
 namespace candlewick {
+
+/// \brief Automatically detect which subset of shader formats (MSL, SPIR-V) are
+/// compatible with the device.
+/// \param name Device name. Pass NULL (default) to auto-detect the best device.
+inline SDL_GPUShaderFormat
+auto_detect_shader_format_subset(const char *name = NULL) {
+  SDL_GPUShaderFormat available_formats = SDL_GPU_SHADERFORMAT_INVALID;
+  for (SDL_GPUShaderFormat test_format :
+       {SDL_GPU_SHADERFORMAT_SPIRV, SDL_GPU_SHADERFORMAT_MSL}) {
+    if (SDL_GPUSupportsShaderFormats(test_format, name))
+      available_formats |= test_format;
+  }
+  return available_formats;
+}
 
 struct Device {
 

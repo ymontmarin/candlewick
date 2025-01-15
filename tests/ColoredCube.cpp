@@ -82,7 +82,7 @@ int main() {
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     return 1;
   }
-  Device device{SDL_GPU_SHADERFORMAT_SPIRV};
+  Device device{auto_detect_shader_format_subset()};
 
   const Uint32 wWidth = 1280;
   const Uint32 wHeight = 720;
