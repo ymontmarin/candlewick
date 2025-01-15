@@ -33,6 +33,12 @@ target_link_libraries(
   candlewick_core
   PUBLIC SDL3::SDL3 SDL3::Headers assimp::assimp Eigen3::Eigen imgui
 )
+set(CANDLEWICK_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets)
+set(CANDLEWICK_SHADERS_DIR ${CANDLEWICK_ASSETS_DIR}/shaders)
+target_compile_definitions(
+  candlewick_core
+  PUBLIC CANDLEWICK_SHADER_BIN_DIR="${CANDLEWICK_SHADERS_DIR}/compiled"
+)
 target_include_directories(candlewick_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(FFmpeg_FOUND)

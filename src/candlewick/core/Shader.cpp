@@ -48,7 +48,6 @@ bool filter_shader_format(SDL_GPUShaderFormat flags, SDL_GPUShaderFormat test) {
 Shader::Shader(const Device &device, const char *filename,
                Uint32 uniformBufferCount, std::string_view entryPoint)
     : _shader(nullptr), _device(device) {
-  const char *currentPath = SDL_GetBasePath();
   SDL_GPUShaderStage stage = detect_shader_stage(filename);
   char shader_path[256];
   const char *shader_ext;
@@ -65,9 +64,8 @@ Shader::Shader(const Device &device, const char *filename,
     SDL_Log("Asked for unavailable shader format.");
     SDL_assert(false);
   }
-  SDL_snprintf(shader_path, sizeof(shader_path),
-               "%s../../../assets/shaders/compiled/%s.%s", currentPath,
-               filename, shader_ext);
+  SDL_snprintf(shader_path, sizeof(shader_path), "%s/%s.%s",
+               CANDLEWICK_SHADER_BIN_DIR, filename, shader_ext);
 
   size_t code_size;
   void *code = SDL_LoadFile(shader_path, &code_size);
