@@ -1,11 +1,10 @@
 #pragma once
 
+#include "Utils.h"
 #include <SDL3/SDL_stdinc.h>
 #include <vector>
 
 namespace candlewick {
-
-struct MeshData;
 
 /// Return codes for \ref loadSceneMeshes().
 enum LoadMeshReturn : Uint16 {
