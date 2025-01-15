@@ -19,7 +19,10 @@ struct Device {
   operator SDL_GPUDevice *() const { return _device; }
   operator bool() const { return _device; }
 
-  const char *driverName() { return driver; }
+  const char *driverName() const { return driver; }
+  SDL_GPUShaderFormat shaderFormats() const {
+    return SDL_GetGPUShaderFormats(_device);
+  }
 
   void destroy();
   ~Device() { destroy(); }

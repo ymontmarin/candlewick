@@ -1,4 +1,5 @@
 #include "Shader.h"
+#include "Device.h"
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_filesystem.h>
 
@@ -16,9 +17,9 @@ SDL_GPUShaderStage detect_shader_stage(const char *filename) {
   return stage;
 }
 
-Shader::Shader(SDL_GPUDevice *device, const char *filename,
-               Uint32 uniformBufferCount)
-    : _device(device) {
+Shader::Shader(const Device &device, const char *filename,
+               Uint32 uniformBufferCount, std::string_view entryPoint)
+    : _shader(nullptr), _device(device) {
   const char *currentPath = SDL_GetBasePath();
   SDL_GPUShaderStage stage = detect_shader_stage(filename);
   char path[256];
@@ -34,8 +35,8 @@ Shader::Shader(SDL_GPUDevice *device, const char *filename,
   }
   SDL_GPUShaderCreateInfo info{.code_size = code_size,
                                .code = reinterpret_cast<Uint8 *>(code),
-                               .entrypoint = "main",
-                               .format = SDL_GPU_SHADERFORMAT_SPIRV,
+                               .entrypoint = entryPoint.data(),
+                               .format = device.shaderFormats(),
                                .stage = stage,
                                .num_samplers = 0,
                                .num_storage_textures = 0,
