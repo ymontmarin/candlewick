@@ -41,29 +41,27 @@ const char *shader_format_name(SDL_GPUShaderFormat shader_format) {
   }
 }
 
-bool filter_shader_format(SDL_GPUShaderFormat flags, SDL_GPUShaderFormat test) {
-  return (flags & test) != 0;
-}
-
 Shader::Shader(const Device &device, const char *filename,
                Uint32 uniformBufferCount, std::string_view entryPoint)
     : _shader(nullptr), _device(device) {
   SDL_GPUShaderStage stage = detect_shader_stage(filename);
-  char shader_path[256];
+
+  SDL_GPUShaderFormat supported_formats = device.shaderFormats();
+  SDL_GPUShaderFormat target_format = SDL_GPU_SHADERFORMAT_INVALID;
   const char *shader_ext;
-  auto supported_formats = device.shaderFormats();
-  SDL_GPUShaderFormat target_format{0};
-  if (filter_shader_format(supported_formats, SDL_GPU_SHADERFORMAT_SPIRV)) {
+
+  if (supported_formats & SDL_GPU_SHADERFORMAT_SPIRV) {
     target_format = SDL_GPU_SHADERFORMAT_SPIRV;
     shader_ext = "spv";
-  } else if (filter_shader_format(supported_formats,
-                                  SDL_GPU_SHADERFORMAT_MSL)) {
+  } else if (supported_formats & SDL_GPU_SHADERFORMAT_MSL) {
     target_format = SDL_GPU_SHADERFORMAT_MSL;
     shader_ext = "msl";
   } else {
-    SDL_Log("Asked for unavailable shader format.");
-    SDL_assert(false);
+    throw RAIIException(
+        "Failed to load shader: no available supported shader format.");
   }
+
+  char shader_path[256];
   SDL_snprintf(shader_path, sizeof(shader_path), "%s/%s.%s",
                CANDLEWICK_SHADER_BIN_DIR, filename, shader_ext);
 
@@ -89,6 +87,8 @@ Shader::Shader(const Device &device, const char *filename,
   if (!_shader) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create shader, %s",
                  SDL_GetError());
+    SDL_free(code);
+    throw RAIIException("Failed to load shader.");
   }
   SDL_free(code);
 }
