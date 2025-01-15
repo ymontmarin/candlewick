@@ -15,10 +15,7 @@ set(CXX_DISABLE_WERROR True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(DOXYGEN_USE_MATHJAX NO)
-set(DOXYGEN_HTML_STYLESHEET "")
-set(DOXYGEN_USE_TEMPLATE_CSS NO)
 set(DOXYGEN_HTML_HEADER "")
-set(DOXYGEN_HTML_FOOTER "")
 set(DOXYGEN_FILE_PATTERNS "*.h *.hh *.hpp *.hxx")
 
 # The following was copied over from https://github.com/Simple-Robotics/aligator:
