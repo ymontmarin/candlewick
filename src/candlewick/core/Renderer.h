@@ -18,7 +18,7 @@ struct Renderer {
 
   Renderer(Device &&device, SDL_Window *window);
   Renderer(Device &&device, SDL_Window *window,
-           SDL_GPUTextureFormat depth_tex_format);
+           SDL_GPUTextureFormat suggested_depth_format);
 
   /// Acquire the command buffer, starting a frame.
   void beginFrame() { command_buffer = SDL_AcquireGPUCommandBuffer(device); }
