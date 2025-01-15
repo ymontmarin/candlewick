@@ -42,20 +42,23 @@ const char *shader_format_name(SDL_GPUShaderFormat shader_format) {
 }
 
 Shader::Shader(const Device &device, const char *filename,
-               Uint32 uniformBufferCount, std::string_view entryPoint)
+               Uint32 uniformBufferCount)
     : _shader(nullptr), _device(device) {
   SDL_GPUShaderStage stage = detect_shader_stage(filename);
 
   SDL_GPUShaderFormat supported_formats = device.shaderFormats();
   SDL_GPUShaderFormat target_format = SDL_GPU_SHADERFORMAT_INVALID;
   const char *shader_ext;
+  const char *entry_point;
 
   if (supported_formats & SDL_GPU_SHADERFORMAT_SPIRV) {
     target_format = SDL_GPU_SHADERFORMAT_SPIRV;
     shader_ext = "spv";
+    entry_point = "main";
   } else if (supported_formats & SDL_GPU_SHADERFORMAT_MSL) {
     target_format = SDL_GPU_SHADERFORMAT_MSL;
     shader_ext = "msl";
+    entry_point = "main0";
   } else {
     throw RAIIException(
         "Failed to load shader: no available supported shader format.");
@@ -75,7 +78,7 @@ Shader::Shader(const Device &device, const char *filename,
           shader_format_name(target_format));
   SDL_GPUShaderCreateInfo info{.code_size = code_size,
                                .code = reinterpret_cast<Uint8 *>(code),
-                               .entrypoint = entryPoint.data(),
+                               .entrypoint = entry_point,
                                .format = target_format,
                                .stage = stage,
                                .num_samplers = 0,

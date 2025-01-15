@@ -12,8 +12,7 @@ const char *shader_format_name(SDL_GPUShaderFormat shader_format);
 
 /// \brief RAII wrapper around \c SDL_GPUShader, with loading utilities.
 struct Shader {
-  Shader(const Device &device, const char *filename, Uint32 uniformBufferCount,
-         std::string_view entryPoint = "main");
+  Shader(const Device &device, const char *filename, Uint32 uniformBufferCount);
   Shader(const Shader &) = delete;
   operator SDL_GPUShader *() noexcept { return _shader; }
   void release();
