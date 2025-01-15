@@ -6,10 +6,10 @@
 #include <SDL3/SDL_log.h>
 #include <new>
 
-bool ExampleInit(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
+bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return false;
-  new (&ctx.device) Device{SDL_GPU_SHADERFORMAT_SPIRV, true};
+  ::new (&ctx.device) Device{SDL_GPU_SHADERFORMAT_SPIRV, true};
 
   ctx.window =
       SDL_CreateWindow("candlewick: examples", int(wWidth), int(wHeight), 0);
@@ -21,24 +21,24 @@ bool ExampleInit(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
   return true;
 }
 
-void ExampleTeardown(Context &ctx) {
+void teardownExample(Context &ctx) {
   SDL_ReleaseWindowFromGPUDevice(ctx.device, ctx.window);
   SDL_DestroyWindow(ctx.window);
-  if (ctx.hudEltPipeline) {
-    SDL_ReleaseGPUGraphicsPipeline(ctx.device, ctx.hudEltPipeline);
-  }
   ctx.device.destroy();
   SDL_Quit();
 }
 
-void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
-                      SDL_GPUTextureFormat depth_stencil_format) {
+SDL_GPUGraphicsPipeline *
+initGridPipeline(const Device &device, SDL_Window *window,
+                 const candlewick::MeshLayout &layout,
+                 SDL_GPUTextureFormat depth_stencil_format,
+                 SDL_GPUPrimitiveType primitive_type) {
   using namespace candlewick;
-  Shader vertexShader{ctx.device, "Hud3dElement.vert", 1};
-  Shader fragmentShader{ctx.device, "Hud3dElement.frag", 1};
+  Shader vertexShader{device, "Hud3dElement.vert", 1};
+  Shader fragmentShader{device, "Hud3dElement.frag", 1};
 
   SDL_GPUColorTargetDescription colorTarget{
-      .format = SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window),
+      .format = SDL_GetGPUSwapchainTextureFormat(device, window),
       .blend_state = {
           .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
           .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
@@ -52,7 +52,7 @@ void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
       .vertex_input_state = layout.toVertexInputState(),
-      .primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST,
+      .primitive_type = primitive_type,
       .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
                         .cull_mode = SDL_GPU_CULLMODE_NONE,
                         .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
@@ -65,9 +65,9 @@ void initGridPipeline(Context &ctx, const candlewick::MeshLayout &layout,
                    .has_depth_stencil_target = true},
       .props = 0,
   };
-  ctx.hudEltPipeline = SDL_CreateGPUGraphicsPipeline(ctx.device, &createInfo);
-  vertexShader.release();
-  fragmentShader.release();
+  SDL_GPUGraphicsPipeline *hudElemPipeline =
+      SDL_CreateGPUGraphicsPipeline(device, &createInfo);
+  return hudElemPipeline;
 }
 
 SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,

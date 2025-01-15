@@ -1,23 +1,26 @@
 #include "Common.h"
 
-#include "candlewick/core/MeshGroup.h"
+#include "candlewick/core/Renderer.h"
+#include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/Shader.h"
+#include "candlewick/core/Shape.h"
 #include "candlewick/core/matrix_util.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
+#include "candlewick/core/TransformUniforms.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"
 #include "candlewick/multibody/LoadPinocchioGeometry.h"
 
+#include "candlewick/primitives/Arrow.h"
 #include "candlewick/primitives/Plane.h"
 #include "candlewick/primitives/Grid.h"
 
-#include "candlewick/gui/imgui_impl_sdl3_extend.h"
-#include "candlewick/gui/imgui_sdl_gpu.h"
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
 
-#include <robot_descriptions_cpp/robot_spec.hpp>
 #include <robot_descriptions_cpp/robot_load.hpp>
 
 #include <pinocchio/multibody/data.hpp>
@@ -27,61 +30,59 @@
 #include <pinocchio/algorithm/geometry.hpp>
 
 #include <SDL3/SDL_log.h>
+#include <SDL3/SDL_init.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_gpu.h>
 
+#include <CLI/App.hpp>
+#include <CLI/Formatter.hpp>
+#include <CLI/Config.hpp>
+
 namespace pin = pinocchio;
 using namespace candlewick;
-using Eigen::Matrix3f;
-using Eigen::Matrix4f;
 
-const Uint32 wWidth = 1600;
-const Uint32 wHeight = 900;
-const float aspectRatio = float(wWidth) / float(wHeight);
+/// Application constants
 
-static bool add_plane = true;
-static bool add_grid = true;
-static Matrix4f viewMat;
-static Matrix4f projectionMat;
-static Rad<float> fov = 55.0_radf;
+constexpr Uint32 wWidth = 1600;
+constexpr Uint32 wHeight = 900;
+constexpr float aspectRatio = float(wWidth) / float(wHeight);
+
+/// Application state
+
+static bool renderPlane = true;
+static bool renderGrid = true;
+static Mat4f viewMat;
+static Mat4f projectionMat;
+static Radf currentFov = 55.0_radf;
 static bool quitRequested = false;
 
 static float pixelDensity;
 static float displayScale;
 
-static struct {
-  MeshData data;
-  Mesh mesh;
-  Float4 color;
-} gridMesh{
-    .data = loadGrid(10),
-    .mesh{NoInit},
-    .color = 0xE0A236ff_rgbaf,
-};
+static GpuVec4 gridColor = 0xE0A236ff_rgbaf;
+static Mesh gridMesh{NoInit};
 
-Context ctx;
-
-struct alignas(16) TransformUniformData {
-  GpuMat4 model;
-  alignas(16) GpuMat4 mvp;
-  alignas(16) GpuMat3 normalMatrix;
-};
-
-static DirectionalLightUniform myLight{
+static DirectionalLight myLight{
     .direction = {0., -1., -1.},
     .color = {1.0, 1.0, 1.0},
-    .intensity = 4.0,
+    .intensity = 8.0,
 };
 
-void updateFov(Rad<float> newFov) {
-  fov = newFov;
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
+struct alignas(16) light_ubo_t {
+  DirectionalLight a;
+  GpuVec3 viewPos;
+};
+
+void updateFov(Radf newFov) {
+  currentFov = newFov;
+  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
 }
 
-void eventLoop() {
-  pixelDensity = SDL_GetWindowPixelDensity(ctx.window);
-  displayScale = SDL_GetWindowDisplayScale(ctx.window);
+void eventLoop(const Renderer &renderer) {
+  // update pixel density and display scale
+  pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
+  displayScale = SDL_GetWindowDisplayScale(renderer.window);
   const float rotSensitivity = 5e-3f * pixelDensity;
   const float panSensitivity = 1e-2f * pixelDensity;
   SDL_Event event;
@@ -101,7 +102,7 @@ void eventLoop() {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
       // orthographicZoom(projectionMat, scaleFac);
-      updateFov(Radf(std::min(fov * scaleFac, 170.0_radf)));
+      updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
       break;
     }
     case SDL_EVENT_KEY_DOWN: {
@@ -144,158 +145,133 @@ void eventLoop() {
   }
 }
 
-void drawMyImguiMenu() {
-  static bool demo_window_open = true;
-  const float minFov = 15.f;
-  const float maxFov = 90.f;
-
-  ImGui::Begin("Camera", nullptr);
-  Deg<float> _fovdeg{fov};
-  ImGui::DragFloat("cam_fov", (float *)(_fovdeg), 1.f, minFov, maxFov, "%.3f",
-                   ImGuiSliderFlags_AlwaysClamp);
-  updateFov(Radf(_fovdeg));
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
-  ImGui::Checkbox("Render plane", &add_plane);
-  ImGui::Checkbox("Render grid", &add_grid);
-  ImGui::End();
-  ImGui::SetNextWindowCollapsed(true, ImGuiCond_FirstUseEver);
-  ImGui::ShowDemoWindow(&demo_window_open);
+Renderer createRenderer(Uint32 width, Uint32 height,
+                        SDL_GPUTextureFormat depth_stencil_format) {
+  Device dev{SDL_GPU_SHADERFORMAT_SPIRV, true};
+  SDL_Window *window = SDL_CreateWindow(__FILE__, int(width), int(height), 0);
+  return Renderer{std::move(dev), window, depth_stencil_format};
 }
 
-void drawGrid(SDL_GPUCommandBuffer *command_buffer,
-              SDL_GPURenderPass *render_pass, Matrix4f projViewMat) {
-  struct {
-    GpuMat4 mvp;
-  } cameraUniform{.mvp = projViewMat};
-  SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
-                               sizeof(cameraUniform));
-  struct {
-    alignas(16) GpuVec4 color;
-  } colorUniform{gridMesh.color};
-  static_assert(IsVertexType<decltype(colorUniform)>, "");
-  SDL_PushGPUFragmentUniformData(command_buffer, 0, &colorUniform,
-                                 sizeof(colorUniform));
-  auto vertex_binding = gridMesh.mesh.getVertexBinding(0);
-  auto index_binding = gridMesh.mesh.getIndexBinding();
+int main(int argc, char **argv) {
+  SDL_GPUGraphicsPipeline *meshPipeline;
 
-  SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
-  SDL_BindGPUIndexBuffer(render_pass, &index_binding,
-                         SDL_GPU_INDEXELEMENTSIZE_32BIT);
-  SDL_DrawGPUIndexedPrimitives(render_pass, gridMesh.mesh.count, 1, 0, 0, 0);
-}
+  CLI::App app{"Ur5 example"};
+  bool performRecording{false};
+  argv = app.ensure_utf8(argv);
+  app.add_flag("-r,--record", performRecording, "Record output");
+  CLI11_PARSE(app, argc, argv);
 
-bool GuiInit() {
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
+  if (!SDL_Init(SDL_INIT_VIDEO))
+    return 1;
 
-  ImGuiIO &io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-  io.IniFilename = nullptr;
+  Renderer renderer =
+      createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D24_UNORM);
+  Device &device = renderer.device;
 
-  ImGui::StyleColorsDark();
-  if (!ImGui_ImplSDL3_InitForSDLGPU3(ctx.window, ctx.device)) {
-    SDL_Log("Failed to init ImGui for SDL");
-    return false;
+  // Load plane
+  MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
+  Mesh plane = createMesh(device, plane_data);
+  uploadMeshToDevice(device, plane, plane_data);
+
+  // Load grid
+  MeshData grid_data = loadGrid(10);
+  gridMesh = createMesh(device, grid_data);
+  uploadMeshToDevice(device, gridMesh, grid_data);
+
+  std::array triad_data = createTriad();
+  std::vector<Mesh> triad_meshes;
+  for (auto &&arrow_data : std::move(triad_data)) {
+    Mesh arrow_mesh = createMesh(device, arrow_data);
+    uploadMeshToDevice(device, arrow_mesh, arrow_data);
+    triad_meshes.push_back(std::move(arrow_mesh));
   }
-  return ImGui_ImplSDLGPU3_Init(ctx.device, ctx.window);
-}
 
-void GuiTeardown() {
-  ImGui_ImplSDLGPU3_Shutdown();
-  ImGui_ImplSDL3_Shutdown();
-  ImGui::DestroyContext();
-}
+  GuiSystem guiSys{[&plane_data](Renderer &r) {
+    static bool demo_window_open = true;
+    const float minFov = 15.f;
+    const float maxFov = 90.f;
 
-int main() {
-  if (!ExampleInit(ctx, wWidth, wHeight)) {
+    ImGui::Begin("Renderer info & controls", nullptr,
+                 ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("Device driver: %s", r.device.driverName());
+    ImGui::SeparatorText("Camera");
+    Degf newFov{currentFov};
+    ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
+                     ImGuiSliderFlags_AlwaysClamp);
+    updateFov(Radf(newFov));
+    projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+    ImGui::Checkbox("Render plane", &renderPlane);
+    ImGui::Checkbox("Render grid", &renderGrid);
+
+    ImGui::SeparatorText("Lights");
+    ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
+    ImGui::ColorEdit3("color", myLight.color.data());
+    ImGui::Separator();
+    ImGui::ColorEdit4("grid color", gridColor.data(),
+                      ImGuiColorEditFlags_AlphaPreview);
+    ImGui::ColorEdit4("plane color", plane_data.material.baseColor.data());
+    ImGui::End();
+    ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+    ImGui::ShowDemoWindow(&demo_window_open);
+  }};
+
+  if (!guiSys.init(renderer)) {
     return 1;
   }
-  Device &device = ctx.device;
-  SDL_Window *window = ctx.window;
 
-  if (!GuiInit()) {
-    return 1;
-  }
-
+  // Load robot
   pin::Model model;
   pin::GeometryModel geom_model;
-  auto robot_spec =
-      robot_descriptions::loadRobotSpecFromToml("ur.toml", "ur5_gripper");
-  robot_descriptions::loadModelFromSpec(robot_spec, model);
-  robot_descriptions::loadGeomFromSpec(robot_spec, model, geom_model,
-                                       pin::VISUAL);
+  robot_descriptions::loadModelsFromToml("ur.toml", "ur5_gripper", model,
+                                         &geom_model, NULL);
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
-  std::vector<MeshData> meshDatas;
-  std::vector<MeshGroup> meshGroups;
-  meshGroups.reserve(geom_model.ngeoms);
-  std::vector<size_t> meshDataIdx = {0UL};
+  std::vector<Shape> robotShapes;
   for (size_t i = 0; i < geom_model.ngeoms; i++) {
     const auto &gobj = geom_model.geometryObjects[i];
-    multibody::loadGeometryObject(gobj, meshDatas);
-    meshDataIdx.push_back(meshDatas.size());
+    auto meshDatas = multibody::loadGeometryObject(gobj);
+    /// Create group of meshes, upload to device
+    auto shape = Shape::createShapeFromDatas(device, meshDatas, true);
+    robotShapes.push_back(std::move(shape));
+    SDL_Log("Loaded %zu MeshData objects. Meshes:", meshDatas.size());
+    for (size_t i = 0; i < meshDatas.size(); i++) {
+      SDL_Log("   [%zu] %zu vertices, %zu indices", i,
+              meshDatas[i].numVertices(), meshDatas[i].numIndices());
+    }
   }
-  for (size_t i = 0; i < geom_model.ngeoms; i++) {
-    std::span<MeshData> slice{meshDatas.begin() + meshDataIdx[i],
-                              meshDatas.begin() + meshDataIdx[i + 1]};
-    meshGroups.emplace_back(device, slice);
-    uploadMeshGroupToDevice(device, meshGroups[i]);
-  }
-
-  SDL_Log("Loaded %zu MeshData objects.", meshDatas.size());
-  for (size_t i = 0; i < meshDatas.size(); i++) {
-    SDL_Log("Mesh %zu: %zu vertices, %zu indices", i,
-            meshDatas[i].numVertices(), meshDatas[i].numIndices());
-  }
-  SDL_Log("Created %zu mesh groups.", meshGroups.size());
-
-  // Load plane
-  struct {
-    MeshData data;
-    Mesh mesh;
-  } plane{loadPlaneTiled(0.25f, 5, 5), Mesh{NoInit}};
-  plane.mesh = convertToMesh(device, plane.data);
-  uploadMeshToDevice(device, plane.mesh, plane.data);
-
-  // Load grid
-  gridMesh.mesh = convertToMesh(device, gridMesh.data);
-  uploadMeshToDevice(device, gridMesh.mesh, gridMesh.data);
+  SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
 
   /** CREATE PIPELINES **/
-  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
-  SDL_GPUTexture *depthTexture = createDepthTexture(
-      device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
-  SDL_GPUGraphicsPipeline *mesh_pipeline = NULL;
+  // Robot mesh pipeline
+  const auto swapchain_format =
+      SDL_GetGPUSwapchainTextureFormat(device, renderer.window);
   {
     Shader vertexShader{device, "PbrBasic.vert", 1};
     Shader fragmentShader{device, "PbrBasic.frag", 2};
 
-    SDL_GPUColorTargetDescription colorTarget{
-        .format = SDL_GetGPUSwapchainTextureFormat(ctx.device, ctx.window)};
+    SDL_GPUColorTargetDescription colorTarget;
+    colorTarget.format = swapchain_format;
     SDL_zero(colorTarget.blend_state);
-    SDL_Log("Mesh pipeline color target format: %d", colorTarget.format);
 
     // create pipeline
     SDL_GPUGraphicsPipelineCreateInfo mesh_pipeline_desc{
         .vertex_shader = vertexShader,
         .fragment_shader = fragmentShader,
-        .vertex_input_state =
-            meshGroups[0].meshes[0].layout().toVertexInputState(),
-        .primitive_type = meshGroups[0].meshDatas[0].primitiveType,
+        .vertex_input_state = robotShapes[0].layout().toVertexInputState(),
+        .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
         .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
                              .enable_depth_test = true,
                              .enable_depth_write = true},
         .target_info{.color_target_descriptions = &colorTarget,
                      .num_color_targets = 1,
-                     .depth_stencil_format = depth_stencil_format,
+                     .depth_stencil_format = renderer.depth_format,
                      .has_depth_stencil_target = true},
         .props = 0,
     };
 
-    mesh_pipeline = SDL_CreateGPUGraphicsPipeline(device, &mesh_pipeline_desc);
-    if (mesh_pipeline == NULL) {
+    meshPipeline = SDL_CreateGPUGraphicsPipeline(device, &mesh_pipeline_desc);
+    if (meshPipeline == nullptr) {
       SDL_Log("Failed to create pipeline: %s", SDL_GetError());
       return 1;
     }
@@ -304,50 +280,51 @@ int main() {
     fragmentShader.release();
   }
 
-  initGridPipeline(ctx, gridMesh.mesh.layout(), depth_stencil_format);
+  SDL_GPUGraphicsPipeline *debugLinePipeline =
+      initGridPipeline(renderer.device, renderer.window, gridMesh.layout(),
+                       renderer.depth_format, SDL_GPU_PRIMITIVETYPE_LINELIST);
+  SDL_GPUGraphicsPipeline *debugTrianglePipeline = initGridPipeline(
+      renderer.device, renderer.window, triad_meshes[0].layout(),
+      renderer.depth_format, SDL_GPU_PRIMITIVETYPE_TRIANGLELIST);
 
   // MAIN APPLICATION LOOP
 
   Uint32 frameNo = 0;
 
-  projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
+  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
   viewMat = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
 
-  media::VideoRecorder recorder{wWidth, wHeight, "ur5.mp4"};
+  media::VideoRecorder recorder{NoInit};
+  if (performRecording)
+    ::new (&recorder) media::VideoRecorder{wWidth, wHeight, "ur5.mp4"};
+
+  auto record_callback = [=, &renderer, &recorder](auto swapchain_format) {
+    media::videoWriteTextureToFrame(renderer.device, recorder,
+                                    renderer.swapchain, swapchain_format,
+                                    wWidth, wHeight);
+  };
 
   while (frameNo < 5000 && !quitRequested) {
     // logic
-    eventLoop();
+    eventLoop(renderer);
     double phi = 0.5 * (1. + std::sin(frameNo * 1e-2));
     Eigen::VectorXd q = pin::interpolate(model, q0, q1, phi);
     pin::forwardKinematics(model, pin_data, q);
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
 
-    ImGui_ImplSDLGPU3_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-    ImGui::NewFrame();
-
-    drawMyImguiMenu();
-    ImGui::Render();
-
-    // render pass
-
-    SDL_GPUCommandBuffer *command_buffer;
-    SDL_GPUTexture *swapchain;
+    // acquire command buffer and swapchain
+    renderer.beginFrame();
+    renderer.acquireSwapchain();
+    SDL_GPUCommandBuffer *command_buffer = renderer.command_buffer;
     SDL_GPURenderPass *render_pass;
 
-    command_buffer = SDL_AcquireGPUCommandBuffer(device);
-    SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain, NULL,
-                                   NULL);
-    // SDL_Log("Frame [%u]", frameNo);
-
-    if (swapchain) {
+    if (renderer.swapchain) {
 
       SDL_GPUColorTargetInfo ctinfo{
-          .texture = swapchain,
+          .texture = renderer.swapchain,
           .clear_color = SDL_FColor{0., 0., 0., 0.},
           .load_op = SDL_GPU_LOADOP_CLEAR,
           .store_op = SDL_GPU_STOREOP_STORE,
@@ -360,34 +337,28 @@ int main() {
       depthTarget.store_op = SDL_GPU_STOREOP_DONT_CARE;
       depthTarget.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
       depthTarget.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
-      depthTarget.texture = depthTexture;
-      depthTarget.cycle = true;
+      depthTarget.texture = renderer.depth_texture;
 
       render_pass =
           SDL_BeginGPURenderPass(command_buffer, &ctinfo, 1, &depthTarget);
 
-      SDL_assert(meshGroups.size() == geom_model.ngeoms);
+      SDL_assert(robotShapes.size() == geom_model.ngeoms);
 
-      Matrix4f modelView;
-      Matrix4f projViewMat;
+      Mat4f modelView;
+      Mat4f projViewMat;
 
-      struct alignas(16) light_ubo_t {
-        DirectionalLightUniform a;
-        alignas(16) GpuVec3 viewPos;
-      };
       const light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
 
-      SDL_BindGPUGraphicsPipeline(render_pass, mesh_pipeline);
+      SDL_BindGPUGraphicsPipeline(render_pass, meshPipeline);
+      renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
 
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
         const pin::SE3 &placement = geom_data.oMg[i];
-        const MeshGroup &mg = meshGroups[i];
-
-        Matrix4f modelMat = placement.toHomogeneousMatrix().cast<float>();
+        Mat4f modelMat = placement.toHomogeneousMatrix().cast<float>();
         modelView = viewMat * modelMat.matrix();
         projViewMat = projectionMat * modelView;
-        const Matrix3f normalMatrix =
+        const Mat3f normalMatrix =
             modelMat.topLeftCorner<3, 3>().inverse().transpose();
         TransformUniformData cameraUniform{
             modelMat,
@@ -395,66 +366,41 @@ int main() {
             normalMatrix,
         };
 
-        SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
-                                     sizeof(cameraUniform));
-        SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
-                                       sizeof(lightUbo));
-
-        for (size_t j = 0; j < mg.size(); j++) {
-          const auto material = mg.meshDatas[j].material.toUniform();
-          SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
-                                         sizeof(PbrMaterialUniform));
-          SDL_GPUBufferBinding vertex_binding{
-              .buffer = mg.masterVertexBuffer,
-              .offset = mg.meshes[j].vertexBufferOffsets[0],
-          };
-          SDL_GPUBufferBinding index_binding{
-              .buffer = mg.masterIndexBuffer,
-              .offset = mg.meshes[j].indexBufferOffset,
-          };
-          SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
-          SDL_BindGPUIndexBuffer(render_pass, &index_binding,
-                                 SDL_GPU_INDEXELEMENTSIZE_32BIT);
-          SDL_DrawGPUIndexedPrimitives(render_pass, mg.meshes[j].count, 1, 0, 0,
-                                       0);
-        }
+        renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
+        renderer.render(render_pass, robotShapes[i]);
       }
 
       // RENDER PLANE
-      if (add_plane) {
+      if (renderPlane) {
         Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-        modelView = viewMat * plane_transform.matrix();
-        projViewMat = projectionMat * modelView;
-        const Matrix3f normalMatrix =
+        modelView.noalias() = viewMat * plane_transform.matrix();
+        projViewMat.noalias() = projectionMat * modelView;
+        const Mat3f normalMatrix =
             plane_transform.linear().inverse().transpose();
         TransformUniformData cameraUniform{plane_transform.matrix(),
                                            projViewMat, normalMatrix};
-        const auto material = plane.data.material.toUniform();
-        SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
-                                     sizeof(cameraUniform));
-        SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
-                                       sizeof(lightUbo));
-        SDL_PushGPUFragmentUniformData(command_buffer, 0, &material,
-                                       sizeof(PbrMaterialUniform));
-
-        SDL_GPUBufferBinding vertex_binding = plane.mesh.getVertexBinding(0);
-        SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
-
-        if (plane.mesh.isIndexed()) {
-          SDL_GPUBufferBinding index_binding = plane.mesh.getIndexBinding();
-          SDL_BindGPUIndexBuffer(render_pass, &index_binding,
-                                 SDL_GPU_INDEXELEMENTSIZE_32BIT);
-          SDL_DrawGPUIndexedPrimitives(render_pass, plane.mesh.count, 1, 0, 0,
-                                       0);
-        } else {
-          SDL_DrawGPUPrimitives(render_pass, plane.mesh.count, 1, 0, 0);
-        }
+        const auto material = plane_data.material.toUniform();
+        renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
+        renderer.pushFragmentUniform(0, &material, sizeof(PbrMaterialUniform));
+        renderer.render(render_pass, plane);
       }
 
-      // render grid
-      if (add_grid) {
-        SDL_BindGPUGraphicsPipeline(render_pass, ctx.hudEltPipeline);
-        drawGrid(command_buffer, render_pass, projectionMat * viewMat);
+      // render 3d hud elements
+      projViewMat.noalias() = projectionMat * viewMat;
+      const GpuMat4 mvp{projViewMat};
+      renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
+      if (renderGrid) {
+        SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
+        renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
+        renderer.render(render_pass, gridMesh);
+
+        SDL_BindGPUGraphicsPipeline(render_pass, debugTrianglePipeline);
+        for (size_t i = 0; i < 3; i++) {
+          Mesh &m = triad_meshes[i];
+          GpuVec4 triad_col{triad_data[i].material.baseColor};
+          renderer.pushFragmentUniform(0, &triad_col, sizeof(triad_col));
+          renderer.render(render_pass, m);
+        }
       }
 
       SDL_EndGPURenderPass(render_pass);
@@ -463,24 +409,25 @@ int main() {
       break;
     }
 
-    ImGui_ImplSDLGPU3_RenderDrawData(ImGui::GetDrawData(), command_buffer,
-                                     swapchain);
+    guiSys.render(renderer);
 
-    SDL_SubmitGPUCommandBuffer(command_buffer);
+    renderer.endFrame();
 
-    auto swapchainFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
-    media::videoWriteTextureToFrame(device, recorder, swapchain,
-                                    swapchainFormat, wWidth, wHeight);
-
+    if (performRecording) {
+      record_callback(swapchain_format);
+    }
     frameNo++;
   }
 
-  for (auto &mg : meshGroups) {
-    mg.releaseBuffers(device);
+  for (auto &shape : robotShapes) {
+    shape.release();
   }
-  SDL_ReleaseGPUGraphicsPipeline(device, mesh_pipeline);
+  SDL_ReleaseGPUGraphicsPipeline(device, meshPipeline);
+  SDL_ReleaseGPUGraphicsPipeline(device, debugLinePipeline);
 
-  GuiTeardown();
-  ExampleTeardown(ctx);
+  guiSys.release();
+  renderer.destroy();
+  SDL_DestroyWindow(renderer.window);
+  SDL_Quit();
   return 0;
 }

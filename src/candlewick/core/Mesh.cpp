@@ -15,10 +15,9 @@ Mesh::Mesh(MeshLayout layout) : _layout(std::move(layout)) {
   vertexBufferOwnerships.resize(count);
 }
 
-std::size_t Mesh::addVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
-                                      Uint32 offset) {
-  auto max = _layout.toVertexInputState().num_vertex_buffers;
-  for (std::size_t i = 0; i < max; i++) {
+std::size_t Mesh::bindVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
+                                       Uint32 offset) {
+  for (std::size_t i = 0; i < _layout.numBuffers(); i++) {
     if (_layout.toVertexInputState().vertex_buffer_descriptions[i].slot ==
         slot) {
       vertexBuffers[i] = buffer;
@@ -30,22 +29,22 @@ std::size_t Mesh::addVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
   return ~std::size_t{};
 }
 
-Mesh &Mesh::addVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
-                            bool takeOwnership) {
-  std::size_t idx = addVertexBufferImpl(slot, buffer, offset);
-  vertexBufferOwnerships[idx] = takeOwnership ? Owned : Borrowed;
+Mesh &Mesh::bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
+                             BufferOwnership owned) {
+  std::size_t idx = bindVertexBufferImpl(slot, buffer, offset);
+  vertexBufferOwnerships[idx] = owned;
   return *this;
 }
 
 Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer, Uint32 offset,
-                           bool takeOwnership) {
+                           BufferOwnership owned) {
   indexBuffer = buffer;
   indexBufferOffset = offset;
-  indexBufferOwnership = takeOwnership ? Owned : Borrowed;
+  indexBufferOwnership = owned;
   return *this;
 }
 
-void Mesh::releaseOwnedBuffers(const Device &device) {
+void Mesh::releaseOwnedBuffers(SDL_GPUDevice *device) {
   for (std::size_t i = 0; i < vertexBuffers.size(); i++) {
     switch (vertexBufferOwnerships[i]) {
     case Owned: {

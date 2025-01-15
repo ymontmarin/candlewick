@@ -5,6 +5,7 @@
 namespace candlewick {
 namespace multibody {
 namespace pin = pinocchio;
+class RobotScene;
 class Visualizer;
 } // namespace multibody
 } // namespace candlewick

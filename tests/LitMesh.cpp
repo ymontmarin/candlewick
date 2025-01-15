@@ -47,7 +47,7 @@ struct alignas(16) TransformUniformData {
 };
 
 int main() {
-  if (!ExampleInit(ctx, wWidth, wHeight)) {
+  if (!initExample(ctx, wWidth, wHeight)) {
     return 1;
   }
   Device &device = ctx.device;
@@ -73,7 +73,7 @@ int main() {
 
   std::vector<Mesh> meshes;
   for (std::size_t j = 0; j < meshDatas.size(); j++) {
-    Mesh mesh = convertToMesh(device, meshDatas[j]);
+    Mesh mesh = createMesh(device, meshDatas[j]);
     meshes.push_back(std::move(mesh));
   }
   SDL_assert(meshDatas[0].numIndices() == meshes[0].count);
@@ -143,7 +143,7 @@ int main() {
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
   Matrix4f viewMat = lookAt({6.0, 0, 3.}, Float3::Zero());
 
-  DirectionalLightUniform myLight{
+  DirectionalLight myLight{
       .direction = {0., -1., 1.},
       .color = {1.0, 1.0, 1.0},
       .intensity = 4.0,
@@ -231,7 +231,7 @@ int main() {
           normalMatrix,
       };
       struct {
-        DirectionalLightUniform a;
+        DirectionalLight a;
         GpuVec3 viewPos;
       } lightUbo{myLight, cameraViewPos(viewMat)};
 
@@ -257,6 +257,6 @@ int main() {
   }
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 
-  ExampleTeardown(ctx);
+  teardownExample(ctx);
   return 0;
 }

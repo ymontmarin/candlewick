@@ -1,7 +1,6 @@
 #include "LoadMesh.h"
 #include "MeshData.h"
 #include "../core/DefaultVertex.h"
-#include "assimp_convert.h"
 
 #include <SDL3/SDL_log.h>
 #include <assimp/scene.h>
@@ -34,24 +33,13 @@ MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
 
   for (Uint32 face_id = 0; face_id < inMesh->mNumFaces; face_id++) {
     const aiFace &f = inMesh->mFaces[face_id];
+    SDL_assert(f.mNumIndices == expectedFaceSize);
     for (Uint32 ii = 0; ii < f.mNumIndices; ii++) {
       indexData[face_id * expectedFaceSize + ii] = f.mIndices[ii];
     }
   }
   return MeshData{SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, std::move(vertexData),
                   std::move(indexData)};
-}
-
-PbrMaterialData loadFromAssimpMaterial(aiMaterial *material) {
-  PbrMaterialData out;
-  aiColor4D baseColor;
-  material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor);
-  out.baseColor = util::assimpColor4ToEigen(baseColor);
-
-  material->Get(AI_MATKEY_METALLIC_FACTOR, out.metalness);
-  material->Get(AI_MATKEY_ROUGHNESS_FACTOR, out.roughness);
-  out.ao = 1.0f;
-  return out;
 }
 
 LoadMeshReturn loadSceneMeshes(const char *path,
@@ -80,14 +68,13 @@ LoadMeshReturn loadSceneMeshes(const char *path,
 
   LoadMeshReturn ret = LoadMeshReturn::OK;
   aiMatrix4x4 transform = scene->mRootNode->mTransformation;
-  // meshData.resize(scene->mNumMeshes);
   for (std::size_t i = 0; i < scene->mNumMeshes; i++) {
     aiMesh *inMesh = scene->mMeshes[i];
-    meshData.push_back(loadAiMesh(inMesh, transform));
+    MeshData &md = meshData.emplace_back(loadAiMesh(inMesh, transform));
     Uint32 materialId = inMesh->mMaterialIndex;
     if (scene->HasMaterials()) {
       aiMaterial *material = scene->mMaterials[materialId];
-      meshData[i].material = loadFromAssimpMaterial(material);
+      md.material = loadFromAssimpMaterial(material);
       ret = LoadMeshReturn::HasMaterials;
     }
   }

@@ -1,4 +1,4 @@
-# Copyright (c) 2024 ManifoldFR
+# Copyright (c) 2024-2025 ManifoldFR
 
 cmake_minimum_required(VERSION 3.20)
 
@@ -7,6 +7,7 @@ set(PROJECT_CUSTOM_HEADER_EXTENSION "h")
 set(PROJECT_DESCRIPTION "A renderer")
 set(PROJECT_CUSTOM_HEADER_DIR)
 set(PROJECT_URL "https://github.com/ManifoldFR/candlewick")
+set(PROJECT_GENERATED_HEADERS_SKIP_WARNING True)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -14,7 +15,8 @@ set(CXX_DISABLE_WERROR True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(DOXYGEN_USE_MATHJAX NO)
-set(DOXYGEN_USE_TEMPLATE_CSS YES)
+set(DOXYGEN_HTML_HEADER "")
+set(DOXYGEN_FILE_PATTERNS "*.h *.hh *.hpp *.hxx")
 
 # The following was copied over from https://github.com/Simple-Robotics/aligator:
 # Use BoostConfig module distributed by boost library instead of using FindBoost module distributed
@@ -33,6 +35,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/bin)
 set(CMAKE_VERBOSE_MAKEFILE False)
+
+set(AWESOME_CSS_DIR ${PROJECT_SOURCE_DIR}/doc/doxygen-awesome-css)
 
 option(BUILD_PYTHON_BINDINGS "Build Python bindings." OFF)
 option(BUILD_PINOCCHIO_VISUALIZER "Build the Pinocchio visualizer." ON)
@@ -55,11 +59,11 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   )
 endif()
 
-set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
+find_package(SDL3 3.1.3 REQUIRED)
 
+add_subdirectory(external)
 add_subdirectory(src)
 add_subdirectory(tests)
-add_subdirectory(external/pinocchio-visualizers)
 if(BUILD_PYTHON_BINDINGS)
   add_subdirectory(python)
 endif()

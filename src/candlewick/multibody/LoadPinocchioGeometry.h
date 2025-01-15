@@ -7,10 +7,16 @@
 
 namespace candlewick::multibody {
 
+/// \brief Load an invidual Pinocchio GeometryObject's component geometries into
+/// an array of \c MeshData.
 void loadGeometryObject(const pin::GeometryObject &gobj,
                         std::vector<MeshData> &meshData);
 
-void loadGeometryModel(const pin::GeometryModel &model,
-                       std::vector<MeshData> &meshData);
+inline std::vector<MeshData>
+loadGeometryObject(const pin::GeometryObject &gobj) {
+  std::vector<MeshData> meshData;
+  loadGeometryObject(gobj, meshData);
+  return meshData;
+}
 
 } // namespace candlewick::multibody

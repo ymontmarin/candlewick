@@ -84,6 +84,7 @@ void videoWriteTextureToFrame(const Device &device,
                               SDL_GPUTexture *texture,
                               SDL_GPUTextureFormat format, const Uint32 width,
                               const Uint32 height) {
+  SDL_assert(recorder.isInitialized());
 
   SDL_GPUCommandBuffer *command_buffer = SDL_AcquireGPUCommandBuffer(device);
   SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(command_buffer);

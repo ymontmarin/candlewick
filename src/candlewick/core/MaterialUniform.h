@@ -9,7 +9,6 @@ struct alignas(16) PbrMaterialUniform {
   float metalness;
   float roughness;
   float ao;
-  float _padding;
 };
 
 } // namespace candlewick
