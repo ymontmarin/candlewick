@@ -15,7 +15,7 @@ static ArrowMeshData gen_arrow_impl(float shaft_length, float shaft_radius,
   ArrowMeshData mesh;
 
   // Generate shaft (cylinder)
-  const float angle_step = 2 * M_PIf / float(segments);
+  const float angle_step = 2 * constants::Pif / float(segments);
 
   // Shaft vertices
   for (Uint32 i = 0; i <= segments; ++i) {
@@ -124,8 +124,8 @@ std::array<MeshData, 3> createTriad(float shaft_length, float shaft_radius,
   xAxis.material.baseColor << 1., 0., 0., 1.;
   yAxis.material.baseColor << 0., 1., 0., 1.;
   zAxis.material.baseColor << 0., 0., 1., 1.;
-  const Eigen::AngleAxisf aax{M_PI_2f, Float3::UnitY()};
-  const Eigen::AngleAxisf aay{M_PI_2f, -Float3::UnitX()};
+  const Eigen::AngleAxisf aax{constants::Pi_2f, Float3::UnitY()};
+  const Eigen::AngleAxisf aay{constants::Pi_2f, -Float3::UnitX()};
   apply3DTransformInPlace(xAxis, Eigen::Affine3f{aax});
   apply3DTransformInPlace(yAxis, Eigen::Affine3f{aay});
   return {std::move(xAxis), std::move(yAxis), std::move(zAxis)};

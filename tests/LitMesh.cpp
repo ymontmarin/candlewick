@@ -24,13 +24,13 @@ struct TestMesh {
   Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 } meshes[] = {
     {"assets/meshes/teapot.obj",
-     Eigen::Affine3f{Eigen::AngleAxisf{M_PI_2f, Float3{1., 0., 0.}}}},
+     Eigen::Affine3f{Eigen::AngleAxisf{constants::Pi_2f, Float3{1., 0., 0.}}}},
     {"assets/meshes/mammoth.obj",
      Eigen::Affine3f{Eigen::UniformScaling(4.0f)}.rotate(
-         Eigen::AngleAxisf{M_PI_2f, Float3{1., 0., 0.}})},
+         Eigen::AngleAxisf{constants::Pi_2f, Float3{1., 0., 0.}})},
     {"assets/meshes/stanford-bunny.obj",
      Eigen::Affine3f{Eigen::UniformScaling(12.0f)}.rotate(
-         Eigen::AngleAxisf(M_PI_2f, Float3{1., 0., 0.}))},
+         Eigen::AngleAxisf(constants::Pi_2f, Float3{1., 0., 0.}))},
     {"assets/meshes/cube.obj"},
 };
 

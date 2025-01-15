@@ -34,9 +34,16 @@ using GpuMat4 = Eigen::Matrix<float, 4, 4, Eigen::ColMajor | Eigen::DontAlign>;
 
 /* ANGLES */
 
-inline double deg2rad(double t) { return t * M_PI / 180.0; }
-inline float deg2rad(float t) { return t * M_PIf / 180.0f; }
-inline float rad2deg(float t) { return t * 180.0f / M_PIf; }
+namespace constants {
+inline constexpr double Pi = 3.1415926535897932;
+inline constexpr float Pif = 3.141592654f;
+inline constexpr double Pi_2 = 1.5707963267948966;
+inline constexpr double Pi_2f = 1.5707963267f;
+} // namespace constants
+
+inline double deg2rad(double t) { return t * constants::Pi / 180.0; }
+inline float deg2rad(float t) { return t * constants::Pif / 180.0f; }
+inline float rad2deg(float t) { return t * 180.0f / constants::Pif; }
 
 template <std::floating_point T> struct Rad;
 template <std::floating_point T> struct Deg;

@@ -125,7 +125,7 @@ int main() {
 
   Uint32 frameNo = 0;
   bool quitRequested = false;
-  Eigen::AngleAxisf rot{M_PI_2f, Eigen::Vector3f{1., 0., 0.}};
+  Eigen::AngleAxisf rot{constants::Pi_2f, Eigen::Vector3f{1., 0., 0.}};
   Eigen::Affine3f modelMat = Eigen::Affine3f{rot}.scale(0.1f);
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
   Matrix4f viewMat = lookAt({0.5, 1., 1.}, Float3::Zero(), {0., 0., 1.});
