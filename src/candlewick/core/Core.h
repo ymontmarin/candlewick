@@ -3,8 +3,8 @@
 namespace candlewick {
 struct Device;
 struct Mesh;
+struct MeshView;
 struct MeshLayout;
 struct Shader;
-class Shape;
 struct Renderer;
 } // namespace candlewick

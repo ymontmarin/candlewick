@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core.h"
 #include "Device.h"
-#include "Shape.h"
+#include "Mesh.h"
 
+#include <span>
 #include <SDL3/SDL_gpu.h>
 
 namespace candlewick {
@@ -14,7 +14,6 @@ namespace candlewick {
 /// \sa Scene
 /// \sa Device
 /// \sa Mesh
-/// \sa Shape
 struct Renderer {
   Device device;
   SDL_Window *window = nullptr;
@@ -40,20 +39,43 @@ struct Renderer {
 
   bool hasDepthTexture() const { return depth_texture != nullptr; }
 
-  /// Render an individual mesh as part of a render pass, using a provided first
+  /// Bind the Mesh object.
+  void bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh);
+
+  /// Render an individual Mesh as part of a render pass, using a provided first
   /// index or vertex offset.
   /// \details This routine will bind the vertex and index buffer. Prefer one of
   /// the other routines to e.g. batch draw calls that use the same buffer
   /// bindings.
-  void render(SDL_GPURenderPass *pass, const Mesh &mesh,
-              Uint32 firstIndexOrVertex = 0);
+  /// \warning Call bindMesh() first!
+  /// \param pass The GPU render pass
+  /// \param mesh The Mesh to draw.
+  void draw(SDL_GPURenderPass *pass, const Mesh &mesh) {
+    this->drawView(pass, mesh.toView());
+  }
+
+  /// \brief Draw a MeshView.
+  /// \warning Call bindMesh() first!
+  /// \param pass The GPU render pass.
+  /// \param mesh MeshView object to be drawn.
+  /// \sa draw()
+  void drawView(SDL_GPURenderPass *pass, const MeshView &mesh);
+
+  /// \brief Render a collection of MeshView.
+  /// This collection must satisfy the invariant that they all have the same
+  /// parent Mesh object, which allows batching draw calls like this without
+  /// having to rebind the Mesh.
+  /// \param pass The GPU render pass
+  /// \param meshViews Collection of MeshView objects with the same parent Mesh.
+  /// \sa drawView() (for individual views)
+  void drawViews(SDL_GPURenderPass *pass, std::span<const MeshView> meshViews);
 
   /// Render a collection of Mesh collected in a Shape object.
   /// The Shape class satisfies the necessary invariants to allow for
   /// batching. We only have to bind the vertex and index buffers once, here.
   /// \param pass The GPU render pass
   /// \param shape The Shape object
-  void render(SDL_GPURenderPass *pass, const Shape &shape);
+  // void render(SDL_GPURenderPass *pass, const Shape &shape);
 
   /// \brief Push uniform data to the vertex shader.
   /// \warning Call this after beginFrame() but **before** endFrame().

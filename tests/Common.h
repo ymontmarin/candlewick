@@ -1,5 +1,5 @@
 #include "candlewick/core/Core.h"
-#include "candlewick/core/Renderer.h"
+#include "candlewick/core/Device.h"
 
 #include <SDL3/SDL_gpu.h>
 
@@ -16,12 +16,13 @@ struct Context {
 bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight);
 void teardownExample(Context &ctx);
 
-SDL_GPUGraphicsPipeline *
+[[nodiscard]] SDL_GPUGraphicsPipeline *
 initGridPipeline(const Device &device, SDL_Window *window,
                  const candlewick::MeshLayout &layout,
                  SDL_GPUTextureFormat depth_stencil_format,
                  SDL_GPUPrimitiveType primitive_type);
 
-SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
-                                   SDL_GPUTextureFormat depth_tex_format,
-                                   SDL_GPUSampleCount sample_count);
+[[nodiscard]] SDL_GPUTexture *
+createDepthTexture(const Device &device, SDL_Window *window,
+                   SDL_GPUTextureFormat depth_tex_format,
+                   SDL_GPUSampleCount sample_count);

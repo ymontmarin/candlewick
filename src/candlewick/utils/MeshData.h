@@ -15,8 +15,12 @@ template <typename Derived> struct MeshDataBase {
   Derived &derived() { return static_cast<Derived &>(*this); }
   const Derived &derived() const { return static_cast<const Derived &>(*this); }
 
-  std::size_t numVertices() const { return derived().vertexData.size(); }
-  std::size_t numIndices() const { return derived().indexData.size(); }
+  Uint32 numVertices() const {
+    return static_cast<Uint32>(derived().vertexData.size());
+  }
+  Uint32 numIndices() const {
+    return static_cast<Uint32>(derived().indexData.size());
+  }
   bool isIndexed() const { return numIndices() > 0; }
 };
 
@@ -60,18 +64,31 @@ MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
 /// \warning This does *not* upload the mesh data to the vertex and index
 /// buffers.
 /// \sa uploadMeshToDevice()
-Mesh createMesh(const Device &device, const MeshData &meshData);
+[[nodiscard]] Mesh createMesh(const Device &device, const MeshData &meshData);
 
 /// \brief Create a \c Mesh object from given mesh data, as a view into existing
 /// vertex and index buffers.
-/// \p vertexOffset Vertex buffer offset (in bytes)
-/// \p indexOffset Index buffer offset (in bytes)
-/// \overload createMesh()
-Mesh createMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
-                Uint32 vertexOffset, SDL_GPUBuffer *indexBuffer,
-                Uint32 indexOffset, bool takeOwnership = false);
+/// \warning This constructor will **take ownership** of the buffers.
+[[nodiscard]] Mesh createMesh(const MeshData &meshData,
+                              SDL_GPUBuffer *vertexBuffer,
+                              SDL_GPUBuffer *indexBuffer);
+
+/// \brief Create a Mesh from a batch of MeshData.
+/// \param[in] device GPU device
+/// \param[in] meshDatas Batch of meshes
+/// \param[in] upload Whether to upload the resulting Mesh to the device.
+[[nodiscard]] std::pair<Mesh, std::vector<MeshView>>
+createMeshFromBatch(const Device &device, std::span<const MeshData> meshDatas,
+                    bool upload);
 
 /// \brief Upload the contents of a single, individual mesh to the GPU device.
-void uploadMeshToDevice(const Device &device, const Mesh &mesh,
+///
+/// TODO: Enable batching the upload. Current workflow is to loop over MeshView
+/// and MeshData objects jointly and do multiple copy passes.
+void uploadMeshToDevice(const Device &device, const MeshView &meshView,
                         const MeshData &meshData);
+
+std::vector<PbrMaterialData>
+extractMaterials(std::span<const MeshData> meshDatas);
+
 } // namespace candlewick

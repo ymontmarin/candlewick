@@ -2,7 +2,7 @@
 
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
-#include "candlewick/core/Shape.h"
+// #include "candlewick/core/Shape.h"
 #include "candlewick/core/math_util.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/utils/WriteTextureToImage.h"
@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
   // Load grid
   MeshData grid_data = loadGrid(10);
   gridMesh = createMesh(device, grid_data);
-  uploadMeshToDevice(device, gridMesh, grid_data);
+  uploadMeshToDevice(device, gridMesh.toView(), grid_data);
 
   // Load robot
   pin::Model model;
@@ -173,6 +173,7 @@ int main(int argc, char **argv) {
   pin::GeometryData geom_data{geom_model};
 
   RobotScene robot_scene{renderer, geom_model, geom_data, {}};
+
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
   auto &plane_obj = robot_scene.addEnvironmentObject(std::move(plane_data),
                                                      plane_transform.matrix());
@@ -180,10 +181,10 @@ int main(int argc, char **argv) {
   std::vector<Mesh> triad_meshes;
   for (auto &&arrow_data : std::move(triad_data)) {
     Mesh arrow_mesh = createMesh(device, arrow_data);
-    uploadMeshToDevice(device, arrow_mesh, arrow_data);
+    uploadMeshToDevice(device, arrow_mesh.toView(), arrow_data);
     triad_meshes.push_back(std::move(arrow_mesh));
   }
-  auto &robotShapes = robot_scene.robotShapes;
+  auto &robotShapes = robot_scene.robotObjects;
   SDL_assert(robotShapes.size() == geom_model.ngeoms);
   SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
 
@@ -224,11 +225,13 @@ int main(int argc, char **argv) {
   /** CREATE PIPELINES **/
 
   SDL_GPUGraphicsPipeline *debugLinePipeline =
-      initGridPipeline(renderer.device, renderer.window, gridMesh.layout(),
+      initGridPipeline(renderer.device, renderer.window, gridMesh.layout,
                        renderer.depth_format, SDL_GPU_PRIMITIVETYPE_LINELIST);
   SDL_GPUGraphicsPipeline *debugTrianglePipeline = initGridPipeline(
-      renderer.device, renderer.window, triad_meshes[0].layout(),
+      renderer.device, renderer.window, triad_meshes[0].layout,
       renderer.depth_format, SDL_GPU_PRIMITIVETYPE_TRIANGLELIST);
+  assert(debugLinePipeline);
+  assert(debugTrianglePipeline);
 
   // MAIN APPLICATION LOOP
 
@@ -263,7 +266,7 @@ int main(int argc, char **argv) {
     // acquire command buffer and swapchain
     robot_scene.directionalLight = myLight;
     renderer.beginFrame();
-    renderer.acquireSwapchain();
+    assert(renderer.acquireSwapchain());
 
     if (renderer.swapchain) {
 
@@ -274,21 +277,23 @@ int main(int argc, char **argv) {
         if (renderGrid) {
           SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
           renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
-          renderer.render(render_pass, gridMesh);
+          renderer.bindMesh(render_pass, gridMesh);
+          renderer.draw(render_pass, gridMesh);
 
           SDL_BindGPUGraphicsPipeline(render_pass, debugTrianglePipeline);
           for (size_t i = 0; i < 3; i++) {
-            Mesh &m = triad_meshes[i];
+            const Mesh &m = triad_meshes[i];
             GpuVec4 triad_col{triad_data[i].material.baseColor};
             renderer.pushFragmentUniform(0, &triad_col, sizeof(triad_col));
-            renderer.render(render_pass, m);
+            renderer.bindMesh(render_pass, m);
+            renderer.draw(render_pass, m);
           }
         }
       });
 
     } else {
       SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
-      break;
+      continue;
     }
 
     guiSys.render(renderer);
@@ -302,7 +307,7 @@ int main(int argc, char **argv) {
   }
 
   for (auto &shape : robotShapes) {
-    shape.second.release();
+    shape.mesh.release(device);
   }
   SDL_ReleaseGPUGraphicsPipeline(device, debugLinePipeline);
 

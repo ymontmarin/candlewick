@@ -1,65 +1,46 @@
 #include "Mesh.h"
 
-#include "Device.h"
 #include "MeshLayout.h"
 #include "./errors.h"
 
 namespace candlewick {
 
-Mesh::Mesh(NoInitT) : _layout() {}
+Mesh::Mesh(NoInitT) : layout() {}
 
-Mesh::Mesh(MeshLayout layout) : _layout(std::move(layout)) {
-  const Uint32 count = _layout.toVertexInputState().num_vertex_buffers;
-  vertexBuffers.resize(count);
-  vertexBufferOffsets.resize(count);
-  vertexBufferOwnerships.resize(count);
+Mesh::Mesh(MeshLayout layout) : layout(std::move(layout)) {
+  const Uint32 count = layout.toVertexInputState().num_vertex_buffers;
+  vertexBuffers.resize(count, nullptr);
 }
 
-std::size_t Mesh::bindVertexBufferImpl(Uint32 slot, SDL_GPUBuffer *buffer,
-                                       Uint32 offset) {
-  for (std::size_t i = 0; i < _layout.numBuffers(); i++) {
-    if (_layout.toVertexInputState().vertex_buffer_descriptions[i].slot ==
+Mesh &Mesh::bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer) {
+  for (std::size_t i = 0; i < layout.numBuffers(); i++) {
+    if (layout.toVertexInputState().vertex_buffer_descriptions[i].slot ==
         slot) {
+      if (vertexBuffers[i]) {
+        throw InvalidArgument(
+            "Rebinding vertex buffer to already occupied slot.");
+      }
       vertexBuffers[i] = buffer;
-      vertexBufferOffsets[i] = offset;
-      return i;
+      return *this;
     }
   }
-  CDW_UNREACHABLE_ASSERT("Binding not found in vertex buffer.");
-  return ~std::size_t{};
+  CDW_UNREACHABLE_ASSERT("Binding slot not found!");
+  std::terminate();
 }
 
-Mesh &Mesh::bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer, Uint32 offset,
-                             BufferOwnership owned) {
-  std::size_t idx = bindVertexBufferImpl(slot, buffer, offset);
-  vertexBufferOwnerships[idx] = owned;
-  return *this;
-}
-
-Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer, Uint32 offset,
-                           BufferOwnership owned) {
+Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer) {
   indexBuffer = buffer;
-  indexBufferOffset = offset;
-  indexBufferOwnership = owned;
   return *this;
 }
 
-void Mesh::releaseOwnedBuffers(SDL_GPUDevice *device) {
+void Mesh::release(SDL_GPUDevice *device) {
   for (std::size_t i = 0; i < vertexBuffers.size(); i++) {
-    switch (vertexBufferOwnerships[i]) {
-    case Owned: {
-      SDL_Log("Releasing owned vertex buffer %zu", i);
+    if (vertexBuffers[i])
       SDL_ReleaseGPUBuffer(device, vertexBuffers[i]);
-      vertexBuffers[i] = nullptr;
-      break;
-    }
-    case Borrowed:
-      break;
-    }
+    vertexBuffers[i] = nullptr;
   }
 
-  if (isIndexed() && indexBufferOwnership == Owned) {
-    SDL_Log("Releasing owned index buffer");
+  if (isIndexed()) {
     SDL_ReleaseGPUBuffer(device, indexBuffer);
     indexBuffer = nullptr;
   }
