@@ -89,7 +89,7 @@ public:
   RobotScene(const Renderer &renderer, const pin::GeometryModel &geom_model,
              const pin::GeometryData &geom_data, Config config);
 
-  static SDL_GPUGraphicsPipeline *
+  [[nodiscard]] static SDL_GPUGraphicsPipeline *
   createPipeline(const Device &dev, const MeshLayout &layout,
                  SDL_GPUTextureFormat render_target_format,
                  SDL_GPUTextureFormat depth_stencil_format, PipelineType type,
