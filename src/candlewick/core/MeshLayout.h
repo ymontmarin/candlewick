@@ -78,7 +78,9 @@ struct MeshLayout {
 
   constexpr SDL_GPUVertexInputState toVertexInputState() const;
 
+  /// \brief Number of vertex buffers.
   constexpr Uint32 numBuffers() const { return _numBuffers; }
+  /// \brief Number of vertex attributes.
   constexpr Uint32 numAttributes() const { return _numAttributes; }
   constexpr Uint32 vertexSize() const { return _totalVertexSize; }
 
