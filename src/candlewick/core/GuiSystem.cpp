@@ -17,7 +17,7 @@ bool GuiSystem::init(const Renderer &renderer) {
   ImGui::StyleColorsDark();
   ImGui_ImplSDL3_InitForSDLGPU(renderer.window);
   ImGui_ImplSDLGPU3_InitInfo imguiInfo{
-      .GpuDevice = renderer.device,
+      .Device = renderer.device,
       .ColorTargetFormat =
           SDL_GetGPUSwapchainTextureFormat(renderer.device, renderer.window),
       .MSAASamples = SDL_GPU_SAMPLECOUNT_1,
