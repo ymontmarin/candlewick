@@ -201,15 +201,14 @@ int main() {
   SDL_GPUTexture *depthTexture = createDepthTexture(
       device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
 
-  using Eigen::Matrix4f;
   const auto fov_rad = 45.0_radf;
-  Matrix4f perp =
+  Mat4f perp =
       // orthographicMatrix({aspectRatio * fov_rad, fov_rad}, 0.1, 10.);
       perspectiveFromFov(fov_rad, aspectRatio, 0.1f, 10.f);
-  Matrix4f modelMat = Matrix4f::Identity();
+  Mat4f modelMat = Mat4f::Identity();
   modelMat.col(3).head<3>() << -0.5f, -0.5f, -0.5f;
-  Matrix4f view;
-  Matrix4f projViewMat;
+  Mat4f view;
+  Mat4f projViewMat;
 
   Uint32 frame = 0;
 

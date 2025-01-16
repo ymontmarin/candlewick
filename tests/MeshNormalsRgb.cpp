@@ -13,8 +13,6 @@
 #include <Eigen/Geometry>
 
 using namespace candlewick;
-using Eigen::Matrix3f;
-using Eigen::Matrix4f;
 
 // const char *meshFilename = "assets/meshes/mammoth.obj";
 // const char *meshFilename = "assets/meshes/Stanford_Bunny.stl";
@@ -120,7 +118,7 @@ int main() {
   SDL_GPUTexture *swapchain;
 
   Radf fov = 70._radf;
-  Matrix4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.1f, 40.0f);
+  Mat4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.1f, 40.0f);
 
   Uint32 frameNo = 0;
   bool quitRequested = false;
@@ -179,10 +177,10 @@ int main() {
       }
     }
     // model-view matrix
-    const Matrix4f modelView = camera.view * modelMat.matrix();
+    const Mat4f modelView = camera.view * modelMat.matrix();
     // MVP matrix
-    const Matrix4f projViewMat = projectionMat * modelView;
-    const Matrix3f normalMatrix =
+    const Mat4f projViewMat = projectionMat * modelView;
+    const Mat3f normalMatrix =
         modelView.topLeftCorner<3, 3>().inverse().transpose();
 
     // render pass

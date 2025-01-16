@@ -15,8 +15,6 @@
 
 namespace candlewick {
 
-using Eigen::Matrix4f;
-
 constexpr float kPlaneScale = 10.f;
 
 void getPlaneOrHalfspaceNormalOffset(

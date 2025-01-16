@@ -2,12 +2,10 @@
 
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/math_util.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"
 #include "candlewick/core/LightUniforms.h"
-#include "candlewick/core/MaterialUniform.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -16,8 +14,6 @@
 #include <Eigen/Geometry>
 
 using namespace candlewick;
-using Eigen::Matrix3f;
-using Eigen::Matrix4f;
 
 struct TestMesh {
   const char *filename;
@@ -194,8 +190,8 @@ int main() {
     }
     // MVP matrix
     const Mat4f viewProj = camera.viewProj();
-    const Matrix4f projViewMat = viewProj * modelMat.matrix();
-    const Matrix3f normalMatrix = modelMat.inverse().linear().transpose();
+    const Mat4f projViewMat = viewProj * modelMat.matrix();
+    const Mat3f normalMatrix = modelMat.inverse().linear().transpose();
 
     // render pass
 
