@@ -106,14 +106,24 @@ inline void orthographicZoom(Mat4f &projMatrix, float factor) {
 struct CylinderCameraControl {
   Camera &camera;
 
-  auto &viewportDrag(Float2 step, float rotSensitivity, float panSensitivity,
-                     bool yinvert = true) {
-    step.x() *= rotSensitivity;
-    step.y() *= panSensitivity;
-    float ystep = yinvert ? -step.y() : step.y();
-    cameraWorldTranslateZ(camera, ystep);
-    cameraWorldRotateZ(camera, Rad(step.x()));
+  static constexpr bool DEFAULT_Y_INVERT = true;
+
+  auto &dolly(float height) {
+    cameraWorldTranslateZ(camera, height);
     return *this;
+  }
+
+  auto &orbit(Radf angle) {
+    cameraWorldRotateZ(camera, angle);
+    return *this;
+  }
+
+  auto &viewportDrag(Float2 step, float rotSensitivity, float panSensitivity,
+                     bool yinvert = DEFAULT_Y_INVERT) {
+    const float rotStep = step.x() * rotSensitivity;
+    const float panStep = step.y() * panSensitivity;
+    float ystep = yinvert ? -panStep : panStep;
+    return dolly(ystep).orbit(Rad{rotStep});
   }
 
   auto &moveInOut(float scale, float offset) {

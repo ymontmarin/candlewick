@@ -87,13 +87,14 @@ void eventLoop(const Renderer &renderer) {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     ImGui_ImplSDL3_ProcessEvent(&event);
-    ImGuiIO &io = ImGui::GetIO();
+    const bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
     if (event.type == SDL_EVENT_QUIT) {
       SDL_Log("Application exit requested.");
       quitRequested = true;
       break;
     }
 
+    ImGuiIO &io = ImGui::GetIO();
     if (io.WantCaptureMouse | io.WantCaptureKeyboard)
       continue;
     switch (event.type) {
@@ -113,17 +114,16 @@ void eventLoop(const Renderer &renderer) {
         cameraLocalTranslate(camera, {-step_size, 0, 0});
         break;
       case SDLK_UP:
-        cameraWorldTranslateZ(camera, -step_size);
+        camControl.dolly(-step_size);
         break;
       case SDLK_DOWN:
-        cameraWorldTranslateZ(camera, +step_size);
+        camControl.dolly(+step_size);
         break;
       }
       break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
       SDL_MouseButtonFlags mouseButton = event.motion.state;
-      bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
       if (mouseButton & SDL_BUTTON_LMASK) {
         if (controlPressed) {
           camControl.moveInOut(0.95f, event.motion.yrel);
