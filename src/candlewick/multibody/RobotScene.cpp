@@ -114,9 +114,9 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
     DirectionalLight a;
     GpuVec3 viewPos;
   };
-  const Mat4f viewMat = cameraState.viewMatrix();
-  const LightUniform lightUbo{directionalLight, cameraViewPos(viewMat)};
-  const Mat4f projView = cameraState.projection * viewMat;
+  const LightUniform lightUbo{directionalLight, cameraState.position()};
+  // view-projection matrix P * V
+  const Mat4f viewProj = cameraState.viewProj();
   SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
       renderer.command_buffer, &color_target, 1, &depth_target);
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
@@ -133,7 +133,7 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
       const Mat4f modelMat = placement.toHomogeneousMatrix();
       const Mat3f normalMatrix =
           modelMat.topLeftCorner<3, 3>().inverse().transpose();
-      const Mat4f mvp = projView * modelMat;
+      const Mat4f mvp = viewProj * modelMat;
       TransformUniformData data{
           .model = modelMat,
           .mvp = mvp,
@@ -151,7 +151,7 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
 
       const Mat3f normalMatrix =
           modelMat.topLeftCorner<3, 3>().inverse().transpose();
-      const Mat4f mvp = projView * modelMat;
+      const Mat4f mvp = viewProj * modelMat;
       TransformUniformData data{
           .model = modelMat,
           .mvp = mvp,
@@ -228,7 +228,7 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
 
 // void RobotDebugModule::addDrawCommands(DebugScene &scene,
 //                                        const Camera &camera) {
-//   const auto viewMat = camera.viewMatrix();
+//   const auto &viewMat = camera.viewMatrix();
 //   const Mat4f projView = camera.projection * viewMat;
 
 //   for (pin::FrameIndex i = 0; i < data.oMf.size(); i++) {

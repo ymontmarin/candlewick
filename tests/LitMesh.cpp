@@ -2,7 +2,7 @@
 
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/matrix_util.h"
+#include "candlewick/core/math_util.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"
@@ -136,12 +136,14 @@ int main() {
   SDL_GPUTexture *swapchain;
 
   Rad<float> fov = 55.0_radf;
-  Matrix4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
+  Camera camera{
+      .projection = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f),
+      .view{lookAt({6.0, 0, 3.}, Float3::Zero())},
+  };
 
   Uint32 frameNo = 0;
   bool quitRequested = false;
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
-  Matrix4f viewMat = lookAt({6.0, 0, 3.}, Float3::Zero());
 
   DirectionalLight myLight{
       .direction = {0., -1., 1.},
@@ -164,37 +166,36 @@ int main() {
         // recreate
         fov = std::min(fov * scaleFac, 170.0_radf);
         SDL_Log("Change fov to %f", rad2deg(fov));
-        projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
+        camera.projection = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
       }
       if (event.type == SDL_EVENT_KEY_DOWN) {
         const float step_size = 0.06f;
         switch (event.key.key) {
         case SDLK_UP:
-          cameraWorldTranslateZ(viewMat, +step_size);
+          cameraWorldTranslateZ(camera, +step_size);
           break;
         case SDLK_DOWN:
-          cameraWorldTranslateZ(viewMat, -step_size);
+          cameraWorldTranslateZ(camera, -step_size);
           break;
         }
       }
       if (event.type == SDL_EVENT_MOUSE_MOTION) {
+        CylinderCameraControl camControl{camera};
         auto mouseButton = event.motion.state;
         if (mouseButton >= SDL_BUTTON_LMASK) {
-          cylinderCameraViewportDrag(
-              viewMat, Float2{event.motion.xrel, event.motion.yrel},
-              5e-3f * pixelDensity, 1e-2f * pixelDensity);
+          camControl.viewportDrag({event.motion.xrel, event.motion.yrel},
+                                  5e-3f * pixelDensity, 1e-2f * pixelDensity);
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01f * pixelDensity;
-          cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
+          cameraLocalRotateX(camera, camXLocRotSpeed * event.motion.yrel);
         }
       }
     }
-    // model-view matrix
-    const Matrix4f modelView = viewMat * modelMat.matrix();
     // MVP matrix
-    const Matrix4f projViewMat = projectionMat * modelView;
-    const Matrix3f normalMatrix = modelMat.linear().inverse().transpose();
+    const Mat4f viewProj = camera.viewProj();
+    const Matrix4f projViewMat = viewProj * modelMat.matrix();
+    const Matrix3f normalMatrix = modelMat.inverse().linear().transpose();
 
     // render pass
 
@@ -233,7 +234,7 @@ int main() {
       struct {
         DirectionalLight a;
         GpuVec3 viewPos;
-      } lightUbo{myLight, cameraViewPos(viewMat)};
+      } lightUbo{myLight, camera.position()};
 
       auto materialUbo = meshDatas[0].material.toUniform();
 

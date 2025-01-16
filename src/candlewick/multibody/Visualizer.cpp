@@ -1,5 +1,4 @@
 #include "Visualizer.h"
-#include "../core/matrix_util.h"
 
 #include <imgui.h>
 
@@ -25,12 +24,11 @@ void Visualizer::displayImpl() {
   float radius = 2.5f;
   Float3 eye{std::cos(angle), std::sin(angle), 0.5f};
   eye *= radius;
-  Mat4f viewMat = lookAt(eye, {0., 0., 0.});
   Radf fov{45.0_degf};
   int w, h;
   SDL_GetWindowSize(renderer.window, &w, &h);
   float aspectRatio = float(w) / float(h);
-  cameraState.setPoseFromView(viewMat);
+  cameraState.view = lookAt(eye, {0., 0., 0.});
   cameraState.projection = perspectiveFromFov(fov, aspectRatio, 0.01f, 100.f);
   robotScene.render(renderer, cameraState);
 }

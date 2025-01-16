@@ -4,6 +4,7 @@
 
 namespace candlewick {
 
+struct Camera;
 struct MeshData;
 struct MeshDataView;
 struct PbrMaterialData;

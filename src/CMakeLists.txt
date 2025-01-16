@@ -6,13 +6,14 @@ add_library(
   candlewick_core
   SHARED
   candlewick/core/Device.cpp
-  candlewick/core/matrix_util.cpp
+  candlewick/core/math_util.cpp
   candlewick/core/errors.cpp
   candlewick/core/GuiSystem.cpp
   candlewick/core/Mesh.cpp
   candlewick/core/Renderer.cpp
   candlewick/core/Shader.cpp
   candlewick/core/Shape.cpp
+  candlewick/utils/CameraControl.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/MaterialData.cpp
   candlewick/utils/MeshData.cpp

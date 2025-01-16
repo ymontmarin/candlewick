@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Renderer.h"
-#include "../utils/CameraState.h"
+#include "../utils/CameraControl.h"
 
 namespace candlewick {
 

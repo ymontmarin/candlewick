@@ -4,13 +4,12 @@
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/Shape.h"
-#include "candlewick/core/matrix_util.h"
+#include "candlewick/core/math_util.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
 #include "candlewick/core/TransformUniforms.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
-#include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"
 #include "candlewick/multibody/LoadPinocchioGeometry.h"
 
@@ -52,8 +51,7 @@ constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 static bool renderPlane = true;
 static bool renderGrid = true;
-static Mat4f viewMat;
-static Mat4f projectionMat;
+static Camera camera;
 static Radf currentFov = 55.0_radf;
 static bool quitRequested = false;
 
@@ -76,10 +74,11 @@ struct alignas(16) light_ubo_t {
 
 void updateFov(Radf newFov) {
   currentFov = newFov;
-  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
 }
 
 void eventLoop(const Renderer &renderer) {
+  CylinderCameraControl camControl{camera};
   // update pixel density and display scale
   pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
   displayScale = SDL_GetWindowDisplayScale(renderer.window);
@@ -101,7 +100,6 @@ void eventLoop(const Renderer &renderer) {
     case SDL_EVENT_MOUSE_WHEEL: {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
-      // orthographicZoom(projectionMat, scaleFac);
       updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
       break;
     }
@@ -109,16 +107,16 @@ void eventLoop(const Renderer &renderer) {
       const float step_size = 0.06f;
       switch (event.key.key) {
       case SDLK_LEFT:
-        cameraLocalTranslateX(viewMat, +step_size);
+        cameraLocalTranslate(camera, {+step_size, 0, 0});
         break;
       case SDLK_RIGHT:
-        cameraLocalTranslateX(viewMat, -step_size);
+        cameraLocalTranslate(camera, {-step_size, 0, 0});
         break;
       case SDLK_UP:
-        cameraWorldTranslateZ(viewMat, -step_size);
+        cameraWorldTranslateZ(camera, -step_size);
         break;
       case SDLK_DOWN:
-        cameraWorldTranslateZ(viewMat, +step_size);
+        cameraWorldTranslateZ(camera, +step_size);
         break;
       }
       break;
@@ -128,16 +126,15 @@ void eventLoop(const Renderer &renderer) {
       bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
       if (mouseButton & SDL_BUTTON_LMASK) {
         if (controlPressed) {
-          cylinderCameraMoveInOut(viewMat, 0.95f, event.motion.yrel);
+          camControl.moveInOut(0.95f, event.motion.yrel);
         } else {
-          cylinderCameraViewportDrag(
-              viewMat, Float2{event.motion.xrel, event.motion.yrel},
-              rotSensitivity, panSensitivity);
+          camControl.viewportDrag(Float2{event.motion.xrel, event.motion.yrel},
+                                  rotSensitivity, panSensitivity);
         }
       }
       if (mouseButton & SDL_BUTTON_RMASK) {
         float camXLocRotSpeed = 0.01f * pixelDensity;
-        cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
+        cameraLocalRotateX(camera, camXLocRotSpeed * event.motion.yrel);
       }
       break;
     }
@@ -199,7 +196,6 @@ int main(int argc, char **argv) {
     ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
                      ImGuiSliderFlags_AlwaysClamp);
     updateFov(Radf(newFov));
-    projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
     ImGui::Checkbox("Render plane", &renderPlane);
     ImGui::Checkbox("Render grid", &renderGrid);
 
@@ -291,8 +287,8 @@ int main(int argc, char **argv) {
 
   Uint32 frameNo = 0;
 
-  projectionMat = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
-  viewMat = lookAt({2.0, 0, 2.}, Float3::Zero());
+  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+  camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
@@ -344,10 +340,10 @@ int main(int argc, char **argv) {
 
       SDL_assert(robotShapes.size() == geom_model.ngeoms);
 
-      Mat4f modelView;
-      Mat4f projViewMat;
+      /// Model-view-projection (MVP) matrix
+      Mat4f mvp;
 
-      const light_ubo_t lightUbo{myLight, cameraViewPos(viewMat)};
+      const light_ubo_t lightUbo{myLight, camera.position()};
 
       SDL_BindGPUGraphicsPipeline(render_pass, meshPipeline);
       renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
@@ -356,13 +352,12 @@ int main(int argc, char **argv) {
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
         const pin::SE3 &placement = geom_data.oMg[i];
         Mat4f modelMat = placement.toHomogeneousMatrix().cast<float>();
-        modelView = viewMat * modelMat.matrix();
-        projViewMat = projectionMat * modelView;
+        mvp = camera.viewProj() * modelMat.matrix();
         const Mat3f normalMatrix =
             modelMat.topLeftCorner<3, 3>().inverse().transpose();
         TransformUniformData cameraUniform{
             modelMat,
-            projViewMat,
+            mvp,
             normalMatrix,
         };
 
@@ -373,12 +368,11 @@ int main(int argc, char **argv) {
       // RENDER PLANE
       if (renderPlane) {
         Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-        modelView.noalias() = viewMat * plane_transform.matrix();
-        projViewMat.noalias() = projectionMat * modelView;
+        mvp.noalias() = camera.viewProj() * plane_transform.matrix();
         const Mat3f normalMatrix =
             plane_transform.linear().inverse().transpose();
-        TransformUniformData cameraUniform{plane_transform.matrix(),
-                                           projViewMat, normalMatrix};
+        TransformUniformData cameraUniform{plane_transform.matrix(), mvp,
+                                           normalMatrix};
         const auto material = plane_data.material.toUniform();
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
         renderer.pushFragmentUniform(0, &material, sizeof(PbrMaterialUniform));
@@ -386,10 +380,11 @@ int main(int argc, char **argv) {
       }
 
       // render 3d hud elements
-      projViewMat.noalias() = projectionMat * viewMat;
-      const GpuMat4 mvp{projViewMat};
-      renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
+      mvp.noalias() = camera.viewProj();
+      ;
       if (renderGrid) {
+        const GpuMat4 cameraUniform{mvp};
+        renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
         SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
         renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
         renderer.render(render_pass, gridMesh);

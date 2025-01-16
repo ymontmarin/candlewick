@@ -2,7 +2,6 @@
 
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/matrix_util.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"
@@ -128,7 +127,11 @@ int main() {
   Eigen::AngleAxisf rot{constants::Pi_2f, Eigen::Vector3f{1., 0., 0.}};
   Eigen::Affine3f modelMat = Eigen::Affine3f{rot}.scale(0.1f);
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
-  Matrix4f viewMat = lookAt({0.5, 1., 1.}, Float3::Zero(), {0., 0., 1.});
+
+  Camera camera;
+  camera.view = lookAt({0.5, 1., 1.}, Float3::Zero(), {0., 0., 1.});
+  CylinderCameraControl camControl{camera};
+
   while (frameNo < 500 && !quitRequested) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -148,10 +151,10 @@ int main() {
         const float step_size = 0.06f;
         switch (event.key.key) {
         case SDLK_UP:
-          cameraWorldTranslateZ(viewMat, +step_size);
+          cameraWorldTranslateZ(camera, +step_size);
           break;
         case SDLK_DOWN:
-          cameraWorldTranslateZ(viewMat, -step_size);
+          cameraWorldTranslateZ(camera, -step_size);
           break;
         }
         break;
@@ -161,22 +164,22 @@ int main() {
         bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
         if (mouseButton >= SDL_BUTTON_LMASK) {
           if (controlPressed)
-            cylinderCameraMoveInOut(viewMat, 0.95f, event.motion.yrel);
+            camControl.moveInOut(0.95f, event.motion.yrel);
           else
-            cylinderCameraViewportDrag(
-                viewMat, Float2{event.motion.xrel, event.motion.yrel},
+            camControl.viewportDrag(
+                Float2{event.motion.xrel, event.motion.yrel},
                 5e-3f * pixelDensity, 1e-2f * pixelDensity);
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01f * pixelDensity;
-          cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
+          cameraLocalRotateX(camera, camXLocRotSpeed * event.motion.yrel);
         }
         break;
       }
       }
     }
     // model-view matrix
-    const Matrix4f modelView = viewMat * modelMat.matrix();
+    const Matrix4f modelView = camera.view * modelMat.matrix();
     // MVP matrix
     const Matrix4f projViewMat = projectionMat * modelView;
     const Matrix3f normalMatrix =

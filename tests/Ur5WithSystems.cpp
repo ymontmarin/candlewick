@@ -3,11 +3,10 @@
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/Shape.h"
-#include "candlewick/core/matrix_util.h"
+#include "candlewick/core/math_util.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
-#include "candlewick/utils/LoadMesh.h"
 #include "candlewick/utils/CameraControl.h"
 #include "candlewick/multibody/RobotScene.h"
 
@@ -71,7 +70,7 @@ void updateFov(Radf newFov) {
 }
 
 void eventLoop(const Renderer &renderer) {
-  auto viewMat = camera.viewMatrix();
+  CylinderCameraControl camControl{camera};
   // update pixel density and display scale
   pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
   displayScale = SDL_GetWindowDisplayScale(renderer.window);
@@ -101,16 +100,16 @@ void eventLoop(const Renderer &renderer) {
       const float step_size = 0.06f;
       switch (event.key.key) {
       case SDLK_LEFT:
-        cameraLocalTranslateX(viewMat, +step_size);
+        cameraLocalTranslateX(camera, +step_size);
         break;
       case SDLK_RIGHT:
-        cameraLocalTranslateX(viewMat, -step_size);
+        cameraLocalTranslateX(camera, -step_size);
         break;
       case SDLK_UP:
-        cameraWorldTranslateZ(viewMat, -step_size);
+        cameraWorldTranslateZ(camera, -step_size);
         break;
       case SDLK_DOWN:
-        cameraWorldTranslateZ(viewMat, +step_size);
+        cameraWorldTranslateZ(camera, +step_size);
         break;
       }
       break;
@@ -120,22 +119,20 @@ void eventLoop(const Renderer &renderer) {
       bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
       if (mouseButton & SDL_BUTTON_LMASK) {
         if (controlPressed) {
-          cylinderCameraMoveInOut(viewMat, 0.95f, event.motion.yrel);
+          camControl.moveInOut(0.95f, event.motion.yrel);
         } else {
-          cylinderCameraViewportDrag(
-              viewMat, Float2{event.motion.xrel, event.motion.yrel},
-              rotSensitivity, panSensitivity);
+          camControl.viewportDrag({event.motion.xrel, event.motion.yrel},
+                                  rotSensitivity, panSensitivity);
         }
       }
       if (mouseButton & SDL_BUTTON_RMASK) {
         float camXLocRotSpeed = 0.01f * pixelDensity;
-        cameraLocalRotateX(viewMat, camXLocRotSpeed * event.motion.yrel);
+        cameraLocalRotateX(camera, camXLocRotSpeed * event.motion.yrel);
       }
       break;
     }
     }
   }
-  camera.setPoseFromView(viewMat);
 }
 
 Renderer createRenderer(Uint32 width, Uint32 height,
@@ -238,7 +235,7 @@ int main(int argc, char **argv) {
   Uint32 frameNo = 0;
 
   camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
-  camera.setPoseFromView(lookAt({2.0, 0, 2.}, Float3::Zero()));
+  camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
@@ -272,8 +269,7 @@ int main(int argc, char **argv) {
 
       robot_scene.render(renderer, camera, [&](auto *render_pass) {
         // render grid
-        Mat4f projViewMat = camera.projection * camera.viewMatrix();
-        const GpuMat4 mvp{projViewMat};
+        const GpuMat4 mvp = camera.viewProj();
         renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
         if (renderGrid) {
           SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
