@@ -8,6 +8,13 @@
 
 namespace candlewick {
 
+/// \brief The Renderer class provides a rendering context for a graphical
+/// application.
+///
+/// \sa Scene
+/// \sa Device
+/// \sa Mesh
+/// \sa Shape
 struct Renderer {
   Device device;
   SDL_Window *window = nullptr;
@@ -41,15 +48,20 @@ struct Renderer {
   void render(SDL_GPURenderPass *pass, const Mesh &mesh,
               Uint32 firstIndexOrVertex = 0);
 
-  /// Render a collection of \c Mesh collected in a \c Shape object, which
-  /// satisfies the necessary invariants to allow for batching. We only have to
-  /// bind the vertex and index buffers once, here.
-  /// \overload render()
+  /// Render a collection of Mesh collected in a Shape object.
+  /// The Shape class satisfies the necessary invariants to allow for
+  /// batching. We only have to bind the vertex and index buffers once, here.
+  /// \param pass The GPU render pass
+  /// \param shape The Shape object
   void render(SDL_GPURenderPass *pass, const Shape &shape);
 
+  /// \brief Push uniform data to the vertex shader.
+  /// \warning Call this after beginFrame() but **before** endFrame().
   void pushVertexUniform(Uint32 slot_index, const void *data, Uint32 length) {
     SDL_PushGPUVertexUniformData(command_buffer, slot_index, data, length);
   }
+  /// \brief Push uniform data to the fragment shader.
+  /// \warning Call this after beginFrame() but **before** endFrame().
   void pushFragmentUniform(Uint32 slot_index, const void *data, Uint32 length) {
     SDL_PushGPUFragmentUniformData(command_buffer, slot_index, data, length);
   }
