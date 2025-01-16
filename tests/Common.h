@@ -1,5 +1,5 @@
 #include "candlewick/core/Core.h"
-#include "candlewick/core/Renderer.h"
+#include "candlewick/core/Device.h"
 
 #include <SDL3/SDL_gpu.h>
 

@@ -3,7 +3,6 @@
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/Shape.h"
 #include "candlewick/core/math_util.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
@@ -168,18 +167,18 @@ int main(int argc, char **argv) {
   // Load plane
   MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
   Mesh plane = createMesh(device, plane_data);
-  uploadMeshToDevice(device, plane, plane_data);
+  uploadMeshToDevice(device, plane.toView(), plane_data);
 
   // Load grid
   MeshData grid_data = loadGrid(10);
   gridMesh = createMesh(device, grid_data);
-  uploadMeshToDevice(device, gridMesh, grid_data);
+  uploadMeshToDevice(device, gridMesh.toView(), grid_data);
 
   std::array triad_data = createTriad();
   std::vector<Mesh> triad_meshes;
   for (auto &&arrow_data : std::move(triad_data)) {
     Mesh arrow_mesh = createMesh(device, arrow_data);
-    uploadMeshToDevice(device, arrow_mesh, arrow_data);
+    uploadMeshToDevice(device, arrow_mesh.toView(), arrow_data);
     triad_meshes.push_back(std::move(arrow_mesh));
   }
 
@@ -223,17 +222,25 @@ int main(int argc, char **argv) {
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
-  std::vector<Shape> robotShapes;
+  struct RobotObject {
+    pin::GeomIndex geom_index;
+    Mesh mesh;
+    std::vector<MeshView> views;
+    std::vector<PbrMaterialData> materials;
+  };
+  std::vector<RobotObject> robotShapes;
   for (size_t i = 0; i < geom_model.ngeoms; i++) {
     const auto &gobj = geom_model.geometryObjects[i];
+    /// Create a Mesh, upload to device
     auto meshDatas = multibody::loadGeometryObject(gobj);
-    /// Create group of meshes, upload to device
-    auto shape = Shape::createShapeFromDatas(device, meshDatas, true);
-    robotShapes.push_back(std::move(shape));
+    auto [mesh, views] = createMeshFromBatch(device, meshDatas, true);
+
+    robotShapes.push_back(
+        {i, std::move(mesh), std::move(views), extractMaterials(meshDatas)});
     SDL_Log("Loaded %zu MeshData objects. Meshes:", meshDatas.size());
     for (size_t i = 0; i < meshDatas.size(); i++) {
-      SDL_Log("   [%zu] %zu vertices, %zu indices", i,
-              meshDatas[i].numVertices(), meshDatas[i].numIndices());
+      SDL_Log("   [%zu] %u vertices, %u indices", i, meshDatas[i].numVertices(),
+              meshDatas[i].numIndices());
     }
   }
   SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
@@ -254,7 +261,7 @@ int main(int argc, char **argv) {
     SDL_GPUGraphicsPipelineCreateInfo mesh_pipeline_desc{
         .vertex_shader = vertexShader,
         .fragment_shader = fragmentShader,
-        .vertex_input_state = robotShapes[0].layout().toVertexInputState(),
+        .vertex_input_state = robotShapes[0].mesh.layout.toVertexInputState(),
         .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
         .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
                              .enable_depth_test = true,
@@ -277,10 +284,10 @@ int main(int argc, char **argv) {
   }
 
   SDL_GPUGraphicsPipeline *debugLinePipeline =
-      initGridPipeline(renderer.device, renderer.window, gridMesh.layout(),
+      initGridPipeline(renderer.device, renderer.window, gridMesh.layout,
                        renderer.depth_format, SDL_GPU_PRIMITIVETYPE_LINELIST);
   SDL_GPUGraphicsPipeline *debugTrianglePipeline = initGridPipeline(
-      renderer.device, renderer.window, triad_meshes[0].layout(),
+      renderer.device, renderer.window, triad_meshes[0].layout,
       renderer.depth_format, SDL_GPU_PRIMITIVETYPE_TRIANGLELIST);
 
   // MAIN APPLICATION LOOP
@@ -360,9 +367,15 @@ int main(int argc, char **argv) {
             mvp,
             normalMatrix,
         };
+        const auto &obj = robotShapes[i];
 
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
-        renderer.render(render_pass, robotShapes[i]);
+        renderer.bindMesh(render_pass, obj.mesh);
+        for (size_t j = 0; j < obj.views.size(); j++) {
+          const auto material = obj.materials[j].toUniform();
+          renderer.pushFragmentUniform(0, &material, sizeof(material));
+          renderer.drawView(render_pass, obj.views[j]);
+        }
       }
 
       // RENDER PLANE
@@ -376,25 +389,26 @@ int main(int argc, char **argv) {
         const auto material = plane_data.material.toUniform();
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
         renderer.pushFragmentUniform(0, &material, sizeof(PbrMaterialUniform));
-        renderer.render(render_pass, plane);
+        renderer.bindMesh(render_pass, plane);
+        renderer.draw(render_pass, plane);
       }
 
       // render 3d hud elements
-      mvp.noalias() = camera.viewProj();
-      ;
       if (renderGrid) {
-        const GpuMat4 cameraUniform{mvp};
+        const GpuMat4 cameraUniform = camera.viewProj();
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
         SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
         renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
-        renderer.render(render_pass, gridMesh);
+        renderer.bindMesh(render_pass, gridMesh);
+        renderer.draw(render_pass, gridMesh);
 
         SDL_BindGPUGraphicsPipeline(render_pass, debugTrianglePipeline);
         for (size_t i = 0; i < 3; i++) {
-          Mesh &m = triad_meshes[i];
+          const Mesh &m = triad_meshes[i];
           GpuVec4 triad_col{triad_data[i].material.baseColor};
           renderer.pushFragmentUniform(0, &triad_col, sizeof(triad_col));
-          renderer.render(render_pass, m);
+          renderer.bindMesh(render_pass, m);
+          renderer.draw(render_pass, m);
         }
       }
 
@@ -415,7 +429,7 @@ int main(int argc, char **argv) {
   }
 
   for (auto &shape : robotShapes) {
-    shape.release();
+    shape.mesh.release(device);
   }
   SDL_ReleaseGPUGraphicsPipeline(device, meshPipeline);
   SDL_ReleaseGPUGraphicsPipeline(device, debugLinePipeline);

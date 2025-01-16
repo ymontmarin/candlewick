@@ -3,7 +3,7 @@
 #include "Multibody.h"
 #include "../core/Device.h"
 #include "../core/Scene.h"
-#include "../core/Shape.h"
+// #include "../core/Shape.h"
 #include "../core/LightUniforms.h"
 #include "../utils/MeshData.h"
 // #include "../core/DebugScene.h"
@@ -21,7 +21,7 @@ public:
     PIPELINE_POINTCLOUD,
   };
   enum VertexUniformSlots : Uint32 { TRANSFORM = 0 };
-  enum FragmentUniformSlots : Uint32 { LIGHTING = 1 };
+  enum FragmentUniformSlots : Uint32 { MATERIAL = 0, LIGHTING = 1 };
   using RenderPostCallback = std::function<void(SDL_GPURenderPass *)>;
 
   /// Map hpp-fcl/coal collision geometry to desired pipeline type.
@@ -40,14 +40,22 @@ public:
     }
   }
 
-  std::vector<std::pair<PipelineType, Shape>> robotShapes;
-  std::unordered_map<PipelineType, SDL_GPUGraphicsPipeline *> pipelines;
+  struct RobotObject {
+    pin::GeomIndex geom_index;
+    Mesh mesh;
+    std::vector<MeshView> views;
+    std::vector<PbrMaterialData> materials;
+    PipelineType pipeline_type;
+  };
   struct EnvironmentObject {
     bool status;
-    Shape shape;
+    Mesh mesh;
+    PbrMaterialData materials;
     Mat4f transform;
     PipelineType pipeline_type;
   };
+  std::vector<RobotObject> robotObjects;
+  std::unordered_map<PipelineType, SDL_GPUGraphicsPipeline *> pipelines;
   std::vector<EnvironmentObject> environmentShapes;
   DirectionalLight directionalLight;
 

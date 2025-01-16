@@ -63,8 +63,8 @@ int main() {
   }
   SDL_Log("Loaded %zu MeshData objects.", meshDatas.size());
   for (size_t i = 0; i < meshDatas.size(); i++) {
-    SDL_Log("Mesh %zu: %zu vertices, %zu indices", i,
-            meshDatas[i].numVertices(), meshDatas[i].numIndices());
+    SDL_Log("Mesh %zu: %u vertices, %u indices", i, meshDatas[i].numVertices(),
+            meshDatas[i].numIndices());
   }
 
   std::vector<Mesh> meshes;
@@ -72,12 +72,12 @@ int main() {
     Mesh mesh = createMesh(device, meshDatas[j]);
     meshes.push_back(std::move(mesh));
   }
-  SDL_assert(meshDatas[0].numIndices() == meshes[0].count);
+  SDL_assert(meshDatas[0].numIndices() == meshes[0].indexCount);
 
   /** COPY DATA TO GPU **/
 
   SDL_Log("Uploading mesh...");
-  uploadMeshToDevice(device, meshes[0], meshDatas[0]);
+  uploadMeshToDevice(device, meshes[0].toView(), meshDatas[0]);
 
   /** CREATE PIPELINE **/
   Shader vertexShader{device, "PbrBasic.vert", 1};
@@ -104,7 +104,7 @@ int main() {
   SDL_GPUGraphicsPipelineCreateInfo pipeline_desc{
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
-      .vertex_input_state = meshes[0].layout().toVertexInputState(),
+      .vertex_input_state = meshes[0].layout.toVertexInputState(),
       .primitive_type = meshDatas[0].primitiveType,
       .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
                         .cull_mode = SDL_GPU_CULLMODE_NONE,
@@ -240,7 +240,8 @@ int main() {
                                      sizeof(materialUbo));
       SDL_PushGPUFragmentUniformData(command_buffer, 1, &lightUbo,
                                      sizeof(lightUbo));
-      SDL_DrawGPUIndexedPrimitives(render_pass, meshes[0].count, 1, 0, 0, 0);
+      SDL_DrawGPUIndexedPrimitives(render_pass, meshes[0].indexCount, 1, 0, 0,
+                                   0);
 
       SDL_EndGPURenderPass(render_pass);
     }
@@ -250,7 +251,7 @@ int main() {
   }
 
   for (auto &mesh : meshes) {
-    mesh.releaseOwnedBuffers(device);
+    mesh.release(device);
   }
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 

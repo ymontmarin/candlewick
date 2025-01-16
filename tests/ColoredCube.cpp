@@ -113,7 +113,7 @@ int main() {
     return 1;
   }
   SDL_SetGPUBufferName(device, buf_vertex, "vertex_buf");
-  mesh.bindVertexBuffer(0, buf_vertex, 0, Mesh::Owned);
+  mesh.bindVertexBuffer(0, buf_vertex);
 
   SDL_GPUTransferBufferCreateInfo transfer_buffer_desc{
       .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
@@ -138,7 +138,7 @@ int main() {
 
     SDL_GPUBufferRegion dst_location{
         .buffer = mesh.vertexBuffers[0],
-        .offset = mesh.vertexBufferOffsets[0],
+        .offset = 0u,
         .size = sizeof(vertexData),
     };
 
@@ -221,9 +221,9 @@ int main() {
     const Float3 center{0., 0., 0.};
     Float3 eye{0., 0., 0.};
     // start at phi -> eye.x = 2.5, eye.y = 0.5
-    const float phi = 0.05 * frame;
-    eye.x() += 2.0 * std::cos(phi);
-    eye.y() += 2.0 * std::sin(phi);
+    const float phi = 0.05f * frame;
+    eye.x() += 2.0f * std::cos(phi);
+    eye.y() += 2.0f * std::sin(phi);
     view = lookAt(eye, center, {0., 0., 1.});
     projViewMat = perp * view * modelMat;
 
@@ -263,7 +263,7 @@ int main() {
 
   SDL_ReleaseGPUTexture(device, depthTexture);
 
-  mesh.releaseOwnedBuffers(device);
+  mesh.release(device);
 
   SDL_ReleaseWindowFromGPUDevice(device, window);
   SDL_DestroyWindow(window);

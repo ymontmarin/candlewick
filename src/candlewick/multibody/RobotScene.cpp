@@ -46,10 +46,10 @@ RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom) {
 auto RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
                                       PipelineType pipe_type)
     -> EnvironmentObject & {
-  Shape shape =
-      Shape::createShapeFromDatas(_device, std::array{std::move(data)});
-  return environmentShapes.emplace_back(true, std::move(shape), placement,
-                                        pipe_type);
+  Mesh mesh = createMesh(_device, data);
+  uploadMeshToDevice(_device, mesh.toView(), data);
+  return environmentShapes.emplace_back(
+      true, std::move(mesh), std::move(data.material), placement, pipe_type);
 }
 
 RobotScene::RobotScene(const Renderer &renderer,
@@ -74,20 +74,28 @@ RobotScene::RobotScene(const Renderer &renderer,
   auto swapchain_format =
       SDL_GetGPUSwapchainTextureFormat(dev, renderer.window);
 
-  for (pin::GeomIndex i = 0; i < geom_model.ngeoms; i++) {
-    const auto &geom_obj = geom_model.geometryObjects[i];
-    auto mesh_datas = loadGeometryObject(geom_obj);
+  for (pin::GeomIndex geom_id = 0; geom_id < geom_model.ngeoms; geom_id++) {
+    const auto &geom_obj = geom_model.geometryObjects[geom_id];
+    auto meshDatas = loadGeometryObject(geom_obj);
     PipelineType pipeline_type = pinGeomToPipeline(*geom_obj.geometry);
-    auto shape = Shape::createShapeFromDatas(dev, mesh_datas, true);
-    const auto &item =
-        robotShapes.emplace_back(pipeline_type, std::move(shape));
+    auto [mesh, views] = createMeshFromBatch(dev, meshDatas, true);
+    assert(validateMesh(mesh));
+    auto layout = mesh.layout;
+    robotObjects.push_back({
+        geom_id,
+        std::move(mesh),
+        std::move(views),
+        extractMaterials(meshDatas),
+        pipeline_type,
+    });
     if (!pipelines.contains(pipeline_type)) {
       auto pipe_config = config.pipeline_configs.at(pipeline_type);
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
               magic_enum::enum_name(pipeline_type).data());
       auto *pipeline =
-          createPipeline(dev, item.second.layout(), swapchain_format,
-                         renderer.depth_format, pipeline_type, pipe_config);
+          createPipeline(dev, layout, swapchain_format, renderer.depth_format,
+                         pipeline_type, pipe_config);
+      assert(pipeline);
       pipelines.emplace(pipeline_type, pipeline);
     }
   }
@@ -125,11 +133,12 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
   // iterate over primitive types in the keys
   for (const auto &[pipeline_type, pipeline] : pipelines) {
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
-    for (pin::GeomIndex i = 0; i < _geomModel.ngeoms; i++) {
-      if (robotShapes[i].first != pipeline_type)
+    for (const auto &obj : robotObjects) {
+      pin::GeomIndex geom_id = obj.geom_index;
+      if (obj.pipeline_type != pipeline_type)
         continue;
-      const auto &shape = robotShapes[i].second;
-      const auto &placement = _geomData.oMg[i].cast<float>();
+      const auto &mesh = obj.mesh;
+      const auto &placement = _geomData.oMg[geom_id].cast<float>();
       const Mat4f modelMat = placement.toHomogeneousMatrix();
       const Mat3f normalMatrix =
           modelMat.topLeftCorner<3, 3>().inverse().transpose();
@@ -141,14 +150,22 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
       };
       renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
                                  sizeof(data));
-      renderer.render(render_pass, shape);
+      renderer.bindMesh(render_pass, mesh);
+      // loop over views and materials
+      for (size_t j = 0; j < obj.views.size(); j++) {
+        auto material = obj.materials[j].toUniform();
+        renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
+                                     sizeof(material));
+        renderer.drawView(render_pass, obj.views[j]);
+      }
     }
 
-    for (const auto &[status, shape, modelMat, object_pipeline_type] :
+    for (const auto &[status, mesh, _material, modelMat, object_pipeline_type] :
          environmentShapes) {
       if (!status || (object_pipeline_type != pipeline_type))
         continue;
 
+      auto material = _material.toUniform();
       const Mat3f normalMatrix =
           modelMat.topLeftCorner<3, 3>().inverse().transpose();
       const Mat4f mvp = viewProj * modelMat;
@@ -159,7 +176,10 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
       };
       renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
                                  sizeof(data));
-      renderer.render(render_pass, shape);
+      renderer.bindMesh(render_pass, mesh);
+      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
+                                   sizeof(material));
+      renderer.draw(render_pass, mesh);
     }
 
     post_callback(render_pass);
@@ -168,15 +188,15 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
 }
 
 void RobotScene::release() {
-  for (auto &[type, shape] : robotShapes) {
-    shape.release();
+  for (auto &obj : robotObjects) {
+    obj.mesh.release(_device);
   }
-  for (auto &[_status, shape, _tr, _pipe_type] : environmentShapes) {
-    shape.release();
+  for (auto &obj : environmentShapes) {
+    obj.mesh.release(_device);
   }
   if (!_device)
     return;
-  robotShapes.clear();
+  robotObjects.clear();
   environmentShapes.clear();
 
   for (auto &[primType, pipeline] : pipelines) {
