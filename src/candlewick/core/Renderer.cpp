@@ -82,7 +82,17 @@ void Renderer::drawViews(SDL_GPURenderPass *pass,
   if (meshViews.empty())
     return;
 
+#ifndef NDEBUG
+  const auto ib = meshViews[0].indexBuffer;
+  const auto &vbs = meshViews[0].vertexBuffers;
+  const auto n_vbs = vbs.size();
+#endif
   for (auto &view : meshViews) {
+#ifndef NDEBUG
+    SDL_assert(ib == view.indexBuffer);
+    for (size_t i = 0; i < n_vbs; i++)
+      SDL_assert(vbs[i] == view.vertexBuffers[i]);
+#endif
     this->drawView(pass, view);
   }
 }
