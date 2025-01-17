@@ -3,7 +3,6 @@
 #include "Scene.h"
 #include "Mesh.h"
 #include "Renderer.h"
-#include "math_util.h"
 
 #include <memory>
 
@@ -30,103 +29,67 @@ class DebugScene;
 struct DebugModule {
   virtual void addDrawCommands(DebugScene &scene, const Camera &camera) = 0;
   virtual ~DebugModule() = default;
+  DebugModule(DebugScene & /* scene */) {}
 };
 
-/// \brief Just the basic 3D triad.
+/// \brief Just the basic 3D triad, and a line grid.
 struct BasicDebugModule : DebugModule {
-  inline static GpuVec4 DEFAULT_GRID_COLOR = 0xE0A236ff_rgbaf;
-
   Mesh triad;
   std::array<MeshView, 3> triad_views;
   std::array<GpuVec4, 3> triad_colors;
   Mesh grid;
-  GpuVec4 grid_color = DEFAULT_GRID_COLOR;
-  SDL_GPUGraphicsPipeline *pipeline;
+  GpuVec4 grid_color;
 
+  /// Flag for enabling the 3D triad (the coordinate frame at the origin)
   bool enableTriad{true};
+  /// Flag for enabling the wireframe grid
   bool enableGrid{true};
 
-  BasicDebugModule(const Device &dev);
+  BasicDebugModule(DebugScene &scene);
   void addDrawCommands(DebugScene &scene, const Camera &camera) override;
 };
 
+/// \brief A render system for Debug elements (coordinate frames, arrows,
+/// grids...)
+///
+/// \todo Reorganize the render pipelines and how they are set up.
 class DebugScene {
   std::vector<std::unique_ptr<DebugModule>> modules;
   const Device &_device;
   SDL_GPUGraphicsPipeline *trianglePipeline;
   SDL_GPUGraphicsPipeline *linePipeline;
+  SDL_GPUTextureFormat _swapchainTextureFormat, _depthFormat;
 
 public:
   enum { TRANSFORM_SLOT = 0 };
   enum { COLOR_SLOT = 0 };
+  std::vector<DebugDrawCommand> drawCommands;
 
   DebugScene(const Renderer &renderer);
 
-  std::vector<DebugDrawCommand> drawCommands;
+  const auto &device() const { return _device; }
 
+  /// \brief Setup pipelines; this will only have an effect **ONCE**.
+  void setupPipelines(const MeshLayout &layout);
+
+  /// \brief Add a debug module (inheriting from DebugModule).
+  ///
+  /// This will inject \c this into the module's constructor.
+  /// \tparam U The type of the debug module to be constructed and added.
+  /// \param ctor_args Constructor arguments (other than \c *this) for U
+  /// \returns Reference to the concrete type U
   template <std::derived_from<DebugModule> U, typename... CtorArgs>
   U &addModule(CtorArgs &&...ctor_args) {
-    U *p = new U(std::forward<CtorArgs>(ctor_args)...);
+    U *p = new U(*this, std::forward<CtorArgs>(ctor_args)...);
     modules.emplace_back(p);
     return *p;
   }
 
-  void render(Renderer &renderer, const Camera &camera) {
-    drawCommands.clear();
-
-    for (auto &module : modules) {
-      module->addDrawCommands(*this, camera);
-    }
-
-    SDL_GPUColorTargetInfo color_target_info{
-        .texture = renderer.swapchain,
-        .clear_color{},
-        .load_op = SDL_GPU_LOADOP_LOAD,
-        .store_op = SDL_GPU_STOREOP_STORE,
-        .cycle = false,
-    };
-    SDL_GPUDepthStencilTargetInfo depth_target_info;
-    depth_target_info.load_op = SDL_GPU_LOADOP_LOAD;
-    depth_target_info.store_op = SDL_GPU_STOREOP_DONT_CARE;
-    depth_target_info.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
-    depth_target_info.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
-    depth_target_info.texture = renderer.depth_texture;
-
-    SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
-        renderer.command_buffer, &color_target_info, 1, &depth_target_info);
-
-    for (const auto &cmd : drawCommands) {
-      SDL_assert(cmd.mesh_views.size() == cmd.colors.size());
-      switch (cmd.pipeline_type) {
-      case DebugPipelines::TRIANGLE_FILL:
-        SDL_BindGPUGraphicsPipeline(render_pass, trianglePipeline);
-        break;
-      case DebugPipelines::LINE:
-        SDL_BindGPUGraphicsPipeline(render_pass, linePipeline);
-        break;
-      }
-      renderer.pushVertexUniform(TRANSFORM_SLOT, &cmd.mvp, sizeof(cmd.mvp));
-      renderer.bindMesh(render_pass, *cmd.mesh);
-      for (size_t i = 0; i < cmd.mesh_views.size(); i++) {
-        const auto &color = cmd.colors[i];
-        renderer.pushFragmentUniform(COLOR_SLOT, &color, sizeof(color));
-        renderer.drawView(render_pass, cmd.mesh_views[i]);
-      }
-    }
-
-    SDL_EndGPURenderPass(render_pass);
-  }
+  void render(Renderer &renderer, const Camera &camera);
 
   void release();
 };
 
 static_assert(Scene<DebugScene>);
-
-inline void DebugScene::release() {
-  if (_device) {
-    SDL_ReleaseGPUGraphicsPipeline(_device, trianglePipeline);
-    SDL_ReleaseGPUGraphicsPipeline(_device, linePipeline);
-  }
-}
 
 } // namespace candlewick
