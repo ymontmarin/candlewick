@@ -1,4 +1,6 @@
 #include "fwd.hpp"
+#include <eigenpy/optional.hpp>
+
 #include "candlewick/multibody/Visualizer.h"
 #include <pinocchio-visualizers/python/visitor.hpp>
 
@@ -8,6 +10,7 @@
 using namespace candlewick::multibody;
 
 void exposeVisualizer() {
+  eigenpy::OptionalConverter<ConstVectorRef, std::optional>::registration();
   bp::class_<Visualizer::Config>("VisualizerConfig", bp::init<>())
       .def_readwrite("width", &Visualizer::Config::width)
       .def_readwrite("height", &Visualizer::Config::height);

@@ -6,11 +6,18 @@
 #include "../core/GuiSystem.h"
 #include "../core/DebugScene.h"
 #include "../core/Renderer.h"
-#include "../core/LightUniforms.h"
 
 #include <SDL3/SDL_init.h>
 
 namespace candlewick::multibody {
+
+namespace {
+using pinocchio_visualizers::BaseVisualizer;
+using pinocchio_visualizers::ConstVectorRef;
+using pinocchio_visualizers::Matrix4s;
+using pinocchio_visualizers::Vector3s;
+using pinocchio_visualizers::VectorXs;
+} // namespace
 
 struct VisualizerConfig {
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
@@ -18,14 +25,19 @@ struct VisualizerConfig {
 
 /// \brief A synchronous renderer. The display() function will perform the draw
 /// calls.
-class Visualizer : public pinocchio_visualizers::BaseVisualizer {
+class Visualizer final : public BaseVisualizer {
 public:
+  using BaseVisualizer::setCameraPose;
   Renderer renderer;
   GuiSystem guiSys;
   RobotScene robotScene;
   DebugScene debugScene;
-  Camera cameraState;
+  Camera camera;
 
+private:
+  BasicDebugModule *basic_debug_module;
+
+public:
   struct Config {
     Uint32 width;
     Uint32 height;
@@ -41,23 +53,11 @@ public:
 
   void default_gui_exec(Renderer &render);
 
+  void loadViewerModel() override;
+
   Visualizer(Config config, const pin::Model &model,
              const pin::GeometryModel &visualModel,
-             GuiSystem::GuiBehavior gui_callback)
-      : pinocchio_visualizers::BaseVisualizer(model, visualModel),
-        renderer(createRenderer(config)), guiSys(std::move(gui_callback)),
-        robotScene(renderer, visualModel, visualData, {}),
-        debugScene(renderer) {
-    guiSys.init(renderer);
-    robotScene.directionalLight = {
-        .direction = {0., -1., -1.},
-        .color = {1.0, 1.0, 1.0},
-        .intensity = 8.0,
-    };
-    debugScene.addModule<BasicDebugModule>();
-  }
-
-  void loadViewerModel() override {}
+             GuiSystem::GuiBehavior gui_callback);
 
   Visualizer(Config config, const pin::Model &model,
              const pin::GeometryModel &visualModel)
@@ -65,6 +65,12 @@ public:
                    [this](auto &r) { default_gui_exec(r); }) {}
 
   void displayImpl() override;
+
+  void setCameraTarget(const Eigen::Ref<const Vector3s> &target) override;
+
+  void setCameraPosition(const Eigen::Ref<const Vector3s> &position) override;
+
+  void setCameraPose(const Eigen::Ref<const Matrix4s> &pose) override;
 
   ~Visualizer() {
     robotScene.release();
