@@ -22,7 +22,6 @@ public:
   };
   enum VertexUniformSlots : Uint32 { TRANSFORM = 0 };
   enum FragmentUniformSlots : Uint32 { MATERIAL = 0, LIGHTING = 1 };
-  using RenderPostCallback = std::function<void(SDL_GPURenderPass *)>;
 
   /// Map hpp-fcl/coal collision geometry to desired pipeline type.
   static PipelineType pinGeomToPipeline(const coal::CollisionGeometry &geom);
@@ -103,9 +102,7 @@ public:
                  SDL_GPUTextureFormat depth_stencil_format, PipelineType type,
                  const Config::PipelineConfig &config);
 
-  void render(
-      Renderer &renderer, const Camera &cameraState,
-      RenderPostCallback post_callback = [](auto *) {});
+  void render(Renderer &renderer, const Camera &cameraState);
   void release();
 
 private:

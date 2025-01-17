@@ -101,8 +101,7 @@ RobotScene::RobotScene(const Renderer &renderer,
   }
 }
 
-void RobotScene::render(Renderer &renderer, const Camera &cameraState,
-                        RenderPostCallback post_callback) {
+void RobotScene::render(Renderer &renderer, const Camera &cameraState) {
   SDL_GPUColorTargetInfo color_target{
       .texture = renderer.swapchain,
       .clear_color{},
@@ -182,7 +181,6 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState,
       renderer.draw(render_pass, mesh);
     }
 
-    post_callback(render_pass);
     SDL_EndGPURenderPass(render_pass);
   }
 }
