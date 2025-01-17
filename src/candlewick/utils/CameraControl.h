@@ -8,17 +8,21 @@ namespace candlewick {
 
 /// \brief The main way of using a camera to render things.
 struct Camera {
+  /// Projection matrix \f$\mathbf{P}\f$
   Mat4f projection;
+  /// %Camera view matrix \f$\mathbf{V}\f$
   Eigen::Isometry3f view;
 
+  /// Compute and return the camera pose matrix \f$\mathbf{M} =
+  /// \mathbf{V}^{-1}\f$
   Eigen::Isometry3f pose() const { return view.inverse(); }
   Float3 position() const { return pose().translation(); }
 
-  /// View-projection matrix \f$P * V\f$
+  /// View-projection matrix \f$\mathbf{P} \cdot \mathbf{V}\f$
   auto viewProj() const { return projection * view.matrix(); }
 
-  /// \name Shortcuts for the basis vectors of the pose matrix, i.e. the
-  /// world-space camera orientation vectors.
+  /// \name Shortcuts for the basis vectors of the pose matrix
+  /// i.e. the world-space camera orientation vectors.
   /// \{
 
   Float3 right() const { return view.linear().row(0); }
@@ -74,6 +78,11 @@ inline void cameraWorldTranslate(Camera &camera, const Float3 &tr) {
 
 inline void cameraWorldTranslateZ(Camera &camera, float step) {
   cameraWorldTranslate(camera, {0, 0, step});
+}
+
+inline void cameraSetWorldPosition(Camera &camera, const Float3 &pos) {
+  auto R = camera.view.linear();
+  camera.view.translation() = R * pos;
 }
 
 /// Compute view matrix looking at \p center from \p eye, with
