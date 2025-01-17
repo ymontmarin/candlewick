@@ -51,6 +51,8 @@ static bool quitRequested = false;
 
 static float pixelDensity;
 static float displayScale;
+static float nearZ = 0.01f;
+static float farZ = 10.0f;
 
 static DirectionalLight myLight{
     .direction = {0., -1., -1.},
@@ -60,7 +62,7 @@ static DirectionalLight myLight{
 
 void updateFov(Radf newFov) {
   currentFov = newFov;
-  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+  camera.projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ);
 }
 
 void eventLoop(const Renderer &renderer) {
@@ -86,7 +88,6 @@ void eventLoop(const Renderer &renderer) {
     case SDL_EVENT_MOUSE_WHEEL: {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
-      // orthographicZoom(projectionMat, scaleFac);
       updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
       break;
     }
@@ -147,7 +148,7 @@ int main(int argc, char **argv) {
     return 1;
 
   Renderer renderer =
-      createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D24_UNORM);
+      createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D32_FLOAT);
 
   // Load robot
   pin::Model model;
@@ -185,8 +186,6 @@ int main(int argc, char **argv) {
     ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
                      ImGuiSliderFlags_AlwaysClamp);
     updateFov(Radf(newFov));
-    camera.projection =
-        perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
 
     ImGui::SeparatorText("Env. status");
     ImGui::Checkbox("Render plane", &plane_obj.status);
@@ -213,7 +212,7 @@ int main(int argc, char **argv) {
 
   Uint32 frameNo = 0;
 
-  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+  camera.projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ);
   camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);
@@ -242,9 +241,8 @@ int main(int argc, char **argv) {
     // acquire command buffer and swapchain
     robot_scene.directionalLight = myLight;
     renderer.beginFrame();
-    renderer.acquireSwapchain();
 
-    if (renderer.swapchain) {
+    if (renderer.acquireSwapchain()) {
       robot_scene.render(renderer, camera);
       debug_scene.render(renderer, camera);
       gui_system.render(renderer);
