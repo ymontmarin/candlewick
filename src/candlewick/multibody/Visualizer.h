@@ -4,6 +4,7 @@
 #include "RobotScene.h"
 #include "../core/Device.h"
 #include "../core/GuiSystem.h"
+#include "../core/DebugScene.h"
 #include "../core/Renderer.h"
 #include "../core/LightUniforms.h"
 
@@ -22,6 +23,7 @@ public:
   Renderer renderer;
   GuiSystem guiSys;
   RobotScene robotScene;
+  DebugScene debugScene;
   Camera cameraState;
 
   struct Config {
@@ -44,13 +46,15 @@ public:
              GuiSystem::GuiBehavior gui_callback)
       : pinocchio_visualizers::BaseVisualizer(model, visualModel),
         renderer(createRenderer(config)), guiSys(std::move(gui_callback)),
-        robotScene(renderer, visualModel, visualData, {}) {
+        robotScene(renderer, visualModel, visualData, {}),
+        debugScene(renderer) {
     guiSys.init(renderer);
     robotScene.directionalLight = {
         .direction = {0., -1., -1.},
         .color = {1.0, 1.0, 1.0},
         .intensity = 8.0,
     };
+    debugScene.addModule<BasicDebugModule>();
   }
 
   void loadViewerModel() override {}
@@ -63,6 +67,8 @@ public:
   void displayImpl() override;
 
   ~Visualizer() {
+    robotScene.release();
+    debugScene.release();
     guiSys.release();
     renderer.destroy();
     SDL_DestroyWindow(renderer.window);
