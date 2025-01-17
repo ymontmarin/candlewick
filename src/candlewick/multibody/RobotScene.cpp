@@ -101,7 +101,7 @@ RobotScene::RobotScene(const Renderer &renderer,
   }
 }
 
-void RobotScene::render(Renderer &renderer, const Camera &cameraState) {
+void RobotScene::render(Renderer &renderer, const Camera &camera) {
   SDL_GPUColorTargetInfo color_target{
       .texture = renderer.swapchain,
       .clear_color{},
@@ -121,9 +121,9 @@ void RobotScene::render(Renderer &renderer, const Camera &cameraState) {
     DirectionalLight a;
     GpuVec3 viewPos;
   };
-  const LightUniform lightUbo{directionalLight, cameraState.position()};
+  const LightUniform lightUbo{directionalLight, camera.position()};
   // view-projection matrix P * V
-  const Mat4f viewProj = cameraState.viewProj();
+  const Mat4f viewProj = camera.viewProj();
   SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
       renderer.command_buffer, &color_target, 1, &depth_target);
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,

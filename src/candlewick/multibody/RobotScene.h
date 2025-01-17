@@ -89,10 +89,6 @@ public:
   addEnvironmentObject(MeshData &&data, Mat4f placement,
                        PipelineType pipe_type = PIPELINE_TRIANGLEMESH);
 
-  void setEnvironmentObjectStatus(size_t i, bool status) {
-    environmentShapes[i].status = status;
-  }
-
   RobotScene(const Renderer &renderer, const pin::GeometryModel &geom_model,
              const pin::GeometryData &geom_data, Config config);
 
@@ -102,7 +98,7 @@ public:
                  SDL_GPUTextureFormat depth_stencil_format, PipelineType type,
                  const Config::PipelineConfig &config);
 
-  void render(Renderer &renderer, const Camera &cameraState);
+  void render(Renderer &renderer, const Camera &camera);
   void release();
 
 private:
