@@ -37,6 +37,10 @@ struct Renderer {
                                           NULL, NULL);
   }
 
+  SDL_GPUTextureFormat getSwapchainTextureFormat() const {
+    return SDL_GetGPUSwapchainTextureFormat(device, window);
+  }
+
   bool hasDepthTexture() const { return depth_texture != nullptr; }
 
   /// Bind the Mesh object.
