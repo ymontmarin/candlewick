@@ -57,11 +57,14 @@ void Renderer::bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
   for (Uint32 j = 0; j < layout.numBuffers(); j++) {
     vertex_bindings.push_back(mesh.getVertexBinding(j));
   }
-  SDL_GPUBufferBinding index_binding = mesh.getIndexBinding();
 
   SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(),
                            layout.numBuffers());
-  SDL_BindGPUIndexBuffer(pass, &index_binding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+  if (mesh.isIndexed()) {
+    SDL_GPUBufferBinding index_binding = mesh.getIndexBinding();
+    SDL_BindGPUIndexBuffer(pass, &index_binding,
+                           SDL_GPU_INDEXELEMENTSIZE_32BIT);
+  }
 }
 
 void Renderer::drawView(SDL_GPURenderPass *pass, const MeshView &mesh) {
