@@ -80,6 +80,11 @@ inline void cameraWorldTranslateZ(Camera &camera, float step) {
   cameraWorldTranslate(camera, {0, 0, step});
 }
 
+inline void cameraSetWorldPosition(Camera &camera, const Float3 &pos) {
+  auto R = camera.view.linear();
+  camera.view.translation() = R * pos;
+}
+
 /// Compute view matrix looking at \p center from \p eye, with
 /// the camera pointing up towards \p up.
 Mat4f lookAt(const Float3 &eye, const Float3 &center,
