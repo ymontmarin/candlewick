@@ -59,17 +59,9 @@ void DebugScene::setupPipelines(const MeshLayout &layout) {
     return;
   Shader vertexShader{_device, "Hud3dElement.vert", 1};
   Shader fragmentShader{_device, "Hud3dElement.frag", 1};
-  SDL_GPUColorTargetDescription color_desc{
-      .format = _swapchainTextureFormat,
-      .blend_state = {
-          .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-          .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-          .color_blend_op = SDL_GPU_BLENDOP_ADD,
-          .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-          .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-          .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
-          .enable_blend = true,
-      }};
+  SDL_GPUColorTargetDescription color_desc;
+  SDL_zero(color_desc);
+  color_desc.format = _swapchainTextureFormat;
   SDL_GPUGraphicsPipelineCreateInfo info{
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
@@ -105,13 +97,11 @@ void DebugScene::render(Renderer &renderer, const Camera &camera) {
     module->addDrawCommands(*this, camera);
   }
 
-  SDL_GPUColorTargetInfo color_target_info{
-      .texture = renderer.swapchain,
-      .clear_color{},
-      .load_op = SDL_GPU_LOADOP_LOAD,
-      .store_op = SDL_GPU_STOREOP_STORE,
-      .cycle = false,
-  };
+  SDL_GPUColorTargetInfo color_target_info;
+  SDL_zero(color_target_info);
+  color_target_info.texture = renderer.swapchain;
+  color_target_info.load_op = SDL_GPU_LOADOP_LOAD;
+  color_target_info.store_op = SDL_GPU_STOREOP_STORE;
   SDL_GPUDepthStencilTargetInfo depth_target_info;
   depth_target_info.load_op = SDL_GPU_LOADOP_LOAD;
   depth_target_info.store_op = SDL_GPU_STOREOP_DONT_CARE;
