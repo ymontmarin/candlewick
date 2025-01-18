@@ -88,7 +88,8 @@ struct Mesh {
 ///
 /// Objects of this class are copyable and movable, since they only "borrow" the
 /// buffers.
-///
+/// \warning A MeshView is expected to be non-empty: positive vertex count and
+/// index count (if initial Mesh is indexed).
 /// \sa Mesh
 struct MeshView {
   std::vector<SDL_GPUBuffer *> vertexBuffers;
@@ -100,7 +101,7 @@ struct MeshView {
   Uint32 indexOffset;
   Uint32 indexCount;
 
-  bool isIndexed() const { return indexCount > 0; }
+  bool isIndexed() const { return indexBuffer != NULL; }
 };
 
 inline MeshView Mesh::toView() const {
@@ -118,6 +119,7 @@ inline MeshView Mesh::toView() const {
 
 /// \brief Check that all vertex buffers were set, and consistency in the
 /// "indexed/non-indexed" status.
+/// \sa validateMeshView()
 [[nodiscard]] inline bool validateMesh(const Mesh &mesh) {
   for (size_t i = 0; i < mesh.numVertexBuffers(); i++) {
     if (!mesh.vertexBuffers[i])
@@ -127,13 +129,17 @@ inline MeshView Mesh::toView() const {
   return mesh.isIndexed() == (mesh.indexCount > 0);
 }
 
+/// \brief Validation for a MeshView object.
+///
+/// Check that all vertex buffer handles are non-null, check consistency of
+/// indexing status (that index buffer is non-NULL iff )
+/// \param view Input view to validate.
+/// \sa validateMesh()
 [[nodiscard]] inline bool validateMeshView(const MeshView &view) {
   for (auto vb : view.vertexBuffers) {
     if (!vb)
       return false;
   }
-  if (!view.indexBuffer)
-    return false;
   // views of indexed meshes cannot have zero indices.
   if (view.isIndexed() != (view.indexCount > 0))
     return false;
