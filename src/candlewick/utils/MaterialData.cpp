@@ -7,7 +7,7 @@ PbrMaterialData loadFromAssimpMaterial(aiMaterial *material) {
   PbrMaterialData out;
   aiColor4D baseColor;
   material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor);
-  out.baseColor = util::assimpColor4ToEigen(baseColor);
+  out.baseColor = assimpColor4ToEigen(baseColor);
 
   material->Get(AI_MATKEY_METALLIC_FACTOR, out.metalness);
   material->Get(AI_MATKEY_ROUGHNESS_FACTOR, out.roughness);
