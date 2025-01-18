@@ -6,6 +6,8 @@
 
 namespace candlewick {
 
+enum class CameraProjection { PERSPECTIVE, ORTHOGRAPHIC };
+
 /// \brief The main way of using a camera to render things.
 struct Camera {
   /// Projection matrix \f$\mathbf{P}\f$
@@ -91,8 +93,8 @@ Mat4f lookAt(const Float3 &eye, const Float3 &center,
              const Float3 &up = Float3::UnitZ());
 
 /// \brief Compute orthographic projection matrix, from clipping plane
-/// parameters (left, right, top, bottom).
-Mat4f perspectiveMatrix(float left, float right, float top, float bottom,
+/// parameters (left, right, bottom, top, near, far).
+Mat4f perspectiveMatrix(float left, float right, float bottom, float top,
                         float near, float far);
 
 /// \brief Get perspective projection matrix given fov, aspect ratio, and
@@ -103,12 +105,18 @@ Mat4f perspectiveMatrix(float left, float right, float top, float bottom,
 /// \p farZ Far clipping plane
 Mat4f perspectiveFromFov(Radf fovY, float aspectRatio, float nearZ, float farZ);
 
-Mat4f orthographicMatrix(const Float2 &size, float, float far);
+/// \brief Get an orthographic projection matrix.
+Mat4f orthographicMatrix(float left, float right, float bottom, float top,
+                         float near, float far);
 
-inline void orthographicZoom(Mat4f &projMatrix, float factor) {
-  projMatrix(0, 0) *= 1.f / factor;
-  projMatrix(1, 1) *= 1.f / factor;
-}
+/// \copybrief orthographicMatrix()
+/// \param size xy-plane view-space sizes
+/// \param nearZ Near clipping plane. This is where the rendering starts on the
+/// Z-axis (the positive direction of which points up towards you).
+/// \param farZ Far clipping plane, where rendering ends. A value of \f$0\f$
+/// stops the rendered volume at the camera (_only_ things in front of camera
+/// will be rendered).
+Mat4f orthographicMatrix(const Float2 &size, float nearZ, float farZ);
 
 /// \}
 

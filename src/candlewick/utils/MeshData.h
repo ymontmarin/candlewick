@@ -83,7 +83,7 @@ createMeshFromBatch(const Device &device, std::span<const MeshData> meshDatas,
 
 /// \brief Upload the contents of a single, individual mesh to the GPU device.
 ///
-/// TODO: Enable batching the upload. Current workflow is to loop over MeshView
+/// \todo Enable batching the upload. Current workflow is to loop over MeshView
 /// and MeshData objects jointly and do multiple copy passes.
 void uploadMeshToDevice(const Device &device, const MeshView &meshView,
                         const MeshData &meshData);
