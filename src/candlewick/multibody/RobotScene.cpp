@@ -4,7 +4,6 @@
 #include "../core/Shader.h"
 #include "../core/TransformUniforms.h"
 #include "../utils/CameraControl.h"
-// #include "../primitives/Arrow.h"
 #include "../third-party/magic_enum.hpp"
 
 #include <coal/BVH/BVH_model.h>
@@ -48,14 +47,14 @@ auto RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
     -> EnvironmentObject & {
   Mesh mesh = createMesh(_device, data);
   uploadMeshToDevice(_device, mesh.toView(), data);
-  return environmentShapes.emplace_back(
+  return environmentObjects.emplace_back(
       true, std::move(mesh), std::move(data.material), placement, pipe_type);
 }
 
 RobotScene::RobotScene(const Renderer &renderer,
                        const pin::GeometryModel &geom_model,
                        const pin::GeometryData &geom_data, Config config)
-    : _device(renderer.device), _geomModel(geom_model), _geomData(geom_data) {
+    : _device(renderer.device), _geomData(geom_data) {
   for (const auto type : {
            PIPELINE_TRIANGLEMESH, PIPELINE_HEIGHTFIELD,
            //  PIPELINE_POINTCLOUD
@@ -79,7 +78,7 @@ RobotScene::RobotScene(const Renderer &renderer,
     PipelineType pipeline_type = pinGeomToPipeline(*geom_obj.geometry);
     auto [mesh, views] = createMeshFromBatch(dev, meshDatas, true);
     assert(validateMesh(mesh));
-    auto layout = mesh.layout;
+    const auto &layout = mesh.layout;
     robotObjects.push_back({
         geom_id,
         std::move(mesh),
@@ -87,7 +86,7 @@ RobotScene::RobotScene(const Renderer &renderer,
         extractMaterials(meshDatas),
         pipeline_type,
     });
-    if (!pipelines.contains(pipeline_type)) {
+    if (!renderPipelines.contains(pipeline_type)) {
       auto pipe_config = config.pipeline_configs.at(pipeline_type);
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
               magic_enum::enum_name(pipeline_type).data());
@@ -95,7 +94,7 @@ RobotScene::RobotScene(const Renderer &renderer,
           createPipeline(dev, layout, swapchain_format, renderer.depth_format,
                          pipeline_type, pipe_config);
       assert(pipeline);
-      pipelines.emplace(pipeline_type, pipeline);
+      renderPipelines.emplace(pipeline_type, PipelineData{pipeline, layout});
     }
   }
 }
@@ -129,8 +128,8 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
                                sizeof(lightUbo));
 
   // iterate over primitive types in the keys
-  for (const auto &[pipeline_type, pipeline] : pipelines) {
-    SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
+  for (const auto &[pipeline_type, pipe_data] : renderPipelines) {
+    SDL_BindGPUGraphicsPipeline(render_pass, pipe_data.pipeline);
     for (const auto &obj : robotObjects) {
       pin::GeomIndex geom_id = obj.geom_index;
       if (obj.pipeline_type != pipeline_type)
@@ -159,7 +158,7 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
     }
 
     for (const auto &[status, mesh, _material, modelMat, object_pipeline_type] :
-         environmentShapes) {
+         environmentObjects) {
       if (!status || (object_pipeline_type != pipeline_type))
         continue;
 
@@ -188,17 +187,17 @@ void RobotScene::release() {
   for (auto &obj : robotObjects) {
     obj.mesh.release(_device);
   }
-  for (auto &obj : environmentShapes) {
+  for (auto &obj : environmentObjects) {
     obj.mesh.release(_device);
   }
   if (!_device)
     return;
   robotObjects.clear();
-  environmentShapes.clear();
+  environmentObjects.clear();
 
-  for (auto &[primType, pipeline] : pipelines) {
-    SDL_ReleaseGPUGraphicsPipeline(_device, pipeline);
-    pipeline = nullptr;
+  for (auto &[primType, pipe_data] : renderPipelines) {
+    SDL_ReleaseGPUGraphicsPipeline(_device, pipe_data.pipeline);
+    pipe_data.pipeline = nullptr;
   }
 }
 

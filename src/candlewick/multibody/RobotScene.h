@@ -37,6 +37,10 @@ public:
     }
   }
 
+  struct PipelineData {
+    SDL_GPUGraphicsPipeline *pipeline;
+    MeshLayout layout;
+  };
   struct RobotObject {
     pin::GeomIndex geom_index;
     Mesh mesh;
@@ -52,8 +56,8 @@ public:
     PipelineType pipeline_type;
   };
   std::vector<RobotObject> robotObjects;
-  std::unordered_map<PipelineType, SDL_GPUGraphicsPipeline *> pipelines;
-  std::vector<EnvironmentObject> environmentShapes;
+  std::vector<EnvironmentObject> environmentObjects;
+  std::unordered_map<PipelineType, PipelineData> renderPipelines;
   DirectionalLight directionalLight;
 
   struct Config {
@@ -103,7 +107,6 @@ public:
 
 private:
   const Device &_device;
-  const pin::GeometryModel &_geomModel;
   const pin::GeometryData &_geomData;
 };
 static_assert(Scene<RobotScene>);
