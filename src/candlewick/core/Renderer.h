@@ -101,6 +101,14 @@ struct Renderer {
     SDL_PushGPUFragmentUniformData(command_buffer, slot_index, data, length);
   }
 
+  /// \brief Bind fragment sampler.
+  void bindFragmentSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
+                           SDL_GPUTextureSamplerBinding binding);
+  /// \brief Bind fragment samplers.
+  void bindFragmentSamplers(
+      SDL_GPURenderPass *pass, Uint32 first_slot,
+      const std::vector<SDL_GPUTextureSamplerBinding> bindings);
+
   void destroy() {
     SDL_ReleaseWindowFromGPUDevice(device, window);
     device.destroy();

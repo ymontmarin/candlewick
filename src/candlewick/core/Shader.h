@@ -2,7 +2,6 @@
 
 #include "Core.h"
 #include <SDL3/SDL_gpu.h>
-#include <string_view>
 
 namespace candlewick {
 
@@ -12,7 +11,8 @@ const char *shader_format_name(SDL_GPUShaderFormat shader_format);
 
 /// \brief RAII wrapper around \c SDL_GPUShader, with loading utilities.
 struct Shader {
-  Shader(const Device &device, const char *filename, Uint32 uniformBufferCount);
+  Shader(const Device &device, const char *filename, Uint32 uniformBufferCount,
+         Uint32 numSamplers = 0);
   Shader(const Shader &) = delete;
   operator SDL_GPUShader *() noexcept { return _shader; }
   void release();

@@ -26,7 +26,8 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
   SDL_GPUTextureCreateInfo texInfo{
       .type = SDL_GPU_TEXTURETYPE_2D,
       .format = suggested_depth_format,
-      .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+      .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET |
+               SDL_GPU_TEXTUREUSAGE_SAMPLER,
       .width = Uint32(width),
       .height = Uint32(height),
       .layer_count_or_depth = 1,
@@ -94,6 +95,18 @@ void Renderer::drawViews(SDL_GPURenderPass *pass,
 #endif
     this->drawView(pass, view);
   }
+}
+
+void Renderer::bindFragmentSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
+                                   SDL_GPUTextureSamplerBinding binding) {
+  SDL_BindGPUFragmentSamplers(pass, first_slot, &binding, 1);
+}
+
+void Renderer::bindFragmentSamplers(
+    SDL_GPURenderPass *pass, Uint32 first_slot,
+    const std::vector<SDL_GPUTextureSamplerBinding> bindings) {
+  SDL_BindGPUFragmentSamplers(pass, first_slot, bindings.data(),
+                              Uint32(bindings.size()));
 }
 
 } // namespace candlewick

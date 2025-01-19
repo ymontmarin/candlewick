@@ -42,7 +42,7 @@ const char *shader_format_name(SDL_GPUShaderFormat shader_format) {
 }
 
 Shader::Shader(const Device &device, const char *filename,
-               Uint32 uniformBufferCount)
+               Uint32 uniformBufferCount, Uint32 numSamplers)
     : _shader(nullptr), _device(device) {
   SDL_GPUShaderStage stage = detect_shader_stage(filename);
 
@@ -81,7 +81,7 @@ Shader::Shader(const Device &device, const char *filename,
                                .entrypoint = entry_point,
                                .format = target_format,
                                .stage = stage,
-                               .num_samplers = 0,
+                               .num_samplers = numSamplers,
                                .num_storage_textures = 0,
                                .num_storage_buffers = 0,
                                .num_uniform_buffers = uniformBufferCount,
