@@ -158,7 +158,6 @@ int main() {
       if (event.type == SDL_EVENT_MOUSE_WHEEL) {
         float wy = event.wheel.y;
         const float scaleFac = std::exp(kScrollZoom * wy);
-        // orthographicZoom(projectionMat, scaleFac);
         // recreate
         fov = std::min(fov * scaleFac, 170.0_radf);
         SDL_Log("Change fov to %f", rad2deg(fov));

@@ -51,8 +51,6 @@ static bool quitRequested = false;
 
 static float pixelDensity;
 static float displayScale;
-static float nearZ = 0.01f;
-static float farZ = 10.0f;
 
 static DirectionalLight myLight{
     .direction = {0., -1., -1.},
@@ -62,7 +60,7 @@ static DirectionalLight myLight{
 
 void updateFov(Radf newFov) {
   currentFov = newFov;
-  camera.projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ);
+  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.f);
 }
 
 void eventLoop(const Renderer &renderer) {
@@ -212,7 +210,7 @@ int main(int argc, char **argv) {
 
   Uint32 frameNo = 0;
 
-  camera.projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ);
+  updateFov(currentFov);
   camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);

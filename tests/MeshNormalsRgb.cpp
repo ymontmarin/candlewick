@@ -141,8 +141,9 @@ int main() {
 
       switch (event.type) {
       case SDL_EVENT_MOUSE_WHEEL: {
-        float wy = event.wheel.y;
-        orthographicZoom(projectionMat, std::exp(kScrollZoom * wy));
+        float s = std::exp(kScrollZoom * event.wheel.y);
+        fov *= s;
+        projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
         break;
       }
       case SDL_EVENT_KEY_DOWN: {
