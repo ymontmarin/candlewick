@@ -3,10 +3,8 @@
 #include "Multibody.h"
 #include "../core/Device.h"
 #include "../core/Scene.h"
-// #include "../core/Shape.h"
 #include "../core/LightUniforms.h"
 #include "../utils/MeshData.h"
-// #include "../core/DebugScene.h"
 
 #include <pinocchio/multibody/geometry.hpp>
 
@@ -67,6 +65,8 @@ public:
       Uint32 num_frag_uniforms;
       SDL_GPUCullMode cull_mode = SDL_GPU_CULLMODE_BACK;
       SDL_GPUFillMode fill_mode = SDL_GPU_FILLMODE_FILL;
+      // the following can be set to EQUAL if there's a depth pre-pass.
+      SDL_GPUCompareOp depth_compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
     };
     std::unordered_map<PipelineType, PipelineConfig> pipeline_configs = {
         {PIPELINE_TRIANGLEMESH,
@@ -107,14 +107,6 @@ private:
   const pin::GeometryData &_geomData;
 };
 static_assert(Scene<RobotScene>);
-
-// struct RobotDebugModule : DebugModule {
-//   const pin::Data &data;
-//   Shape triad[3];
-//   RobotDebugModule(const pin::Data &data);
-//   virtual void addDrawCommands(DebugScene &scene,
-//                                const Camera &camera) override;
-// };
 
 } // namespace multibody
 } // namespace candlewick

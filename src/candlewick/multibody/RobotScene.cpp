@@ -71,8 +71,7 @@ RobotScene::RobotScene(const Renderer &renderer,
   }
 
   auto &dev = renderer.device;
-  auto swapchain_format =
-      SDL_GetGPUSwapchainTextureFormat(dev, renderer.window);
+  auto swapchain_format = renderer.getSwapchainTextureFormat();
 
   for (pin::GeomIndex geom_id = 0; geom_id < geom_model.ngeoms; geom_id++) {
     const auto &geom_obj = geom_model.geometryObjects[geom_id];
@@ -224,7 +223,7 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
       .vertex_input_state = layout.toVertexInputState(),
       .primitive_type = getPrimitiveTopologyForType(type),
       .depth_stencil_state{
-          .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
+          .compare_op = config.depth_compare_op,
           .enable_depth_test = true,
           .enable_depth_write = true,
       },
