@@ -6,10 +6,20 @@
 #include "../core/LightUniforms.h"
 #include "../utils/MeshData.h"
 
+#include <entt/entity/registry.hpp>
 #include <pinocchio/multibody/geometry.hpp>
 
 namespace candlewick {
 namespace multibody {
+
+struct PinGeomObjComponent {
+  pin::GeomIndex geom_index;
+};
+
+/// \brief A visibility component for ECS.
+struct VisibilityComponent {
+  bool status;
+};
 
 class RobotScene {
 public:
@@ -41,22 +51,20 @@ public:
     SDL_GPUGraphicsPipeline *pipeline;
     MeshLayout layout;
   };
-  struct RobotObject {
-    pin::GeomIndex geom_index;
+
+  struct Opaque {};
+  struct TransformComponent {
+    Mat4f transform;
+  };
+
+  struct MeshMaterialComponent {
     Mesh mesh;
     std::vector<MeshView> views;
     std::vector<PbrMaterialData> materials;
     PipelineType pipeline_type;
   };
-  struct EnvironmentObject {
-    bool status;
-    Mesh mesh;
-    PbrMaterialData materials;
-    Mat4f transform;
-    PipelineType pipeline_type;
-  };
-  std::vector<RobotObject> robotObjects;
-  std::vector<EnvironmentObject> environmentObjects;
+
+  entt::registry &registry;
   std::unordered_map<PipelineType, PipelineData> renderPipelines;
   DirectionalLight directionalLight;
 
@@ -89,12 +97,16 @@ public:
     SDL_GPUSampleCount msaa_samples = SDL_GPU_SAMPLECOUNT_1;
   };
 
-  EnvironmentObject &
+  RobotScene(entt::registry &registry, const Renderer &renderer,
+             const pin::GeometryModel &geom_model,
+             const pin::GeometryData &geom_data, Config config);
+
+  entt::entity
   addEnvironmentObject(MeshData &&data, Mat4f placement,
                        PipelineType pipe_type = PIPELINE_TRIANGLEMESH);
 
-  RobotScene(const Renderer &renderer, const pin::GeometryModel &geom_model,
-             const pin::GeometryData &geom_data, Config config);
+  // void addRobot(const pin::GeometryModel &geom_model,
+  //               const pin::GeometryData &geom_data);
 
   [[nodiscard]] static SDL_GPUGraphicsPipeline *
   createPipeline(const Device &dev, const MeshLayout &layout,
@@ -106,8 +118,9 @@ public:
   void release();
 
 private:
+  Config config;
   const Device &_device;
-  const pin::GeometryData &_geomData;
+  pin::GeometryData const *_geomData;
 };
 static_assert(Scene<RobotScene>);
 

@@ -4,6 +4,7 @@
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/DebugScene.h"
+// #include "candlewick/core/DepthAndShadowPass.h"
 
 #include "candlewick/core/math_util.h"
 #include "candlewick/core/LightUniforms.h"
@@ -170,6 +171,8 @@ int main(int argc, char **argv) {
   Renderer renderer =
       createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D32_FLOAT);
 
+  entt::registry registry{};
+
   // Load robot
   pin::Model model;
   pin::GeometryModel geom_model;
@@ -178,15 +181,20 @@ int main(int argc, char **argv) {
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
-  RobotScene robot_scene{renderer, geom_model, geom_data, {}};
+  RobotScene robot_scene{registry, renderer, geom_model, geom_data, {}};
 
   // Add plane
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-  auto &plane_obj = robot_scene.addEnvironmentObject(
+  entt::entity plane_entity = robot_scene.addEnvironmentObject(
       loadPlaneTiled(0.25f, 5, 5), plane_transform.matrix());
-  auto &robotShapes = robot_scene.robotObjects;
-  SDL_assert(robotShapes.size() == geom_model.ngeoms);
-  SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
+  auto [plane_obj, plane_vis] =
+      registry.get<RobotScene::MeshMaterialComponent,
+                   multibody::VisibilityComponent>(plane_entity);
+
+  const size_t numRobotShapes =
+      registry.view<const multibody::PinGeomObjComponent>().size();
+  SDL_assert(numRobotShapes == geom_model.ngeoms);
+  SDL_Log("Registered %zu robot geometry objects.", numRobotShapes);
 
   /** DEBUG SYSTEM **/
   DebugScene debug_scene{renderer};
@@ -195,6 +203,9 @@ int main(int argc, char **argv) {
 
   auto depth_debug = DepthDebugPass::create(renderer, renderer.depth_texture);
   static DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
+
+  // auto depth_prepass =
+  //     DepthPassInfo::create(renderer, robotShapes[0].mesh.layout);
 
   GuiSystem gui_system{[&](Renderer &r) {
     static bool demo_window_open = true;
@@ -221,13 +232,14 @@ int main(int argc, char **argv) {
       Degf newFov{currentFov};
       persp_change |= ImGui::DragFloat("fov", (float *)newFov, 1.f, 15.f, 90.f,
                                        "%.3f", ImGuiSliderFlags_AlwaysClamp);
+      ImGui::SliderFloat("Far plane", &farZ, 1.0f, 10.f);
       if (persp_change)
         updateFov(Radf(newFov));
       break;
     }
 
     ImGui::SeparatorText("Env. status");
-    ImGui::Checkbox("Render plane", &plane_obj.status);
+    ImGui::Checkbox("Render plane", &plane_vis.status);
     ImGui::Checkbox("Render grid", &basic_debug_module.enableGrid);
     ImGui::Checkbox("Render triad", &basic_debug_module.enableTriad);
     if (ImGui::Checkbox("Show depth debug", &showDebugViz)) {
@@ -248,7 +260,7 @@ int main(int argc, char **argv) {
     ImGui::Separator();
     ImGui::ColorEdit4("grid color", basic_debug_module.grid_color.data(),
                       ImGuiColorEditFlags_AlphaPreview);
-    ImGui::ColorEdit4("plane color", plane_obj.materials.baseColor.data());
+    ImGui::ColorEdit4("plane color", plane_obj.materials[0].baseColor.data());
     ImGui::End();
     ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
     ImGui::ShowDemoWindow(&demo_window_open);

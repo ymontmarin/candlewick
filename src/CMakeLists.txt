@@ -61,12 +61,14 @@ target_include_directories(${PROJECT_NAME} INTERFACE candlewick)
 if(BUILD_PINOCCHIO_VISUALIZER)
   find_package(pinocchio REQUIRED)
   find_package(robot_descriptions_cpp REQUIRED)
+  find_package(EnTT REQUIRED)
   add_library(
     candlewick_multibody
     SHARED
     candlewick/multibody/InstantiatePinViz.cpp
     candlewick/multibody/LoadCoalPrimitives.cpp
     candlewick/multibody/LoadPinocchioGeometry.cpp
+    candlewick/multibody/RobotDebug.cpp
     candlewick/multibody/RobotScene.cpp
     candlewick/multibody/Visualizer.cpp
   )
@@ -74,6 +76,7 @@ if(BUILD_PINOCCHIO_VISUALIZER)
     candlewick_multibody
     PUBLIC
       candlewick_core
+      EnTT::EnTT
       robot_descriptions_cpp::robot_descriptions_cpp
       pinocchio::pinocchio_default
       pinocchio-visualizers
