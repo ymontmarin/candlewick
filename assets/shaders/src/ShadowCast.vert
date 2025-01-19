@@ -2,12 +2,8 @@
 
 layout(location=0) in vec3 inPosition;
 
-struct LightUniform {
+layout(set=1, binding=0) uniform CameraBlock {
     mat4 viewProj;
-};
-
-layout(set=1, binding=0) uniform LightingBlock {
-    LightUniform light;
 };
 
 layout(set=1, binding=1) uniform ModelUniforms {
@@ -15,5 +11,5 @@ layout(set=1, binding=1) uniform ModelUniforms {
 };
 
 void main() {
-    gl_Position = light.viewProj * model * vec4(inPosition, 1.0);
+    gl_Position = viewProj * model * vec4(inPosition, 1.0);
 }
