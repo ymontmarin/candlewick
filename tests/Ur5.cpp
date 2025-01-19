@@ -81,8 +81,11 @@ static void updateFov(Radf newFov) {
 }
 
 static void updateOrtho(float zoom) {
-  camera.projection = orthographicMatrix({zoom * aspectRatio, zoom}, -4., 4.);
+  float iz = 1.f / zoom;
+  camera.projection = orthographicMatrix({iz * aspectRatio, iz}, -4., 4.);
   currentOrthoScale = zoom;
+  auto pos = camera.position();
+  SDL_Log("Current ortho cam. pos: (%f, %f, %f)", pos.x(), pos.y(), pos.z());
 }
 
 void eventLoop(const Renderer &renderer) {
@@ -211,15 +214,15 @@ int main(int argc, char **argv) {
                        int(CameraProjection::PERSPECTIVE));
     switch (cam_type) {
     case CameraProjection::ORTHOGRAPHIC:
-      ImGui::DragFloat("ortho_zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f,
-                       "%.3f", ImGuiSliderFlags_AlwaysClamp);
-      updateOrtho(currentOrthoScale);
+      if (ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f, "%.3f",
+                           ImGuiSliderFlags_AlwaysClamp))
+        updateOrtho(currentOrthoScale);
       break;
     case CameraProjection::PERSPECTIVE:
       Degf newFov{currentFov};
-      ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, 15.f, 90.f, "%.3f",
-                       ImGuiSliderFlags_AlwaysClamp);
-      updateFov(Radf(newFov));
+      if (ImGui::DragFloat("fov", (float *)newFov, 1.f, 15.f, 90.f, "%.3f",
+                           ImGuiSliderFlags_AlwaysClamp))
+        updateFov(Radf(newFov));
       break;
     }
 
@@ -323,9 +326,8 @@ int main(int argc, char **argv) {
 
   Uint32 frameNo = 0;
 
-  // updateFov(currentFov);
-  updateOrtho(1.0f);
   camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
+  updateFov(currentFov);
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);

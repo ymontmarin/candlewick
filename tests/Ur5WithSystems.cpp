@@ -39,14 +39,19 @@ using multibody::RobotScene;
 
 /// Application constants
 
-constexpr Uint32 wWidth = 1600;
-constexpr Uint32 wHeight = 900;
+constexpr Uint32 wWidth = 1680;
+constexpr Uint32 wHeight = 1050;
 constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 /// Application state
 
-static Camera camera;
 static Radf currentFov = 55.0_radf;
+static float currentOrthoScale = 1.f;
+static CameraProjection cam_type = CameraProjection::PERSPECTIVE;
+static Camera camera{
+    .projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.f),
+    .view{lookAt({2.0, 0, 2.}, Float3::Zero())},
+};
 static bool quitRequested = false;
 
 static float pixelDensity;
@@ -58,9 +63,15 @@ static DirectionalLight myLight{
     .intensity = 8.0,
 };
 
-void updateFov(Radf newFov) {
+static void updateFov(Radf newFov) {
+  camera.projection = perspectiveFromFov(newFov, aspectRatio, 0.01f, 10.f);
   currentFov = newFov;
-  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.f);
+}
+
+static void updateOrtho(float zoom) {
+  float iz = 1.f / zoom;
+  camera.projection = orthographicMatrix({iz * aspectRatio, iz}, -8., 8.);
+  currentOrthoScale = zoom;
 }
 
 void eventLoop(const Renderer &renderer) {
@@ -86,7 +97,14 @@ void eventLoop(const Renderer &renderer) {
     case SDL_EVENT_MOUSE_WHEEL: {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
-      updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
+      switch (cam_type) {
+      case CameraProjection::ORTHOGRAPHIC:
+        updateOrtho(std::clamp(scaleFac * currentOrthoScale, 0.1f, 2.f));
+        break;
+      case CameraProjection::PERSPECTIVE:
+        updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
+        break;
+      }
       break;
     }
     case SDL_EVENT_KEY_DOWN: {
@@ -173,17 +191,33 @@ int main(int argc, char **argv) {
 
   GuiSystem gui_system{[&](Renderer &r) {
     static bool demo_window_open = true;
-    const float minFov = 15.f;
-    const float maxFov = 90.f;
 
     ImGui::Begin("Renderer info & controls", nullptr,
                  ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("Device driver: %s", r.device.driverName());
     ImGui::SeparatorText("Camera");
-    Degf newFov{currentFov};
-    ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
-                     ImGuiSliderFlags_AlwaysClamp);
-    updateFov(Radf(newFov));
+    bool ortho_change, persp_change;
+    ortho_change = ImGui::RadioButton("Orthographic", (int *)&cam_type,
+                                      int(CameraProjection::ORTHOGRAPHIC));
+    ImGui::SameLine();
+    persp_change = ImGui::RadioButton("Perspective", (int *)&cam_type,
+                                      int(CameraProjection::PERSPECTIVE));
+    switch (cam_type) {
+    case CameraProjection::ORTHOGRAPHIC:
+      ortho_change |=
+          ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f, "%.3f",
+                           ImGuiSliderFlags_AlwaysClamp);
+      if (ortho_change)
+        updateOrtho(currentOrthoScale);
+      break;
+    case CameraProjection::PERSPECTIVE:
+      Degf newFov{currentFov};
+      persp_change |= ImGui::DragFloat("fov", (float *)newFov, 1.f, 15.f, 90.f,
+                                       "%.3f", ImGuiSliderFlags_AlwaysClamp);
+      if (persp_change)
+        updateFov(Radf(newFov));
+      break;
+    }
 
     ImGui::SeparatorText("Env. status");
     ImGui::Checkbox("Render plane", &plane_obj.status);
@@ -209,9 +243,6 @@ int main(int argc, char **argv) {
   // MAIN APPLICATION LOOP
 
   Uint32 frameNo = 0;
-
-  updateFov(currentFov);
-  camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
