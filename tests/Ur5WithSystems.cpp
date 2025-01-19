@@ -1,5 +1,6 @@
 #include "Common.h"
 
+#include "candlewick/core/debug/DepthViz.h"
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/DebugScene.h"
@@ -46,13 +47,16 @@ constexpr float aspectRatio = float(wWidth) / float(wHeight);
 /// Application state
 
 static Radf currentFov = 55.0_radf;
+static float nearZ = 0.01f;
+static float farZ = 10.f;
 static float currentOrthoScale = 1.f;
 static CameraProjection cam_type = CameraProjection::PERSPECTIVE;
 static Camera camera{
-    .projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.f),
+    .projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ),
     .view{lookAt({2.0, 0, 2.}, Float3::Zero())},
 };
 static bool quitRequested = false;
+static bool showDebugViz = false;
 
 static float pixelDensity;
 static float displayScale;
@@ -64,7 +68,7 @@ static DirectionalLight myLight{
 };
 
 static void updateFov(Radf newFov) {
-  camera.projection = perspectiveFromFov(newFov, aspectRatio, 0.01f, 10.f);
+  camera.projection = perspectiveFromFov(newFov, aspectRatio, nearZ, farZ);
   currentFov = newFov;
 }
 
@@ -189,6 +193,9 @@ int main(int argc, char **argv) {
   auto &basic_debug_module = debug_scene.addModule<BasicDebugModule>();
   basic_debug_module.grid_color = 0xE0A236ff_rgbaf;
 
+  auto depth_debug = DepthDebugPass::create(renderer, renderer.depth_texture);
+  static DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
+
   GuiSystem gui_system{[&](Renderer &r) {
     static bool demo_window_open = true;
 
@@ -223,6 +230,17 @@ int main(int argc, char **argv) {
     ImGui::Checkbox("Render plane", &plane_obj.status);
     ImGui::Checkbox("Render grid", &basic_debug_module.enableGrid);
     ImGui::Checkbox("Render triad", &basic_debug_module.enableTriad);
+    if (ImGui::Checkbox("Show depth debug", &showDebugViz)) {
+      // do stuff here
+      if (showDebugViz) {
+        SDL_Log("Turned on depth debug viz.");
+      }
+    }
+    if (showDebugViz) {
+      ImGui::RadioButton("Grayscale", (int *)&depth_mode, 0);
+      ImGui::SameLine();
+      ImGui::RadioButton("Heatmap", (int *)&depth_mode, 1);
+    }
 
     ImGui::SeparatorText("Lights");
     ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
@@ -252,8 +270,7 @@ int main(int argc, char **argv) {
     recorder = media::VideoRecorder{wWidth, wHeight, "ur5.mp4"};
 
   auto record_callback = [=, &renderer, &recorder]() {
-    auto swapchain_format =
-        SDL_GetGPUSwapchainTextureFormat(renderer.device, renderer.window);
+    auto swapchain_format = renderer.getSwapchainTextureFormat();
     media::videoWriteTextureToFrame(renderer.device, recorder,
                                     renderer.swapchain, swapchain_format,
                                     wWidth, wHeight);
@@ -273,7 +290,11 @@ int main(int argc, char **argv) {
 
     if (renderer.acquireSwapchain()) {
       robot_scene.render(renderer, camera);
-      debug_scene.render(renderer, camera);
+      if (showDebugViz) {
+        renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});
+      } else {
+        debug_scene.render(renderer, camera);
+      }
       gui_system.render(renderer);
     } else {
       SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());

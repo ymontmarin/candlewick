@@ -13,6 +13,7 @@ add_library(
   candlewick/core/Mesh.cpp
   candlewick/core/Renderer.cpp
   candlewick/core/Shader.cpp
+  candlewick/core/debug/DepthViz.cpp
   candlewick/utils/CameraControl.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/MaterialData.cpp
