@@ -50,18 +50,17 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
   depth_texture = SDL_CreateGPUTexture(this->device, &texInfo);
 }
 
-void Renderer::bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
-  const MeshLayout &layout = mesh.layout;
+void Renderer::bindMeshView(SDL_GPURenderPass *pass, const MeshView &mesh) {
+  const Uint32 num_buffers = Uint32(mesh.vertexBuffers.size());
   std::vector<SDL_GPUBufferBinding> vertex_bindings;
-  vertex_bindings.reserve(layout.numBuffers());
-  for (Uint32 j = 0; j < layout.numBuffers(); j++) {
-    vertex_bindings.push_back(mesh.getVertexBinding(j));
+  vertex_bindings.reserve(num_buffers);
+  for (Uint32 j = 0; j < num_buffers; j++) {
+    vertex_bindings.push_back({mesh.vertexBuffers[j], mesh.vertexOffsets[j]});
   }
 
-  SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(),
-                           layout.numBuffers());
+  SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(), num_buffers);
   if (mesh.isIndexed()) {
-    SDL_GPUBufferBinding index_binding = mesh.getIndexBinding();
+    SDL_GPUBufferBinding index_binding{mesh.indexBuffer, mesh.indexOffset};
     SDL_BindGPUIndexBuffer(pass, &index_binding,
                            SDL_GPU_INDEXELEMENTSIZE_32BIT);
   }

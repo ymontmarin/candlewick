@@ -48,8 +48,12 @@ struct Renderer {
 
   bool hasDepthTexture() const { return depth_texture != nullptr; }
 
+  /// Bind a MeshView object.
+  void bindMeshView(SDL_GPURenderPass *pass, const MeshView &view);
   /// Bind the Mesh object.
-  void bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh);
+  void bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
+    bindMeshView(pass, mesh.toView());
+  }
 
   /// Render an individual Mesh as part of a render pass, using a provided first
   /// index or vertex offset.
