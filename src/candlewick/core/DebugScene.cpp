@@ -10,10 +10,8 @@ BasicDebugModule::BasicDebugModule(DebugScene &scene)
     : DebugModule(scene), triad(NoInit), grid(NoInit) {
   const auto &dev = scene.device();
   auto triad_datas = createTriad();
-  std::vector<MeshView> _views;
-  std::tie(triad, _views) = createMeshFromBatch(dev, triad_datas, true);
+  std::tie(triad, triad_views) = createMeshFromBatch(dev, triad_datas, true);
   for (size_t i = 0; i < 3; i++) {
-    triad_views[i] = std::move(_views[i]);
     triad_colors[i] = triad_datas[i].material.baseColor;
   }
 
