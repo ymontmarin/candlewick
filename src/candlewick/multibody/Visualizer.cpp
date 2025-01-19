@@ -21,9 +21,10 @@ void Visualizer::default_gui_exec(Renderer &render) {
 Visualizer::Visualizer(Config config, const pin::Model &model,
                        const pin::GeometryModel &visualModel,
                        GuiSystem::GuiBehavior gui_callback)
-    : BaseVisualizer(model, visualModel), renderer(createRenderer(config)),
-      guiSys(std::move(gui_callback)),
-      robotScene(renderer, visualModel, visualData, {}), debugScene(renderer) {
+    : BaseVisualizer(model, visualModel), registry{},
+      renderer(createRenderer(config)), guiSys(std::move(gui_callback)),
+      robotScene(registry, renderer, visualModel, visualData, {}),
+      debugScene(renderer) {
   robotScene.directionalLight = {
       .direction = {0., -1., -1.},
       .color = {1.0, 1.0, 1.0},

@@ -10,8 +10,8 @@
 #include <pinocchio/multibody/data.hpp>
 
 namespace candlewick::multibody {
-RobotScene::PipelineType
-RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom) {
+auto RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom)
+    -> PipelineType {
   using enum coal::OBJECT_TYPE;
   const auto objType = geom.getObjectType();
   switch (objType) {
@@ -42,19 +42,26 @@ RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom) {
   }
 }
 
-auto RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
-                                      PipelineType pipe_type)
-    -> EnvironmentObject & {
+entt::entity RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
+                                              PipelineType pipe_type) {
   Mesh mesh = createMesh(_device, data);
   uploadMeshToDevice(_device, mesh.toView(), data);
-  return environmentObjects.emplace_back(
-      true, std::move(mesh), std::move(data.material), placement, pipe_type);
+  auto entity = registry.create();
+  registry.emplace<TransformComponent>(entity, placement);
+  if (pipe_type != PIPELINE_POINTCLOUD)
+    registry.emplace<Opaque>(entity);
+  registry.emplace<VisibilityComponent>(entity, true);
+  registry.emplace<MeshMaterialComponent>(
+      entity, std::move(mesh), std::vector{mesh.toView()},
+      std::vector{std::move(data.material)}, pipe_type);
+  return entity;
 }
 
-RobotScene::RobotScene(const Renderer &renderer,
+RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
                        const pin::GeometryModel &geom_model,
                        const pin::GeometryData &geom_data, Config config)
-    : _device(renderer.device), _geomData(geom_data) {
+    : registry(registry), config(config), _device(renderer.device),
+      _geomData(&geom_data) {
   for (const auto type : {
            PIPELINE_TRIANGLEMESH, PIPELINE_HEIGHTFIELD,
            //  PIPELINE_POINTCLOUD
@@ -73,23 +80,26 @@ RobotScene::RobotScene(const Renderer &renderer,
   auto swapchain_format = renderer.getSwapchainTextureFormat();
 
   for (pin::GeomIndex geom_id = 0; geom_id < geom_model.ngeoms; geom_id++) {
+
     const auto &geom_obj = geom_model.geometryObjects[geom_id];
     auto meshDatas = loadGeometryObject(geom_obj);
     PipelineType pipeline_type = pinGeomToPipeline(*geom_obj.geometry);
     auto [mesh, views] = createMeshFromBatch(dev, meshDatas, true);
     assert(validateMesh(mesh));
-    const auto &layout = mesh.layout;
-    robotObjects.push_back({
-        geom_id,
-        std::move(mesh),
-        std::move(views),
-        extractMaterials(meshDatas),
-        pipeline_type,
-    });
+
+    auto entity = registry.create();
+    registry.emplace<PinGeomObjComponent>(entity, geom_id);
+    if (pipeline_type != PIPELINE_POINTCLOUD)
+      registry.emplace<Opaque>(entity);
+    registry.emplace<MeshMaterialComponent>(
+        entity, std::move(mesh), std::move(views), extractMaterials(meshDatas),
+        pipeline_type);
+
     if (!renderPipelines.contains(pipeline_type)) {
       auto pipe_config = config.pipeline_configs.at(pipeline_type);
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
               magic_enum::enum_name(pipeline_type).data());
+      const auto &layout = mesh.layout;
       auto *pipeline =
           createPipeline(dev, layout, swapchain_format, renderer.depth_format,
                          pipeline_type, pipe_config);
@@ -130,12 +140,15 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
   // iterate over primitive types in the keys
   for (const auto &[pipeline_type, pipe_data] : renderPipelines) {
     SDL_BindGPUGraphicsPipeline(render_pass, pipe_data.pipeline);
-    for (const auto &obj : robotObjects) {
-      pin::GeomIndex geom_id = obj.geom_index;
+
+    auto robot_view =
+        registry.view<const PinGeomObjComponent, const MeshMaterialComponent>();
+
+    for (auto [entity, geom_id, obj] : robot_view.each()) {
       if (obj.pipeline_type != pipeline_type)
         continue;
       const auto &mesh = obj.mesh;
-      const auto &placement = _geomData.oMg[geom_id].cast<float>();
+      const auto &placement = _geomData->oMg[geom_id.geom_index].cast<float>();
       const Mat4f modelMat = placement.toHomogeneousMatrix();
       const Mat3f normalMatrix =
           modelMat.topLeftCorner<3, 3>().inverse().transpose();
@@ -157,12 +170,16 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
       }
     }
 
-    for (const auto &[status, mesh, _material, modelMat, object_pipeline_type] :
-         environmentObjects) {
-      if (!status || (object_pipeline_type != pipeline_type))
+    auto env_view =
+        registry.view<const VisibilityComponent, const TransformComponent,
+                      const MeshMaterialComponent>();
+    for (auto [entity, visible, tr, obj] : env_view.each()) {
+      if (!visible.status || (obj.pipeline_type != pipeline_type))
         continue;
 
-      auto material = _material.toUniform();
+      auto material = obj.materials[0].toUniform();
+      auto modelMat = tr.transform;
+      auto &mesh = obj.mesh;
       const Mat3f normalMatrix =
           modelMat.topLeftCorner<3, 3>().inverse().transpose();
       const Mat4f mvp = viewProj * modelMat;
@@ -184,16 +201,11 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
 }
 
 void RobotScene::release() {
-  for (auto &obj : robotObjects) {
-    obj.mesh.release(_device);
-  }
-  for (auto &obj : environmentObjects) {
+  for (auto [entity, obj] : registry.view<MeshMaterialComponent>()->each()) {
     obj.mesh.release(_device);
   }
   if (!_device)
     return;
-  robotObjects.clear();
-  environmentObjects.clear();
 
   for (auto &[primType, pipe_data] : renderPipelines) {
     SDL_ReleaseGPUGraphicsPipeline(_device, pipe_data.pipeline);
@@ -237,27 +249,5 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
   desc.rasterizer_state.fill_mode = config.fill_mode;
   return SDL_CreateGPUGraphicsPipeline(dev, &desc);
 }
-
-///// ROBOT DEBUG MODULE
-
-// RobotDebugModule::RobotDebugModule(const pin::Data &data) : data(data) {}
-
-// void RobotDebugModule::addDrawCommands(DebugScene &scene,
-//                                        const Camera &camera) {
-//   const auto &viewMat = camera.viewMatrix();
-//   const Mat4f projView = camera.projection * viewMat;
-
-//   for (pin::FrameIndex i = 0; i < data.oMf.size(); i++) {
-//     const auto pose = data.oMf[i].cast<float>();
-//     const Mat4f M = pose.toHomogeneousMatrix();
-//     const Mat3f N = M.topLeftCorner<3, 3>().inverse().transpose();
-//     for (int axis = 0; axis < 3; axis++) {
-//       scene.draw_commands.push_back(
-//           {.shape = &triad[axis],
-//            .transform = {.model = M, .mvp = projView * M, .normalMatrix =
-//            N}});
-//     }
-//   }
-// }
 
 } // namespace candlewick::multibody

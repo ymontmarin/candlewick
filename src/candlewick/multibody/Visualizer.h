@@ -28,6 +28,7 @@ struct VisualizerConfig {
 class Visualizer final : public BaseVisualizer {
 public:
   using BaseVisualizer::setCameraPose;
+  entt::registry registry;
   Renderer renderer;
   GuiSystem guiSys;
   RobotScene robotScene;
