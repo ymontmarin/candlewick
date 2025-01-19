@@ -309,6 +309,7 @@ int main(int argc, char **argv) {
     frameNo++;
   }
 
+  depth_debug.release(renderer.device);
   robot_scene.release();
   debug_scene.release();
   gui_system.release();
