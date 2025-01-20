@@ -63,33 +63,15 @@ DepthPassInfo createShadowPass(const Renderer &renderer,
     throw std::runtime_error(msg);
   }
 
-  // shaders
-  Shader vertexShader{device, "ShadowCast.vert", 2};
-  Shader fragmentShader{device, "ShadowCast.frag", 0};
-  SDL_GPUGraphicsPipelineCreateInfo shadow_pipeline_desc{
-      .vertex_shader = vertexShader,
-      .fragment_shader = fragmentShader,
-      .vertex_input_state = layout.toVertexInputState(),
-      .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-      .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
-                        .cull_mode = SDL_GPU_CULLMODE_BACK},
-      .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
-                           .enable_depth_test = true,
-                           .enable_depth_write = true},
-      .target_info{.color_target_descriptions = nullptr,
-                   .num_color_targets = 0,
-                   .has_depth_stencil_target = false},
-  };
-  auto *shadowPipeline =
-      SDL_CreateGPUGraphicsPipeline(device, &shadow_pipeline_desc);
-  if (!shadowPipeline) {
+  auto passInfo = DepthPassInfo::create(renderer, layout, shadowMap);
+  if (!passInfo.pipeline) {
     SDL_ReleaseGPUTexture(device, shadowMap);
     auto msg =
         std::format("Failed to create shadow map pipeline: %s", SDL_GetError());
     throw std::runtime_error(msg);
   }
 
-  return {shadowMap, shadowPipeline};
+  return passInfo;
 }
 
 void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
