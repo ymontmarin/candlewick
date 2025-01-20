@@ -17,8 +17,6 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
 
   const CollisionGeometry &collgom = *gobj.geometry.get();
   const OBJECT_TYPE objType = collgom.getObjectType();
-  SDL_Log("Processing GeometryObject %s (object type %s)", gobj.name.c_str(),
-          magic_enum::enum_name(objType).data());
 
   Float4 meshColor = gobj.meshColor.cast<float>();
   Float3 meshScale = gobj.meshScale.cast<float>();
