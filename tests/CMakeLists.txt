@@ -1,9 +1,11 @@
 enable_testing()
 find_package(GTest REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
+find_package(coal REQUIRED)
 
-add_library(Common SHARED Common.h Common.cpp)
+add_library(Common SHARED lib/Common.cpp lib/PerlinNoise.cpp)
 target_link_libraries(Common PUBLIC candlewick_core)
+target_include_directories(Common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 function(create_test filename)
   cmake_path(GET filename STEM name)
