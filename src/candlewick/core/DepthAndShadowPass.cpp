@@ -24,12 +24,13 @@ DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
       .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
       .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
                         .cull_mode = SDL_GPU_CULLMODE_BACK},
-      .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
+      .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS,
                            .enable_depth_test = true,
                            .enable_depth_write = true},
       .target_info{.color_target_descriptions = nullptr,
                    .num_color_targets = 0,
-                   .has_depth_stencil_target = false},
+                   .depth_stencil_format = renderer.depth_format,
+                   .has_depth_stencil_target = true},
   };
   auto *pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
   return {depth_texture, pipeline};
