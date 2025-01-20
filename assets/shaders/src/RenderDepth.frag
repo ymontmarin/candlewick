@@ -1,6 +1,5 @@
 // To be used with DrawQuad.vert
 #version 450
-#extension GL_GOOGLE_include_directive : enable
 
 #include "depth_utils.glsl"
 

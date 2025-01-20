@@ -1,8 +1,8 @@
-# Small util script to run our shaders through glslang,
-# targeting Vulkan 1.0
+# Small util script to run our shaders through glslc
+# https://github.com/google/shaderc
 import subprocess
-import os.path
 import argparse
+import pathlib as pt
 
 parser = argparse.ArgumentParser()
 parser.add_argument("shader_name")
@@ -17,32 +17,28 @@ group.add_argument(
     help="Process all available shader stages.",
 )
 parser.add_argument(
-    "--cross",
+    "--no-cross",
     action="store_true",
-    help="Use shadercross to transpile the SPIR-V shader to MSL and produce JSON metadata",
+    help="Skip the SPIR-V -> MSL transpiling and JSON metadata step.",
 )
 args = parser.parse_args()
 
 shader_name = args.shader_name
-SHADER_SRC_DIR = os.path.abspath("shaders/src")
-SHADER_OUT_DIR = os.path.abspath("shaders/compiled")
-print("Shader src dir:", SHADER_SRC_DIR)
+SHADER_SRC_DIR = pt.Path("shaders/src")
+SHADER_OUT_DIR = pt.Path("shaders/compiled")
+print("Shader src dir:", SHADER_SRC_DIR.absolute())
 if args.all_stages:
-    import glob
-
-    stages = glob.glob(os.path.join(SHADER_SRC_DIR, f"{shader_name}.[a-z]*"))
+    stages = list(SHADER_SRC_DIR.glob(f"{shader_name}.[a-z]*"))
 else:
-    stages = [
-        os.path.join(SHADER_SRC_DIR, f"{shader_name}.{stage}") for stage in args.stages
-    ]
+    stages = [SHADER_SRC_DIR / f"{shader_name}.{stage}" for stage in args.stages]
 
-print(f"Processing stages: {stages}")
+print(f"Processing files: {stages}")
 assert len(stages) > 0, "No stages found!"
 
 for stage_file in stages:
-    assert os.path.exists(stage_file)
-    spv_file = os.path.join(SHADER_OUT_DIR, os.path.relpath(stage_file, SHADER_SRC_DIR))
-    spv_file = f"{spv_file}.spv"
+    assert stage_file.exists()
+    spv_file = SHADER_OUT_DIR / stage_file.name
+    spv_file = spv_file.with_suffix(spv_file.suffix + ".spv")
     proc = subprocess.run(
         [
             "glslc",
@@ -55,23 +51,20 @@ for stage_file in stages:
         ],
         shell=False,
     )
-    print(proc.args)
+    print(f"Compiling SPV file {spv_file}")
 
-    if args.cross:
-        for ext in ("json", "msl"):
-            out_file = os.path.join(
-                SHADER_OUT_DIR, os.path.relpath(stage_file, SHADER_SRC_DIR)
-            )
-            out_file = f"{out_file}.{ext}"
+    if not args.no_cross:
+        for ext in (".json", ".msl"):
+            out_file = spv_file.with_suffix(ext)
             proc2 = subprocess.run(
                 [
                     "shadercross",
                     spv_file,
                     "-o",
                     out_file,
-                    "-d",
-                    ext.upper(),
                 ],
                 shell=False,
             )
-            print(proc2)
+
+if args.no_cross:
+    print("Skipping SPIR-V -> MSL transpiling and JSON metadata steps.")
