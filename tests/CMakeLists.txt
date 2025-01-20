@@ -1,7 +1,6 @@
 enable_testing()
 find_package(GTest REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
-find_package(coal REQUIRED)
 
 add_library(Common SHARED lib/Common.cpp lib/PerlinNoise.cpp)
 target_link_libraries(Common PUBLIC candlewick_core)
