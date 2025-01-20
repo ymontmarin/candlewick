@@ -106,6 +106,7 @@ void DebugScene::render(Renderer &renderer, const Camera &camera) {
   depth_target_info.stencil_load_op = SDL_GPU_LOADOP_LOAD;
   depth_target_info.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
   depth_target_info.texture = renderer.depth_texture;
+  depth_target_info.cycle = false;
 
   SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
       renderer.command_buffer, &color_target_info, 1, &depth_target_info);
