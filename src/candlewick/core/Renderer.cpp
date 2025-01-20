@@ -67,18 +67,22 @@ void Renderer::bindMeshView(SDL_GPURenderPass *pass, const MeshView &mesh) {
   }
 }
 
-void Renderer::drawView(SDL_GPURenderPass *pass, const MeshView &mesh) {
+void Renderer::drawView(SDL_GPURenderPass *pass, const MeshView &mesh,
+                        Uint32 numInstances) {
   assert(validateMeshView(mesh));
   if (mesh.isIndexed()) {
-    SDL_DrawGPUIndexedPrimitives(pass, mesh.indexCount, 1, mesh.indexOffset,
+    SDL_DrawGPUIndexedPrimitives(pass, mesh.indexCount, numInstances,
+                                 mesh.indexOffset,
                                  Sint32(mesh.vertexOffsets[0]), 0);
   } else {
-    SDL_DrawGPUPrimitives(pass, mesh.vertexCount, 1, mesh.vertexOffsets[0], 0);
+    SDL_DrawGPUPrimitives(pass, mesh.vertexCount, numInstances,
+                          mesh.vertexOffsets[0], 0);
   }
 }
 
 void Renderer::drawViews(SDL_GPURenderPass *pass,
-                         std::span<const MeshView> meshViews) {
+                         std::span<const MeshView> meshViews,
+                         Uint32 numInstances) {
   if (meshViews.empty())
     return;
 
@@ -93,7 +97,7 @@ void Renderer::drawViews(SDL_GPURenderPass *pass,
     for (size_t i = 0; i < n_vbs; i++)
       SDL_assert(vbs[i] == view.vertexBuffers[i]);
 #endif
-    this->drawView(pass, view);
+    this->drawView(pass, view, numInstances);
   }
 }
 

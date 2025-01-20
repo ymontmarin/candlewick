@@ -48,12 +48,13 @@ struct Renderer {
 
   bool hasDepthTexture() const { return depth_texture != nullptr; }
 
-  /// Bind a MeshView object.
-  void bindMeshView(SDL_GPURenderPass *pass, const MeshView &view);
-  /// Bind the Mesh object.
+  /// \brief Bind the Mesh object.
   void bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
     bindMeshView(pass, mesh.toView());
   }
+
+  /// \brief Bind a MeshView object.
+  void bindMeshView(SDL_GPURenderPass *pass, const MeshView &view);
 
   /// Render an individual Mesh as part of a render pass, using a provided first
   /// index or vertex offset.
@@ -63,8 +64,9 @@ struct Renderer {
   /// \warning Call bindMesh() first!
   /// \param pass The GPU render pass
   /// \param mesh The Mesh to draw.
-  void draw(SDL_GPURenderPass *pass, const Mesh &mesh) {
-    this->drawView(pass, mesh.toView());
+  void draw(SDL_GPURenderPass *pass, const Mesh &mesh,
+            Uint32 numInstances = 1) {
+    this->drawView(pass, mesh.toView(), numInstances);
   }
 
   /// \brief Draw a MeshView.
@@ -72,7 +74,8 @@ struct Renderer {
   /// \param pass The GPU render pass.
   /// \param mesh MeshView object to be drawn.
   /// \sa draw()
-  void drawView(SDL_GPURenderPass *pass, const MeshView &mesh);
+  void drawView(SDL_GPURenderPass *pass, const MeshView &mesh,
+                Uint32 numInstances = 1);
 
   /// \brief Render a collection of MeshView.
   /// This collection must satisfy the invariant that they all have the same
@@ -81,7 +84,8 @@ struct Renderer {
   /// \param pass The GPU render pass
   /// \param meshViews Collection of MeshView objects with the same parent Mesh.
   /// \sa drawView() (for individual views)
-  void drawViews(SDL_GPURenderPass *pass, std::span<const MeshView> meshViews);
+  void drawViews(SDL_GPURenderPass *pass, std::span<const MeshView> meshViews,
+                 Uint32 numInstances = 1);
 
   /// Render a collection of Mesh collected in a Shape object.
   /// The Shape class satisfies the necessary invariants to allow for
