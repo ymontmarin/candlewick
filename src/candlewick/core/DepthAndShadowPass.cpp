@@ -46,10 +46,10 @@ DepthPassInfo createShadowPass(const Renderer &renderer,
   SDL_GPUTextureCreateInfo texInfo{
       .type = SDL_GPU_TEXTURETYPE_2D,
       .format = renderer.depth_format,
-      .width = config.width,
-      .height = config.height,
       .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET |
                SDL_GPU_TEXTUREUSAGE_SAMPLER,
+      .width = config.width,
+      .height = config.height,
       .layer_count_or_depth = 1,
       .num_levels = 1,
       .sample_count = SDL_GPU_SAMPLECOUNT_1,
