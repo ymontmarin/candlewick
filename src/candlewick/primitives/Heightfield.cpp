@@ -2,16 +2,16 @@
 
 namespace candlewick {
 
-struct alignas(16) VertexType {
+struct alignas(16) PosOnlyVertex {
   GpuVec3 pos;
 };
 
-template <> struct VertexTraits<VertexType> {
+template <> struct VertexTraits<PosOnlyVertex> {
   constexpr static auto layout() {
     return MeshLayout{}
-        .addBinding(0, sizeof(VertexType))
+        .addBinding(0, sizeof(PosOnlyVertex))
         .addAttribute("pos", 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(VertexType, pos));
+                      offsetof(PosOnlyVertex, pos));
   }
 };
 
@@ -25,7 +25,7 @@ MeshData loadHeightfield(const Eigen::MatrixXf &heights,
   SDL_assert(nx > 0);
   SDL_assert(ny > 0);
   Uint32 vertexCount = Uint32(nx * ny);
-  std::vector<VertexType> vertexData{vertexCount};
+  std::vector<PosOnlyVertex> vertexData{vertexCount};
   std::vector<MeshData::IndexType> indexData;
   indexData.resize(Uint32(4 * nx * ny));
   size_t idx = 0;
