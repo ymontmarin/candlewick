@@ -110,6 +110,15 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
 }
 
 void RobotScene::render(Renderer &renderer, const Camera &camera) {
+  // render geometry which participated in the prepass
+  renderGeometryPass(renderer, camera, true);
+
+  // render geometry which was _not_ in the prepass
+  renderGeometryPass(renderer, camera, false);
+}
+
+void RobotScene::renderGeometryPass(Renderer &renderer, const Camera &camera,
+                                    bool had_prepass) {
   SDL_GPUColorTargetInfo color_target{
       .texture = renderer.swapchain,
       .clear_color{},
@@ -119,19 +128,19 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
   SDL_GPUDepthStencilTargetInfo depth_target{
       .texture = renderer.depth_texture,
       .clear_depth = 1.0f,
-      .load_op = SDL_GPU_LOADOP_CLEAR,
+      .load_op = had_prepass ? SDL_GPU_LOADOP_LOAD : SDL_GPU_LOADOP_CLEAR,
       .store_op = SDL_GPU_STOREOP_STORE,
       .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
       .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
   };
 
-  struct alignas(16) LightUniform {
+  struct alignas(16) light_ubo_t {
     DirectionalLight a;
     GpuVec3 viewPos;
   };
-  const LightUniform lightUbo{directionalLight, camera.position()};
-  // view-projection matrix P * V
+  const light_ubo_t lightUbo{directionalLight, camera.position()};
   const Mat4f viewProj = camera.viewProj();
+
   SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
       renderer.command_buffer, &color_target, 1, &depth_target);
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
@@ -139,6 +148,11 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
 
   // iterate over primitive types in the keys
   for (const auto &[pipeline_type, pipe_data] : renderPipelines) {
+    const auto &pipe_config = config.pipeline_configs[pipeline_type];
+    if (pipe_config.has_prepass != had_prepass) {
+      continue;
+    }
+
     SDL_BindGPUGraphicsPipeline(render_pass, pipe_data.pipeline);
 
     auto robot_view =
@@ -148,7 +162,7 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
       if (obj.pipeline_type != pipeline_type)
         continue;
       const auto &mesh = obj.mesh;
-      const auto &placement = _geomData->oMg[geom_id.geom_index].cast<float>();
+      const auto &placement = _geomData->oMg[geom_id].cast<float>();
       const Mat4f modelMat = placement.toHomogeneousMatrix();
       const Mat3f normalMatrix =
           modelMat.topLeftCorner<3, 3>().inverse().transpose();
@@ -174,7 +188,7 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
         registry.view<const VisibilityComponent, const TransformComponent,
                       const MeshMaterialComponent>();
     for (auto [entity, visible, tr, obj] : env_view.each()) {
-      if (!visible.status || (obj.pipeline_type != pipeline_type))
+      if (!visible || (obj.pipeline_type != pipeline_type))
         continue;
 
       auto material = obj.materials[0].toUniform();
@@ -195,9 +209,8 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
                                    sizeof(material));
       renderer.draw(render_pass, mesh);
     }
-
-    SDL_EndGPURenderPass(render_pass);
   }
+  SDL_EndGPURenderPass(render_pass);
 }
 
 void RobotScene::release() {
@@ -207,7 +220,7 @@ void RobotScene::release() {
   if (!_device)
     return;
 
-  for (auto &[primType, pipe_data] : renderPipelines) {
+  for (auto [primType, pipe_data] : renderPipelines) {
     SDL_ReleaseGPUGraphicsPipeline(_device, pipe_data.pipeline);
     pipe_data.pipeline = nullptr;
   }
@@ -220,6 +233,7 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
                            PipelineType type,
                            const Config::PipelineConfig &config) {
 
+  SDL_Log("Creating pipeline type %s", magic_enum::enum_name(type).data());
   Shader vertex_shader{dev, config.vertex_shader_path,
                        config.num_vertex_uniforms};
   Shader fragment_shader{dev, config.fragment_shader_path,
@@ -228,13 +242,16 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
   SDL_GPUColorTargetDescription color_target;
   SDL_zero(color_target);
   color_target.format = render_target_format;
+  SDL_GPUCompareOp depth_compare_op = config.has_prepass
+                                          ? SDL_GPU_COMPAREOP_EQUAL
+                                          : SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
   SDL_GPUGraphicsPipelineCreateInfo desc{
       .vertex_shader = vertex_shader,
       .fragment_shader = fragment_shader,
       .vertex_input_state = layout.toVertexInputState(),
       .primitive_type = getPrimitiveTopologyForType(type),
       .depth_stencil_state{
-          .compare_op = config.depth_compare_op,
+          .compare_op = depth_compare_op,
           .enable_depth_test = true,
           .enable_depth_write = true,
       },

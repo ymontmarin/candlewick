@@ -14,13 +14,16 @@ namespace multibody {
 
 struct PinGeomObjComponent {
   pin::GeomIndex geom_index;
+  operator pin::GeomIndex() const { return geom_index; }
 };
 
 /// \brief A visibility component for ECS.
 struct VisibilityComponent {
   bool status;
+  operator bool() const { return status; }
 };
 
+/// \brief A scene/render system for robot geometries using Pinocchio.
 class RobotScene {
 public:
   enum PipelineType {
@@ -65,7 +68,7 @@ public:
   };
 
   entt::registry &registry;
-  std::unordered_map<PipelineType, PipelineData> renderPipelines;
+  entt::dense_map<PipelineType, PipelineData> renderPipelines;
   DirectionalLight directionalLight;
 
   struct Config {
@@ -77,8 +80,7 @@ public:
       Uint32 num_frag_uniforms;
       SDL_GPUCullMode cull_mode = SDL_GPU_CULLMODE_BACK;
       SDL_GPUFillMode fill_mode = SDL_GPU_FILLMODE_FILL;
-      // the following can be set to EQUAL if there's a depth pre-pass.
-      SDL_GPUCompareOp depth_compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
+      bool has_prepass = false;
     };
     std::unordered_map<PipelineType, PipelineConfig> pipeline_configs = {
         {PIPELINE_TRIANGLEMESH,
@@ -115,7 +117,11 @@ public:
                  const Config::PipelineConfig &config);
 
   void render(Renderer &renderer, const Camera &camera);
+  void renderGeometryPass(Renderer &renderer, const Camera &camera,
+                          bool had_prepass);
   void release();
+
+  const pin::GeometryData &geomData() const { return *_geomData; }
 
 private:
   Config config;
