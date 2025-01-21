@@ -12,7 +12,7 @@ namespace candlewick {
 DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
                                     const MeshLayout &layout,
                                     SDL_GPUTexture *depth_texture) {
-  if (depth_texture == NULL)
+  if (depth_texture == nullptr)
     depth_texture = renderer.depth_texture;
   const Device &device = renderer.device;
   Shader vertexShader{device, "ShadowCast.vert", 2};
@@ -85,16 +85,20 @@ void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
   depth_info.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
   depth_info.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
   depth_info.clear_depth = 1.0f;
+  // depth texture may be the renderer shared depth texture,
+  // or a specially created texture.
   depth_info.texture = passInfo.depthTexture;
 
   SDL_GPURenderPass *render_pass =
       SDL_BeginGPURenderPass(renderer.command_buffer, nullptr, 0, &depth_info);
 
+  assert(passInfo.pipeline);
   SDL_BindGPUGraphicsPipeline(render_pass, passInfo.pipeline);
 
   renderer.pushVertexUniform(DepthPassInfo::VIEWPROJ_SLOT, &viewProj,
                              sizeof(viewProj));
   for (auto &cs : castables) {
+    assert(validateMeshView(cs.mesh));
     renderer.bindMeshView(render_pass, cs.mesh);
     renderer.pushVertexUniform(DepthPassInfo::TRANSFORM_SLOT, &cs.transform,
                                sizeof(cs.transform));
