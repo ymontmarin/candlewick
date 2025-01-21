@@ -56,7 +56,7 @@ template <std::floating_point T> struct Rad {
   explicit constexpr Rad(Deg<T> value) : _value(deg2rad(value)) {}
   constexpr operator T &() { return _value; }
   constexpr operator T() const { return _value; }
-  explicit constexpr operator T *() { return &_value; }
+  /* implicit */ constexpr operator T *() { return &_value; }
   template <typename U> constexpr bool operator==(const Rad<U> &other) const {
     return _value == other._value;
   }
@@ -77,7 +77,7 @@ template <std::floating_point T> struct Deg {
   explicit constexpr Deg(Rad<T> value) : _value(rad2deg(value)) {}
   constexpr operator T &() { return _value; }
   constexpr operator T() const { return _value; }
-  explicit constexpr operator T *() { return &_value; }
+  /* implicit */ constexpr operator T *() { return &_value; }
   template <typename U> constexpr bool operator==(const Deg<U> &other) const {
     return _value == other._value;
   }

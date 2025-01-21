@@ -220,7 +220,7 @@ int main(int argc, char **argv) {
       break;
     case CameraProjection::PERSPECTIVE:
       Degf newFov{currentFov};
-      if (ImGui::DragFloat("fov", (float *)newFov, 1.f, 15.f, 90.f, "%.3f",
+      if (ImGui::DragFloat("fov", newFov, 1.f, 15.f, 90.f, "%.3f",
                            ImGuiSliderFlags_AlwaysClamp))
         updateFov(Radf(newFov));
       break;

@@ -8,11 +8,11 @@
 
 #include "candlewick/core/math_util.h"
 #include "candlewick/core/LightUniforms.h"
+
+#include "candlewick/multibody/RobotScene.h"
+#include "candlewick/primitives/Plane.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/CameraControl.h"
-#include "candlewick/multibody/RobotScene.h"
-
-#include "candlewick/primitives/Plane.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -61,12 +61,6 @@ static bool showDebugViz = false;
 
 static float pixelDensity;
 static float displayScale;
-
-static DirectionalLight myLight{
-    .direction = {0., -1., -1.},
-    .color = {1.0, 1.0, 1.0},
-    .intensity = 8.0,
-};
 
 static void updateFov(Radf newFov) {
   camera.projection = perspectiveFromFov(newFov, aspectRatio, nearZ, farZ);
@@ -161,8 +155,12 @@ Renderer createRenderer(Uint32 width, Uint32 height,
 int main(int argc, char **argv) {
   CLI::App app{"Ur5 example"};
   bool performRecording{false};
+  RobotScene::Config robot_scene_config;
+
   argv = app.ensure_utf8(argv);
   app.add_flag("-r,--record", performRecording, "Record output");
+  app.add_flag("--prepass", robot_scene_config.triangle_has_prepass,
+               "Whether to have a prepass for the PBR'd triangle meshes.");
   CLI11_PARSE(app, argc, argv);
 
   if (!SDL_Init(SDL_INIT_VIDEO))
@@ -181,7 +179,14 @@ int main(int argc, char **argv) {
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
-  RobotScene robot_scene{registry, renderer, geom_model, geom_data, {}};
+  RobotScene robot_scene{registry, renderer, geom_model, geom_data,
+                         robot_scene_config};
+  auto &myLight = robot_scene.directionalLight;
+  myLight = {
+      .direction = {0., -1., -1.},
+      .color = {1.0, 1.0, 1.0},
+      .intensity = 8.0,
+  };
 
   // Add plane
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
@@ -230,9 +235,9 @@ int main(int argc, char **argv) {
       break;
     case CameraProjection::PERSPECTIVE:
       Degf newFov{currentFov};
-      persp_change |= ImGui::DragFloat("fov", (float *)newFov, 1.f, 15.f, 90.f,
-                                       "%.3f", ImGuiSliderFlags_AlwaysClamp);
-      ImGui::SliderFloat("Far plane", &farZ, 1.0f, 10.f);
+      persp_change |= ImGui::DragFloat("fov", newFov, 1.f, 15.f, 90.f, "%.3f",
+                                       ImGuiSliderFlags_AlwaysClamp);
+      persp_change |= ImGui::SliderFloat("Far plane", &farZ, 1.0f, 10.f);
       if (persp_change)
         updateFov(Radf(newFov));
       break;
