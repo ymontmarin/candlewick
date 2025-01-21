@@ -56,12 +56,12 @@ void Renderer::bindMeshView(SDL_GPURenderPass *pass, const MeshView &mesh) {
   std::vector<SDL_GPUBufferBinding> vertex_bindings;
   vertex_bindings.reserve(num_buffers);
   for (Uint32 j = 0; j < num_buffers; j++) {
-    vertex_bindings.push_back({mesh.vertexBuffers[j], mesh.vertexOffsets[j]});
+    vertex_bindings.push_back(mesh.getVertexBinding(j));
   }
 
   SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(), num_buffers);
   if (mesh.isIndexed()) {
-    SDL_GPUBufferBinding index_binding{mesh.indexBuffer, mesh.indexOffset};
+    SDL_GPUBufferBinding index_binding = mesh.getIndexBinding();
     SDL_BindGPUIndexBuffer(pass, &index_binding,
                            SDL_GPU_INDEXELEMENTSIZE_32BIT);
   }

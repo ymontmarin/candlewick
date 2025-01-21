@@ -100,8 +100,16 @@ struct MeshView {
   /// Index offset (not in bytes).
   Uint32 indexOffset;
   Uint32 indexCount;
+  Uint32 vertexSize;
+  Uint32 indexSize;
 
   bool isIndexed() const { return indexBuffer != NULL; }
+  SDL_GPUBufferBinding getVertexBinding(Uint32 slot) const {
+    return {vertexBuffers[slot], vertexOffsets[slot] * vertexSize};
+  }
+  SDL_GPUBufferBinding getIndexBinding() const {
+    return {indexBuffer, indexOffset * indexSize};
+  }
 };
 
 inline MeshView Mesh::toView() const {
@@ -114,6 +122,8 @@ inline MeshView Mesh::toView() const {
       .indexBuffer = indexBuffer,
       .indexOffset = 0,
       .indexCount = indexCount,
+      .vertexSize = layout.vertexSize(),
+      .indexSize = layout.indexSize(),
   };
 }
 
@@ -121,6 +131,8 @@ inline MeshView Mesh::toView() const {
 /// "indexed/non-indexed" status.
 /// \sa validateMeshView()
 [[nodiscard]] inline bool validateMesh(const Mesh &mesh) {
+  if (!validateMeshLayout(mesh.layout))
+    return false;
   for (size_t i = 0; i < mesh.numVertexBuffers(); i++) {
     if (!mesh.vertexBuffers[i])
       return false;
