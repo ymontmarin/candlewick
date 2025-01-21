@@ -10,6 +10,9 @@
 namespace candlewick {
 
 /// \brief Helper struct for depth or light pre-passes.
+/// \warning The depth pre-pass is meant for _opaque_ geometries. Hence, the
+/// pipeline created by the create() factory function will have back-face
+/// culling enabled.
 struct DepthPassInfo {
   enum DepthPassSlots : Uint32 {
     VIEWPROJ_SLOT = 0,
