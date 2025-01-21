@@ -1,10 +1,11 @@
 #include "Common.h"
+#include "GenHeightfield.h"
 
 #include "candlewick/core/debug/DepthViz.h"
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/DebugScene.h"
-// #include "candlewick/core/DepthAndShadowPass.h"
+#include "candlewick/core/DepthAndShadowPass.h"
 
 #include "candlewick/core/math_util.h"
 #include "candlewick/core/LightUniforms.h"
@@ -152,6 +153,49 @@ Renderer createRenderer(Uint32 width, Uint32 height,
   return Renderer{std::move(dev), window, depth_stencil_format};
 }
 
+void runDepthPrepass(Renderer &renderer, const Camera &camera,
+                     const RobotScene &scene, DepthPassInfo &depthPassInfo) {
+  RobotScene::PipelineType pipeline_type = RobotScene::PIPELINE_TRIANGLEMESH;
+  entt::registry &registry = scene.registry;
+  auto &geom_data = scene.geomData();
+
+  auto robot_view =
+      registry
+          .view<const RobotScene::Opaque, const multibody::PinGeomObjComponent,
+                const RobotScene::MeshMaterialComponent>();
+  auto env_view =
+      registry
+          .view<const RobotScene::Opaque, const RobotScene::TransformComponent,
+                const multibody::VisibilityComponent,
+                const RobotScene::MeshMaterialComponent>();
+
+  std::vector<OpaqueCastable> castables;
+  // collect castable objects
+  for (auto [ent, geom_id, meshMaterial] : robot_view.each()) {
+    if (meshMaterial.pipeline_type != pipeline_type)
+      continue;
+
+    auto pose = geom_data.oMg[geom_id].cast<float>();
+    GpuMat4 transform = pose.toHomogeneousMatrix();
+    // do *not* put the whole Mesh in. the indices collide!
+    for (auto &v : meshMaterial.views) {
+      castables.emplace_back(v, transform);
+    }
+  }
+
+  for (auto [ent, tr, vis, meshMaterial] : env_view.each()) {
+    if (!vis || meshMaterial.pipeline_type != pipeline_type)
+      continue;
+
+    const Mesh &mesh = meshMaterial.mesh;
+    GpuMat4 transform = tr.transform;
+    castables.emplace_back(mesh.toView(), transform);
+  }
+  SDL_assert(castables.size() > 0);
+  const GpuMat4 viewProj = camera.viewProj();
+  renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
+}
+
 int main(int argc, char **argv) {
   CLI::App app{"Ur5 example"};
   bool performRecording{false};
@@ -176,6 +220,13 @@ int main(int argc, char **argv) {
   pin::GeometryModel geom_model;
   robot_descriptions::loadModelsFromToml("ur.toml", "ur5_gripper", model,
                                          &geom_model, NULL);
+  // ADD HEIGHTFIELD GEOM
+  // {
+  //   auto hfield = generatePerlinNoiseHeightfield(42, 40u, 0.2f);
+  //   pin::GeometryObject gobj{"custom_hfield", 0ul, pin::SE3::Identity(),
+  //                            hfield};
+  //   geom_model.addGeometryObject(gobj);
+  // }
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
@@ -209,8 +260,7 @@ int main(int argc, char **argv) {
   auto depth_debug = DepthDebugPass::create(renderer, renderer.depth_texture);
   static DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
 
-  // auto depth_prepass =
-  //     DepthPassInfo::create(renderer, robotShapes[0].mesh.layout);
+  auto depthPassInfo = DepthPassInfo::create(renderer, plane_obj.mesh.layout);
 
   GuiSystem gui_system{[&](Renderer &r) {
     static bool demo_window_open = true;
@@ -305,11 +355,14 @@ int main(int argc, char **argv) {
     robot_scene.directionalLight = myLight;
     renderer.beginFrame();
 
-    if (renderer.acquireSwapchain()) {
-      robot_scene.render(renderer, camera);
+    if (renderer.waitAndAcquireSwapchain()) {
       if (showDebugViz) {
+        runDepthPrepass(renderer, camera, robot_scene, depthPassInfo);
         renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});
       } else {
+        if (robot_scene.pbrHasPrepass())
+          runDepthPrepass(renderer, camera, robot_scene, depthPassInfo);
+        robot_scene.render(renderer, camera);
         debug_scene.render(renderer, camera);
       }
       gui_system.render(renderer);
@@ -326,6 +379,7 @@ int main(int argc, char **argv) {
     frameNo++;
   }
 
+  depthPassInfo.release(renderer.device);
   depth_debug.release(renderer.device);
   robot_scene.release();
   debug_scene.release();

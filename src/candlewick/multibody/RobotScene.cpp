@@ -87,6 +87,9 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     auto [mesh, views] = createMeshFromBatch(dev, meshDatas, true);
     assert(validateMesh(mesh));
 
+    // local copy for use
+    const auto layout = mesh.layout;
+
     auto entity = registry.create();
     registry.emplace<PinGeomObjComponent>(entity, geom_id);
     if (pipeline_type != PIPELINE_POINTCLOUD)
@@ -96,43 +99,60 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
         pipeline_type);
 
     if (!renderPipelines.contains(pipeline_type)) {
-      auto pipe_config = config.pipeline_configs.at(pipeline_type);
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
               magic_enum::enum_name(pipeline_type).data());
-      const auto &layout = mesh.layout;
       auto *pipeline =
           createPipeline(dev, layout, swapchain_format, renderer.depth_format,
-                         pipeline_type, pipe_config);
+                         pipeline_type, config);
       assert(pipeline);
-      renderPipelines.emplace(pipeline_type, PipelineData{pipeline, layout});
+      renderPipelines.emplace(pipeline_type, pipeline);
     }
   }
 }
 
 void RobotScene::render(Renderer &renderer, const Camera &camera) {
   // render geometry which participated in the prepass
-  renderGeometryPass(renderer, camera, true);
+  renderPBRTriangleGeometry(renderer, camera);
 
   // render geometry which was _not_ in the prepass
-  renderGeometryPass(renderer, camera, false);
+  renderOtherGeometry(renderer, camera);
 }
 
-void RobotScene::renderGeometryPass(Renderer &renderer, const Camera &camera,
-                                    bool had_prepass) {
-  SDL_GPUColorTargetInfo color_target{
-      .texture = renderer.swapchain,
-      .clear_color{},
-      .load_op = SDL_GPU_LOADOP_CLEAR,
-      .store_op = SDL_GPU_STOREOP_STORE,
-  };
-  SDL_GPUDepthStencilTargetInfo depth_target{
-      .texture = renderer.depth_texture,
-      .clear_depth = 1.0f,
-      .load_op = had_prepass ? SDL_GPU_LOADOP_LOAD : SDL_GPU_LOADOP_CLEAR,
-      .store_op = SDL_GPU_STOREOP_STORE,
-      .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
-      .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
-  };
+/// Function private to this translation unit.
+/// Utility function to provide a render pass handle
+/// with just two configuration options: whether to load or clear the color and
+/// depth targets.
+static SDL_GPURenderPass *getRenderPass(Renderer &renderer,
+                                        SDL_GPULoadOp color_load_op,
+                                        SDL_GPULoadOp depth_load_op) {
+  SDL_GPUColorTargetInfo color_target;
+  SDL_zero(color_target);
+  color_target.texture = renderer.swapchain;
+  color_target.clear_color = SDL_FColor{0., 0., 0., 0.};
+  color_target.load_op = color_load_op;
+  color_target.store_op = SDL_GPU_STOREOP_STORE;
+  color_target.cycle = false;
+
+  SDL_GPUDepthStencilTargetInfo depth_target;
+  SDL_zero(depth_target);
+  depth_target.texture = renderer.depth_texture;
+  depth_target.clear_depth = 1.0f;
+  depth_target.load_op = depth_load_op;
+  depth_target.store_op = SDL_GPU_STOREOP_STORE;
+  depth_target.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
+  depth_target.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
+  return SDL_BeginGPURenderPass(renderer.command_buffer, &color_target, 1,
+                                &depth_target);
+}
+
+void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
+                                           const Camera &camera) {
+
+  if (!renderPipelines.contains(PIPELINE_TRIANGLEMESH)) {
+    // skip of no triangle pipeline to use
+    SDL_Log("Skipping triangle render pass...");
+    return;
+  }
 
   struct alignas(16) light_ubo_t {
     DirectionalLight a;
@@ -141,72 +161,122 @@ void RobotScene::renderGeometryPass(Renderer &renderer, const Camera &camera,
   const light_ubo_t lightUbo{directionalLight, camera.position()};
   const Mat4f viewProj = camera.viewProj();
 
-  SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
-      renderer.command_buffer, &color_target, 1, &depth_target);
+  // this is the first render pass, hence:
+  // clear the color texture (swapchain), either load or clear the depth texture
+  SDL_GPULoadOp depth_load_op =
+      config.triangle_has_prepass ? SDL_GPU_LOADOP_LOAD : SDL_GPU_LOADOP_CLEAR;
+  SDL_GPURenderPass *render_pass =
+      getRenderPass(renderer, SDL_GPU_LOADOP_CLEAR, depth_load_op);
+
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                                sizeof(lightUbo));
 
-  // iterate over primitive types in the keys
-  for (const auto &[pipeline_type, pipe_data] : renderPipelines) {
-    const auto &pipe_config = config.pipeline_configs[pipeline_type];
-    if (pipe_config.has_prepass != had_prepass) {
-      continue;
-    }
+  auto *pipeline = renderPipelines.at(PIPELINE_TRIANGLEMESH);
+  SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
-    SDL_BindGPUGraphicsPipeline(render_pass, pipe_data.pipeline);
+  auto robot_view =
+      registry.view<const PinGeomObjComponent, const MeshMaterialComponent>();
+
+  for (auto [entity, geom_id, obj] : robot_view.each()) {
+    if (obj.pipeline_type != PIPELINE_TRIANGLEMESH)
+      continue;
+    const auto &mesh = obj.mesh;
+    const auto &placement = _geomData->oMg[geom_id].cast<float>();
+    const Mat4f modelMat = placement.toHomogeneousMatrix();
+    const Mat3f normalMatrix =
+        modelMat.topLeftCorner<3, 3>().inverse().transpose();
+    const Mat4f mvp = viewProj * modelMat;
+    TransformUniformData data{
+        .model = modelMat,
+        .mvp = mvp,
+        .normalMatrix = normalMatrix,
+    };
+    renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
+                               sizeof(data));
+    renderer.bindMesh(render_pass, mesh);
+    // loop over views and materials
+    for (size_t j = 0; j < obj.views.size(); j++) {
+      auto material = obj.materials[j].toUniform();
+      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
+                                   sizeof(material));
+      renderer.drawView(render_pass, obj.views[j]);
+    }
+  }
+
+  auto env_view =
+      registry.view<const VisibilityComponent, const TransformComponent,
+                    const MeshMaterialComponent>();
+  for (auto [entity, visible, tr, obj] : env_view.each()) {
+    if (!visible || (obj.pipeline_type != PIPELINE_TRIANGLEMESH))
+      continue;
+
+    auto material = obj.materials[0].toUniform();
+    auto modelMat = tr.transform;
+    auto &mesh = obj.mesh;
+    const Mat3f normalMatrix =
+        modelMat.topLeftCorner<3, 3>().inverse().transpose();
+    const Mat4f mvp = viewProj * modelMat;
+    TransformUniformData data{
+        .model = modelMat,
+        .mvp = mvp,
+        .normalMatrix = normalMatrix,
+    };
+    renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
+                               sizeof(data));
+    renderer.bindMesh(render_pass, mesh);
+    renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
+                                 sizeof(material));
+    renderer.draw(render_pass, mesh);
+  }
+
+  SDL_EndGPURenderPass(render_pass);
+}
+
+void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
+  SDL_GPURenderPass *render_pass =
+      getRenderPass(renderer, SDL_GPU_LOADOP_LOAD, SDL_GPU_LOADOP_LOAD);
+
+  const Mat4f viewProj = camera.viewProj();
+
+  // iterate over primitive types in the keys
+  for (const auto &[current_pipeline_type, pipeline] : renderPipelines) {
+    if (current_pipeline_type == PIPELINE_TRIANGLEMESH)
+      // handled by other function
+      continue;
+
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
     auto robot_view =
         registry.view<const PinGeomObjComponent, const MeshMaterialComponent>();
 
     for (auto [entity, geom_id, obj] : robot_view.each()) {
-      if (obj.pipeline_type != pipeline_type)
+      if (obj.pipeline_type != current_pipeline_type)
         continue;
-      const auto &mesh = obj.mesh;
+      const Mesh &mesh = obj.mesh;
       const auto &placement = _geomData->oMg[geom_id].cast<float>();
       const Mat4f modelMat = placement.toHomogeneousMatrix();
-      const Mat3f normalMatrix =
-          modelMat.topLeftCorner<3, 3>().inverse().transpose();
       const Mat4f mvp = viewProj * modelMat;
-      TransformUniformData data{
-          .model = modelMat,
-          .mvp = mvp,
-          .normalMatrix = normalMatrix,
-      };
-      renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
-                                 sizeof(data));
+
+      renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &mvp,
+                                 sizeof(mvp));
+      // draw the entire object
       renderer.bindMesh(render_pass, mesh);
-      // loop over views and materials
-      for (size_t j = 0; j < obj.views.size(); j++) {
-        auto material = obj.materials[j].toUniform();
-        renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
-                                     sizeof(material));
-        renderer.drawView(render_pass, obj.views[j]);
-      }
+      renderer.drawViews(render_pass, obj.views);
     }
 
     auto env_view =
         registry.view<const VisibilityComponent, const TransformComponent,
                       const MeshMaterialComponent>();
     for (auto [entity, visible, tr, obj] : env_view.each()) {
-      if (!visible || (obj.pipeline_type != pipeline_type))
+      if (!visible || (obj.pipeline_type != current_pipeline_type))
         continue;
 
-      auto material = obj.materials[0].toUniform();
-      auto modelMat = tr.transform;
-      auto &mesh = obj.mesh;
-      const Mat3f normalMatrix =
-          modelMat.topLeftCorner<3, 3>().inverse().transpose();
+      auto &modelMat = tr.transform;
+      const Mesh &mesh = obj.mesh;
       const Mat4f mvp = viewProj * modelMat;
-      TransformUniformData data{
-          .model = modelMat,
-          .mvp = mvp,
-          .normalMatrix = normalMatrix,
-      };
-      renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
-                                 sizeof(data));
+      renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &mvp,
+                                 sizeof(mvp));
       renderer.bindMesh(render_pass, mesh);
-      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
-                                   sizeof(material));
       renderer.draw(render_pass, mesh);
     }
   }
@@ -220,9 +290,9 @@ void RobotScene::release() {
   if (!_device)
     return;
 
-  for (auto [primType, pipe_data] : renderPipelines) {
-    SDL_ReleaseGPUGraphicsPipeline(_device, pipe_data.pipeline);
-    pipe_data.pipeline = nullptr;
+  for (auto [primType, pipeline] : renderPipelines) {
+    SDL_ReleaseGPUGraphicsPipeline(_device, pipeline);
+    pipeline = nullptr;
   }
 }
 
@@ -230,21 +300,23 @@ SDL_GPUGraphicsPipeline *
 RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
                            SDL_GPUTextureFormat render_target_format,
                            SDL_GPUTextureFormat depth_stencil_format,
-                           PipelineType type,
-                           const Config::PipelineConfig &config) {
-
-  SDL_Log("Creating pipeline type %s", magic_enum::enum_name(type).data());
-  Shader vertex_shader{dev, config.vertex_shader_path,
-                       config.num_vertex_uniforms};
-  Shader fragment_shader{dev, config.fragment_shader_path,
-                         config.num_frag_uniforms};
+                           PipelineType type, const Config &config) {
+  const Config::PipelineConfig &pipe_config = config.pipeline_configs.at(type);
+  Shader vertex_shader{dev, pipe_config.vertex_shader_path,
+                       pipe_config.num_vertex_uniforms};
+  Shader fragment_shader{dev, pipe_config.fragment_shader_path,
+                         pipe_config.num_frag_uniforms};
 
   SDL_GPUColorTargetDescription color_target;
   SDL_zero(color_target);
   color_target.format = render_target_format;
-  SDL_GPUCompareOp depth_compare_op = config.has_prepass
-                                          ? SDL_GPU_COMPAREOP_EQUAL
-                                          : SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
+  bool had_prepass =
+      (type == PIPELINE_TRIANGLEMESH) && config.triangle_has_prepass;
+  SDL_GPUCompareOp depth_compare_op =
+      had_prepass ? SDL_GPU_COMPAREOP_EQUAL : SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
+  SDL_Log("Triangle pipeline uses depth compare op %s",
+          magic_enum::enum_name(depth_compare_op).data());
+  SDL_assert(validateMeshLayout(layout));
   SDL_GPUGraphicsPipelineCreateInfo desc{
       .vertex_shader = vertex_shader,
       .fragment_shader = fragment_shader,
@@ -253,7 +325,8 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
       .depth_stencil_state{
           .compare_op = depth_compare_op,
           .enable_depth_test = true,
-          .enable_depth_write = true,
+          // no depth write if there was a prepass
+          .enable_depth_write = !had_prepass,
       },
       .target_info{
           .color_target_descriptions = &color_target,
@@ -262,8 +335,8 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
           .has_depth_stencil_target = true,
       },
   };
-  desc.rasterizer_state.cull_mode = config.cull_mode;
-  desc.rasterizer_state.fill_mode = config.fill_mode;
+  desc.rasterizer_state.cull_mode = pipe_config.cull_mode;
+  desc.rasterizer_state.fill_mode = pipe_config.fill_mode;
   return SDL_CreateGPUGraphicsPipeline(dev, &desc);
 }
 

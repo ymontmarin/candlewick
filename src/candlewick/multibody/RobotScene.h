@@ -50,11 +50,6 @@ public:
     }
   }
 
-  struct PipelineData {
-    SDL_GPUGraphicsPipeline *pipeline;
-    MeshLayout layout;
-  };
-
   struct Opaque {};
   struct TransformComponent {
     Mat4f transform;
@@ -68,7 +63,7 @@ public:
   };
 
   entt::registry &registry;
-  entt::dense_map<PipelineType, PipelineData> renderPipelines;
+  entt::dense_map<PipelineType, SDL_GPUGraphicsPipeline *> renderPipelines;
   DirectionalLight directionalLight;
 
   struct Config {
@@ -80,7 +75,6 @@ public:
       Uint32 num_frag_uniforms;
       SDL_GPUCullMode cull_mode = SDL_GPU_CULLMODE_BACK;
       SDL_GPUFillMode fill_mode = SDL_GPU_FILLMODE_FILL;
-      bool has_prepass = false;
     };
     std::unordered_map<PipelineType, PipelineConfig> pipeline_configs = {
         {PIPELINE_TRIANGLEMESH,
@@ -96,6 +90,7 @@ public:
         // {PIPELINE_POINTCLOUD, {}}
     };
     bool enable_msaa = false;
+    bool triangle_has_prepass = false;
     SDL_GPUSampleCount msaa_samples = SDL_GPU_SAMPLECOUNT_1;
   };
 
@@ -111,16 +106,21 @@ public:
   //               const pin::GeometryData &geom_data);
 
   [[nodiscard]] static SDL_GPUGraphicsPipeline *
-  createPipeline(const Device &dev, const MeshLayout &layout,
+  createPipeline(const Device &device, const MeshLayout &layout,
                  SDL_GPUTextureFormat render_target_format,
                  SDL_GPUTextureFormat depth_stencil_format, PipelineType type,
-                 const Config::PipelineConfig &config);
+                 const Config &config);
 
   void render(Renderer &renderer, const Camera &camera);
-  void renderGeometryPass(Renderer &renderer, const Camera &camera,
-                          bool had_prepass);
+  /// \brief PBR render pass for triangle meshes.
+  void renderPBRTriangleGeometry(Renderer &renderer, const Camera &camera);
+  /// \brief Render pass for other geometry.
+  void renderOtherGeometry(Renderer &renderer, const Camera &camera);
   void release();
 
+  inline bool pbrHasPrepass() const { return config.triangle_has_prepass; }
+
+  /// \brief Getter for the referenced pinocchio GeometryData object.
   const pin::GeometryData &geomData() const { return *_geomData; }
 
 private:
