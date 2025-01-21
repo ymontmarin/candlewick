@@ -1,8 +1,8 @@
 #pragma once
 
 #include <SDL3/SDL_gpu.h>
-#include <utility>
 #include <string_view>
+#include <vector>
 
 namespace candlewick {
 
@@ -21,9 +21,6 @@ constexpr Uint32 roundUpTo16(Uint32 value) {
   return (q + 1) * 16u;
 }
 } // namespace math
-
-static constexpr Uint32 MAX_VERTEX_BUF_DESCS = 10u;
-static constexpr Uint32 MAX_VERTEX_ATTRS = 10u;
 
 constexpr Uint64 vertexElementSize(SDL_GPUVertexElementFormat format) {
   switch (format) {
@@ -56,99 +53,100 @@ constexpr Uint64 vertexElementSize(SDL_GPUVertexElementFormat format) {
   }
 }
 
-/// Struct which defines the layout of a mesh's vertices.
+/// \brief Struct which defines the layout of a mesh's vertices.
+///
+/// This is used to build both rasterization pipeline create a Mesh.
+/// \sa Mesh
+/// \sa MeshData
 struct MeshLayout {
-  constexpr explicit MeshLayout() = default;
+  explicit MeshLayout() {}
 
-  /// @p slot - index for vertex buffer
-  /// @p size - equivalent of pitch in SDL_gpu, size of consecutive elements of
-  /// the vertex buffer, i.e. sizeof(Vertex) if your vertices are of some type
-  /// Vertex.
-  constexpr MeshLayout &addBinding(Uint32 slot, Uint32 pitch) &;
-  constexpr MeshLayout &&addBinding(Uint32 slot, Uint32 pitch) &&;
+  /// \brief Add a binding (i.e. a vertex binding) for the mesh.
+  ///
+  /// Calling this multiple times allows to describe a mesh layout where e.g.
+  /// positions and normals are non-interleaved and should be uploaded to
+  /// different vertex buffers.
+  /// \param slot Index for vertex buffer
+  /// \param size Equivalent of pitch in SDL_gpu, size of consecutive elements
+  /// of the vertex buffer, i.e. sizeof(Vertex) if your vertices are of some
+  /// type Vertex.
+  MeshLayout &addBinding(Uint32 slot, Uint32 pitch) &;
+  /// \copydoc addBinding()
+  MeshLayout &&addBinding(Uint32 slot, Uint32 pitch) &&;
 
-  constexpr MeshLayout &addAttribute(std::string_view name, Uint32 loc,
-                                     Uint32 binding,
-                                     SDL_GPUVertexElementFormat format,
-                                     Uint32 offset) &;
-  constexpr MeshLayout &&addAttribute(std::string_view name, Uint32 loc,
-                                      Uint32 binding,
-                                      SDL_GPUVertexElementFormat format,
-                                      Uint32 offset) &&;
+  /// \brief Add a vertex attribute.
+  /// \param name The vertex attribute name.
+  /// \param loc Location index in the vertex shader.
+  /// \param binding Binding slot of the corresponding vertex buffer.
+  /// \param format Format of the vertex attribute.
+  /// \param offset Byte offset of the attribute relative to the start of the
+  /// vertex buffer element.
+  MeshLayout &addAttribute(std::string_view name, Uint32 loc, Uint32 binding,
+                           SDL_GPUVertexElementFormat format, Uint32 offset) &;
+  /// \copydoc addAttribute()
+  MeshLayout &&addAttribute(std::string_view name, Uint32 loc, Uint32 binding,
+                            SDL_GPUVertexElementFormat format,
+                            Uint32 offset) &&;
 
-  constexpr SDL_GPUVertexInputState toVertexInputState() const;
+  /// \brief Cast to the SDL_GPU vertex input state struct, used to create
+  /// pipelines.
+  /// \warning The data here only references data internal to MeshLayout and
+  /// *not* copied. It must stay in scope until the pipeline is created.
+  SDL_GPUVertexInputState toVertexInputState() const {
+    return {vertex_buffer_desc.data(), numBuffers(), vertex_attributes.data(),
+            numAttributes()};
+  }
+
+  bool operator==(const MeshLayout &other) const;
 
   /// \brief Number of vertex buffers.
-  constexpr Uint32 numBuffers() const { return _numBuffers; }
+  Uint32 numBuffers() const { return Uint32(vertex_buffer_desc.size()); }
   /// \brief Number of vertex attributes.
-  constexpr Uint32 numAttributes() const { return _numAttributes; }
-  constexpr Uint32 vertexSize() const { return _totalVertexSize; }
+  Uint32 numAttributes() const { return Uint32(vertex_attributes.size()); }
+  /// \brief Total size of a vertex (in bytes).
+  /// \todo Make this compatible with multiple vertex bindings.
+  Uint32 vertexSize() const { return _totalVertexSize; }
+  /// \brief Size of mesh indices (in bytes).
+  Uint32 indexSize() const { return sizeof(Uint32); }
 
   const SDL_GPUVertexAttribute *
   lookupAttributeByName(std::string_view name) const {
-    for (Uint64 i = 0; i < _numAttributes; i++) {
+    for (Uint64 i = 0; i < numAttributes(); i++) {
       if (vertex_attr_names[i] == name)
         return &vertex_attributes[i];
     }
     return NULL;
   }
 
-  SDL_GPUVertexBufferDescription vertex_buffer_desc[MAX_VERTEX_BUF_DESCS];
-  SDL_GPUVertexAttribute vertex_attributes[MAX_VERTEX_ATTRS];
-  std::string_view vertex_attr_names[MAX_VERTEX_ATTRS];
+  MeshLayout &reserve(Uint64 num_buffers, Uint64 num_attributes);
+
+  std::vector<SDL_GPUVertexBufferDescription> vertex_buffer_desc;
+  std::vector<SDL_GPUVertexAttribute> vertex_attributes;
+  std::vector<std::string_view> vertex_attr_names;
 
 private:
-  Uint32 _numBuffers{0};
-  Uint32 _numAttributes{0};
   Uint32 _totalVertexSize{0};
 };
 
-constexpr MeshLayout &MeshLayout::addBinding(Uint32 slot, Uint32 pitch) & {
-  vertex_buffer_desc[_numBuffers++] = {
-      .slot = slot,
-      .pitch = pitch,
-      .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
-      .instance_step_rate = 0,
-  };
-  return *this;
+/// \brief Validation function. Checks if a MeshLayout produces invalid data for
+/// a Mesh.
+inline bool validateMeshLayout(const MeshLayout &layout) {
+  SDL_GPUVertexInputState inputState = layout.toVertexInputState();
+  return (inputState.num_vertex_buffers > 0) &&
+         (inputState.vertex_buffer_descriptions) &&
+         (inputState.num_vertex_attributes > 0) &&
+         (inputState.num_vertex_attributes);
 }
 
-constexpr MeshLayout &&MeshLayout::addBinding(Uint32 slot, Uint32 pitch) && {
-  return std::move(addBinding(slot, pitch));
-}
-
-constexpr MeshLayout &
-MeshLayout::addAttribute(std::string_view name, Uint32 loc, Uint32 binding,
-                         SDL_GPUVertexElementFormat format, Uint32 offset) & {
-  vertex_attr_names[_numAttributes] = name;
-  vertex_attributes[_numAttributes++] = {
-      .location = loc,
-      .buffer_slot = binding,
-      .format = format,
-      .offset = offset,
-  };
-  const Uint32 attrSize = math::roundUpTo16(Uint32(vertexElementSize(format)));
-  _totalVertexSize = math::max(_totalVertexSize, offset + attrSize);
-  return *this;
-}
-
-constexpr MeshLayout &&
-MeshLayout::addAttribute(std::string_view name, Uint32 loc, Uint32 binding,
-                         SDL_GPUVertexElementFormat format, Uint32 offset) && {
-  return std::move(addAttribute(name, loc, binding, format, offset));
-}
-
-constexpr SDL_GPUVertexInputState MeshLayout::toVertexInputState() const {
-  return {vertex_buffer_desc, _numBuffers, vertex_attributes, _numAttributes};
-}
-
+/// \brief Basic concept checking if type V has the correct layout and alignment
+/// requirements to be a vertex element.
 template <typename V>
 concept IsVertexType = std::is_standard_layout_v<V> && (alignof(V) == 16);
 
 template <IsVertexType V> struct VertexTraits;
 
 /// \brief Shortcut for extracting layout from compile-time struct.
-template <IsVertexType V> constexpr MeshLayout meshLayoutFor() {
+template <IsVertexType V> MeshLayout meshLayoutFor() {
   return VertexTraits<V>::layout();
 }
 

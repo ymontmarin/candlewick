@@ -7,7 +7,7 @@ struct alignas(16) PosOnlyVertex {
 };
 
 template <> struct VertexTraits<PosOnlyVertex> {
-  constexpr static auto layout() {
+  static auto layout() {
     return MeshLayout{}
         .addBinding(0, sizeof(PosOnlyVertex))
         .addAttribute("pos", 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,

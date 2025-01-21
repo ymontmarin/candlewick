@@ -24,8 +24,7 @@ public:
             reinterpret_cast<const char *>(vertices.data()),
             reinterpret_cast<const char *>(vertices.data() + vertices.size())),
         m_layout(meshLayoutFor<V>()), m_actualSize(vertices.size()) {
-    // compile-time check
-    static_assert(meshLayoutFor<V>().vertexSize() == sizeof(V));
+    SDL_assert(meshLayoutFor<V>().vertexSize() == sizeof(V));
   }
 
   template <typename U> std::span<const U> viewAs() const {

@@ -7,8 +7,8 @@ namespace candlewick {
 
 Mesh::Mesh(NoInitT) : layout() {}
 
-Mesh::Mesh(MeshLayout layout) : layout(std::move(layout)) {
-  const Uint32 count = layout.toVertexInputState().num_vertex_buffers;
+Mesh::Mesh(const MeshLayout &layout) : layout(layout) {
+  const Uint32 count = layout.numBuffers();
   vertexBuffers.resize(count, nullptr);
 }
 

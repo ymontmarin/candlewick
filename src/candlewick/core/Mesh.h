@@ -36,7 +36,7 @@ struct Mesh {
   /// Mesh is considered to be *non*-indexed.
   SDL_GPUBuffer *indexBuffer{NULL};
 
-  explicit Mesh(MeshLayout layout);
+  explicit Mesh(const MeshLayout &layout);
 
   Mesh(NoInitT);
   Mesh(const Mesh &) = delete;
