@@ -7,7 +7,8 @@
 #include "../utils/MeshData.h"
 
 #include <entt/entity/registry.hpp>
-#include <pinocchio/multibody/geometry.hpp>
+#include <coal/fwd.hh>
+#include <pinocchio/multibody/fwd.hpp>
 
 namespace candlewick {
 namespace multibody {

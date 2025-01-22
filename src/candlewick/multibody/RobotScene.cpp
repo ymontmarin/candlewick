@@ -8,6 +8,7 @@
 
 #include <coal/BVH/BVH_model.h>
 #include <pinocchio/multibody/data.hpp>
+#include <pinocchio/multibody/geometry.hpp>
 
 namespace candlewick::multibody {
 auto RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom)
