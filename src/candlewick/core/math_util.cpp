@@ -1,7 +1,5 @@
 #include "math_util.h"
 
-#include <Eigen/Geometry>
-
 namespace candlewick {
 
 Vec3u8 hexToRgbi(unsigned long hex) {
