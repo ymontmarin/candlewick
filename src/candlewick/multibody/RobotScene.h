@@ -72,22 +72,20 @@ public:
       // shader set
       const char *vertex_shader_path;
       const char *fragment_shader_path;
-      Uint32 num_vertex_uniforms;
-      Uint32 num_frag_uniforms;
       SDL_GPUCullMode cull_mode = SDL_GPU_CULLMODE_BACK;
       SDL_GPUFillMode fill_mode = SDL_GPU_FILLMODE_FILL;
     };
     std::unordered_map<PipelineType, PipelineConfig> pipeline_configs = {
         {PIPELINE_TRIANGLEMESH,
-         {.vertex_shader_path = "PbrBasic.vert",
-          .fragment_shader_path = "PbrBasic.frag",
-          .num_vertex_uniforms = 1,
-          .num_frag_uniforms = 2}},
+         {
+             .vertex_shader_path = "PbrBasic.vert",
+             .fragment_shader_path = "PbrBasic.frag",
+         }},
         {PIPELINE_HEIGHTFIELD,
-         {.vertex_shader_path = "Hud3dElement.vert",
-          .fragment_shader_path = "Hud3dElement.frag",
-          .num_vertex_uniforms = 1,
-          .num_frag_uniforms = 1}},
+         {
+             .vertex_shader_path = "Hud3dElement.vert",
+             .fragment_shader_path = "Hud3dElement.frag",
+         }},
         // {PIPELINE_POINTCLOUD, {}}
     };
     bool enable_msaa = false;

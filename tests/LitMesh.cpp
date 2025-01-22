@@ -80,8 +80,8 @@ int main() {
   uploadMeshToDevice(device, meshes[0].toView(), meshDatas[0]);
 
   /** CREATE PIPELINE **/
-  Shader vertexShader{device, "PbrBasic.vert", {.uniformBufferCount = 1}};
-  Shader fragmentShader{device, "PbrBasic.frag", {.uniformBufferCount = 2}};
+  auto vertexShader = Shader::fromMetadata(device, "PbrBasic.vert");
+  auto fragmentShader = Shader::fromMetadata(device, "PbrBasic.frag");
 
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
   SDL_GPUTexture *depthTexture = createDepthTexture(

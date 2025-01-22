@@ -150,8 +150,8 @@ int main() {
 
   // Shaders
 
-  Shader vertexShader{device, "VertexColor.vert", {.uniformBufferCount = 1}};
-  Shader fragmentShader{device, "VertexColor.frag"};
+  auto vertexShader = Shader::fromMetadata(device, "VertexColor.vert");
+  auto fragmentShader = Shader::fromMetadata(device, "VertexColor.frag");
 
   // Pipeline
 
