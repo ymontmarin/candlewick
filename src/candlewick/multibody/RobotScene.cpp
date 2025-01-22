@@ -3,7 +3,7 @@
 #include "../core/errors.h"
 #include "../core/Shader.h"
 #include "../core/TransformUniforms.h"
-#include "../utils/CameraControl.h"
+#include "../core/CameraControl.h"
 #include "../third-party/magic_enum.hpp"
 
 #include <coal/BVH/BVH_model.h>

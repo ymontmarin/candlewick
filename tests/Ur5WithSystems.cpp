@@ -13,7 +13,7 @@
 #include "candlewick/multibody/RobotScene.h"
 #include "candlewick/primitives/Plane.h"
 #include "candlewick/utils/WriteTextureToImage.h"
-#include "candlewick/utils/CameraControl.h"
+#include "candlewick/core/CameraControl.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>

@@ -9,7 +9,7 @@
 #include "candlewick/core/TransformUniforms.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
-#include "candlewick/utils/CameraControl.h"
+#include "candlewick/core/CameraControl.h"
 #include "candlewick/multibody/LoadPinocchioGeometry.h"
 
 #include "candlewick/primitives/Arrow.h"

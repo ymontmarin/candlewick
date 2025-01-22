@@ -5,6 +5,7 @@ find_package(FFmpeg COMPONENTS avformat avcodec swscale)
 add_library(
   candlewick_core
   SHARED
+  candlewick/core/CameraControl.cpp
   candlewick/core/DebugScene.cpp
   candlewick/core/Device.cpp
   candlewick/core/math_util.cpp
@@ -16,7 +17,6 @@ add_library(
   candlewick/core/Shader.cpp
   candlewick/core/DepthAndShadowPass.cpp
   candlewick/core/debug/DepthViz.cpp
-  candlewick/utils/CameraControl.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/MaterialData.cpp
   candlewick/utils/MeshData.cpp

@@ -3,7 +3,7 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/MeshLayout.h"
-#include "candlewick/utils/CameraControl.h"
+#include "candlewick/core/CameraControl.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>

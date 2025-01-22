@@ -2,7 +2,7 @@
 #include "Renderer.h"
 #include "Shader.h"
 #include "BoundingBox.h"
-#include "../utils/CameraControl.h"
+#include "CameraControl.h"
 
 #include <stdexcept>
 #include <format>

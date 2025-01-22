@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "Mesh.h"
 #include "Renderer.h"
+#include "math_types.h"
 
 #include <memory>
 

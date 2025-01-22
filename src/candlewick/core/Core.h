@@ -1,6 +1,7 @@
 #pragma once
 
 namespace candlewick {
+struct Camera;
 struct Device;
 struct Mesh;
 struct MeshView;
