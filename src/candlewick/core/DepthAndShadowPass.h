@@ -1,3 +1,20 @@
+/// \defgroup depth_pass Depth Pre-Pass System
+/// \{
+///
+/// \brief Requirements for consistent depth testing between passes.
+///
+/// When using a depth pre-pass with `EQUAL` depth comparison in the main pass,
+/// ensure identical vertex transformations between passes by:
+/// 1. Computing the MVP matrix on CPU side
+/// 2. Using the same MVP matrix in both pre-pass and main pass shaders
+/// 3. Avoiding shader-side matrix multiplication that might cause precision
+/// differences.
+///
+/// Failing to do this can result in z-fighting/Moiré patterns due to
+/// floating-point precision differences between CPU and GPU matrix
+/// calculations.
+///
+/// \}
 #pragma once
 
 #include "Core.h"
@@ -9,14 +26,14 @@
 
 namespace candlewick {
 
+/// \ingroup depth_pass
 /// \brief Helper struct for depth or light pre-passes.
 /// \warning The depth pre-pass is meant for _opaque_ geometries. Hence, the
 /// pipeline created by the create() factory function will have back-face
 /// culling enabled.
 struct DepthPassInfo {
   enum DepthPassSlots : Uint32 {
-    VIEWPROJ_SLOT = 0,
-    TRANSFORM_SLOT = 1,
+    TRANSFORM_SLOT = 0,
   };
   SDL_GPUTexture *depthTexture;
   SDL_GPUGraphicsPipeline *pipeline;
@@ -54,10 +71,13 @@ struct ShadowPassConfig {
   Uint32 height = 2048;
 };
 
+/// \brief Run a shadow (depth-testing) pass using specific config.
 /// \sa DepthPassInfo::create()
 DepthPassInfo createShadowPass(const Renderer &renderer,
-                               const MeshLayout &layout, ShadowPassConfig);
+                               const MeshLayout &layout,
+                               const ShadowPassConfig &config);
 
+/// \ingroup depth_pass
 /// \brief Struct for shadow-casting or opaque objects. For use in depth or
 /// light pre-passes.
 /// \sa renderDepthOnlyPass()
@@ -68,6 +88,8 @@ struct OpaqueCastable {
   GpuMat4 transform;
 };
 
+/// \ingroup depth_pass
+/// \brief Render a depth-only pass, built from a set of OpaqueCastable.
 void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
                          const GpuMat4 &viewProj,
                          std::span<const OpaqueCastable> castables);

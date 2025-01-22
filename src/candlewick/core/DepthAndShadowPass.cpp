@@ -15,7 +15,7 @@ DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
   if (depth_texture == nullptr)
     depth_texture = renderer.depth_texture;
   const Device &device = renderer.device;
-  Shader vertexShader{device, "ShadowCast.vert", 2};
+  Shader vertexShader{device, "ShadowCast.vert", 1};
   Shader fragmentShader{device, "ShadowCast.frag", 0};
   SDL_GPUGraphicsPipelineCreateInfo pipeline_desc{
       .vertex_shader = vertexShader,
@@ -38,7 +38,7 @@ DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
 
 DepthPassInfo createShadowPass(const Renderer &renderer,
                                const MeshLayout &layout,
-                               ShadowPassConfig config) {
+                               const ShadowPassConfig &config) {
   const Device &device = renderer.device;
 
   // TEXTURE
@@ -95,13 +95,13 @@ void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
   assert(passInfo.pipeline);
   SDL_BindGPUGraphicsPipeline(render_pass, passInfo.pipeline);
 
-  renderer.pushVertexUniform(DepthPassInfo::VIEWPROJ_SLOT, &viewProj,
-                             sizeof(viewProj));
+  GpuMat4 mvp;
   for (auto &cs : castables) {
     assert(validateMeshView(cs.mesh));
     renderer.bindMeshView(render_pass, cs.mesh);
-    renderer.pushVertexUniform(DepthPassInfo::TRANSFORM_SLOT, &cs.transform,
-                               sizeof(cs.transform));
+    mvp.noalias() = viewProj * cs.transform;
+    renderer.pushVertexUniform(DepthPassInfo::TRANSFORM_SLOT, &mvp,
+                               sizeof(mvp));
     renderer.drawView(render_pass, cs.mesh);
   }
 

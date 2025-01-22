@@ -1,5 +1,5 @@
 #version 450
 
 void main() {
-    // no-op
+    gl_FragDepth = gl_FragCoord.z;
 }
