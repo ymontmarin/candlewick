@@ -302,12 +302,12 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
                            SDL_GPUTextureFormat depth_stencil_format,
                            PipelineType type, const Config &config) {
   const Config::PipelineConfig &pipe_config = config.pipeline_configs.at(type);
-  Shader vertex_shader{dev,
-                       pipe_config.vertex_shader_path,
-                       {.uniformBufferCount = pipe_config.num_vertex_uniforms}};
-  Shader fragment_shader{dev,
-                         pipe_config.fragment_shader_path,
-                         {.uniformBufferCount = pipe_config.num_frag_uniforms}};
+  Shader vertexShader{dev,
+                      pipe_config.vertex_shader_path,
+                      {.uniformBufferCount = pipe_config.num_vertex_uniforms}};
+  Shader fragmentShader{dev,
+                        pipe_config.fragment_shader_path,
+                        {.uniformBufferCount = pipe_config.num_frag_uniforms}};
 
   SDL_GPUColorTargetDescription color_target;
   SDL_zero(color_target);
@@ -320,8 +320,8 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
           magic_enum::enum_name(depth_compare_op).data());
   SDL_assert(validateMeshLayout(layout));
   SDL_GPUGraphicsPipelineCreateInfo desc{
-      .vertex_shader = vertex_shader,
-      .fragment_shader = fragment_shader,
+      .vertex_shader = vertexShader,
+      .fragment_shader = fragmentShader,
       .vertex_input_state = layout.toVertexInputState(),
       .primitive_type = getPrimitiveTopologyForType(type),
       .depth_stencil_state{
