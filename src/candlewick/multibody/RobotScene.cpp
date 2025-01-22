@@ -77,7 +77,6 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
   }
 
   auto &dev = renderer.device;
-  auto swapchain_format = renderer.getSwapchainTextureFormat();
 
   for (pin::GeomIndex geom_id = 0; geom_id < geom_model.ngeoms; geom_id++) {
 
@@ -102,8 +101,8 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
               magic_enum::enum_name(pipeline_type).data());
       auto *pipeline =
-          createPipeline(dev, layout, swapchain_format, renderer.depth_format,
-                         pipeline_type, config);
+          createPipeline(dev, layout, renderer.getSwapchainTextureFormat(),
+                         renderer.depth_format, pipeline_type, config);
       assert(pipeline);
       renderPipelines.emplace(pipeline_type, pipeline);
     }
@@ -302,10 +301,12 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
                            SDL_GPUTextureFormat depth_stencil_format,
                            PipelineType type, const Config &config) {
   const Config::PipelineConfig &pipe_config = config.pipeline_configs.at(type);
-  Shader vertex_shader{dev, pipe_config.vertex_shader_path,
-                       pipe_config.num_vertex_uniforms};
-  Shader fragment_shader{dev, pipe_config.fragment_shader_path,
-                         pipe_config.num_frag_uniforms};
+  Shader vertex_shader{dev,
+                       pipe_config.vertex_shader_path,
+                       {.uniformBufferCount = pipe_config.num_vertex_uniforms}};
+  Shader fragment_shader{dev,
+                         pipe_config.fragment_shader_path,
+                         {.uniformBufferCount = pipe_config.num_frag_uniforms}};
 
   SDL_GPUColorTargetDescription color_target;
   SDL_zero(color_target);

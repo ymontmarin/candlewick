@@ -55,8 +55,9 @@ DebugScene::DebugScene(const Renderer &renderer)
 void DebugScene::setupPipelines(const MeshLayout &layout) {
   if (linePipeline && trianglePipeline)
     return;
-  Shader vertexShader{_device, "Hud3dElement.vert", 1};
-  Shader fragmentShader{_device, "Hud3dElement.frag", 1};
+  Shader vertexShader{_device, "Hud3dElement.vert", {.uniformBufferCount = 1}};
+  Shader fragmentShader{
+      _device, "Hud3dElement.frag", {.uniformBufferCount = 1}};
   SDL_GPUColorTargetDescription color_desc;
   SDL_zero(color_desc);
   color_desc.format = _swapchainTextureFormat;

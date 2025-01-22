@@ -150,8 +150,8 @@ int main() {
 
   // Shaders
 
-  Shader vertexShader{device, "VertexColor.vert", 1};
-  Shader fragmentShader{device, "VertexColor.frag", 0};
+  Shader vertexShader{device, "VertexColor.vert", {.uniformBufferCount = 1}};
+  Shader fragmentShader{device, "VertexColor.frag"};
 
   // Pipeline
 

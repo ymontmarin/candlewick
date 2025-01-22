@@ -4,13 +4,11 @@
 #include "Common.h"
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
-#include <new>
 
 bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return false;
-  ::new (&ctx.device)
-      Device{candlewick::auto_detect_shader_format_subset(), true};
+  ctx.device = Device{candlewick::auto_detect_shader_format_subset(), true};
 
   ctx.window =
       SDL_CreateWindow("candlewick: examples", int(wWidth), int(wHeight), 0);
@@ -35,8 +33,8 @@ initGridPipeline(const Device &device, SDL_Window *window,
                  SDL_GPUTextureFormat depth_stencil_format,
                  SDL_GPUPrimitiveType primitive_type) {
   using namespace candlewick;
-  Shader vertexShader{device, "Hud3dElement.vert", 1};
-  Shader fragmentShader{device, "Hud3dElement.frag", 1};
+  Shader vertexShader{device, "Hud3dElement.vert", {.uniformBufferCount = 1}};
+  Shader fragmentShader{device, "Hud3dElement.frag", {.uniformBufferCount = 1}};
 
   SDL_GPUColorTargetDescription colorTarget{
       .format = SDL_GetGPUSwapchainTextureFormat(device, window),

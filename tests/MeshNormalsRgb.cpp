@@ -66,8 +66,8 @@ int main() {
   uploadMeshToDevice(device, meshes[0].toView(), meshDatas[0]);
 
   /** CREATE PIPELINE **/
-  Shader vertexShader{device, "VertexNormal.vert", 1};
-  Shader fragmentShader{device, "VertexNormal.frag", 0};
+  Shader vertexShader{device, "VertexNormal.vert", {.uniformBufferCount = 1}};
+  Shader fragmentShader{device, "VertexNormal.frag"};
 
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
   SDL_GPUTexture *depthTexture = createDepthTexture(

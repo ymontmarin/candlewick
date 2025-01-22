@@ -11,12 +11,19 @@ const char *shader_format_name(SDL_GPUShaderFormat shader_format);
 
 /// \brief RAII wrapper around \c SDL_GPUShader, with loading utilities.
 struct Shader {
-  Shader(const Device &device, const char *filename, Uint32 uniformBufferCount,
-         Uint32 numSamplers = 0);
+  struct Config {
+    Uint32 uniformBufferCount = 0;
+    Uint32 numSamplers = 0;
+    Uint32 numStorageTextures = 0;
+    Uint32 numStorageBuffers = 0;
+  };
+  Shader(const Device &device, const char *filename, const Config &config);
+  Shader(const Device &device, const char *filename)
+      : Shader(device, filename, {}) {}
   Shader(const Shader &) = delete;
   operator SDL_GPUShader *() noexcept { return _shader; }
-  void release();
-  ~Shader() { release(); }
+  void release() noexcept;
+  ~Shader() noexcept { release(); }
 
 private:
   SDL_GPUShader *_shader;
