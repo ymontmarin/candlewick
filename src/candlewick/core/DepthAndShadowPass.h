@@ -14,6 +14,8 @@
 /// floating-point precision differences between CPU and GPU matrix
 /// calculations.
 ///
+/// \image html depth-prepass.png "Rendering the depth buffer after early pass"
+///
 /// \}
 #pragma once
 
