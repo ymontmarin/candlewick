@@ -8,8 +8,9 @@ namespace candlewick {
 DepthDebugPass DepthDebugPass::create(const Renderer &renderer,
                                       SDL_GPUTexture *depth_texture) {
   const auto &device = renderer.device;
-  Shader vertexShader{device, "DrawQuad.vert", 0};
-  Shader fragmentShader{device, "RenderDepth.frag", 1, 1};
+  Shader vertexShader{device, "DrawQuad.vert"};
+  Shader fragmentShader{
+      device, "RenderDepth.frag", {.uniformBufferCount = 1, .numSamplers = 1}};
 
   SDL_GPUColorTargetDescription color_target_desc;
   SDL_zero(color_target_desc);

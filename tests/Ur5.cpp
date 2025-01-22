@@ -282,8 +282,8 @@ int main(int argc, char **argv) {
   const auto swapchain_format =
       SDL_GetGPUSwapchainTextureFormat(device, renderer.window);
   {
-    Shader vertexShader{device, "PbrBasic.vert", 1};
-    Shader fragmentShader{device, "PbrBasic.frag", 2};
+    Shader vertexShader{device, "PbrBasic.vert", {.uniformBufferCount = 1}};
+    Shader fragmentShader{device, "PbrBasic.frag", {.uniformBufferCount = 2}};
 
     SDL_GPUColorTargetDescription colorTarget;
     colorTarget.format = swapchain_format;
