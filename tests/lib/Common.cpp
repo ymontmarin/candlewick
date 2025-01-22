@@ -33,8 +33,8 @@ initGridPipeline(const Device &device, SDL_Window *window,
                  SDL_GPUTextureFormat depth_stencil_format,
                  SDL_GPUPrimitiveType primitive_type) {
   using namespace candlewick;
-  Shader vertexShader{device, "Hud3dElement.vert", {.uniformBufferCount = 1}};
-  Shader fragmentShader{device, "Hud3dElement.frag", {.uniformBufferCount = 1}};
+  auto vertexShader = Shader::fromMetadata(device, "Hud3dElement.vert");
+  auto fragmentShader = Shader::fromMetadata(device, "Hud3dElement.frag");
 
   SDL_GPUColorTargetDescription colorTarget{
       .format = SDL_GetGPUSwapchainTextureFormat(device, window),

@@ -15,8 +15,8 @@ DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
   if (depth_texture == nullptr)
     depth_texture = renderer.depth_texture;
   const Device &device = renderer.device;
-  Shader vertexShader{device, "ShadowCast.vert", {.uniformBufferCount = 1}};
-  Shader fragmentShader{device, "ShadowCast.frag"};
+  auto vertexShader = Shader::fromMetadata(device, "ShadowCast.vert");
+  auto fragmentShader = Shader::fromMetadata(device, "ShadowCast.frag");
   SDL_GPUGraphicsPipelineCreateInfo pipeline_desc{
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,

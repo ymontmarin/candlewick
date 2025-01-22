@@ -1,5 +1,6 @@
 find_package(assimp REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(nlohmann_json 3.11.3 REQUIRED)
 find_package(FFmpeg COMPONENTS avformat avcodec swscale)
 
 add_library(
@@ -36,6 +37,7 @@ add_library(
 target_link_libraries(
   candlewick_core
   PUBLIC SDL3::SDL3 SDL3::Headers assimp::assimp Eigen3::Eigen imgui
+  PRIVATE nlohmann_json::nlohmann_json
 )
 set(CANDLEWICK_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets)
 set(CANDLEWICK_SHADERS_DIR ${CANDLEWICK_ASSETS_DIR}/shaders)

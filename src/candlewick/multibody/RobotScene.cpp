@@ -297,17 +297,15 @@ void RobotScene::release() {
 }
 
 SDL_GPUGraphicsPipeline *
-RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
+RobotScene::createPipeline(const Device &device, const MeshLayout &layout,
                            SDL_GPUTextureFormat render_target_format,
                            SDL_GPUTextureFormat depth_stencil_format,
                            PipelineType type, const Config &config) {
   const Config::PipelineConfig &pipe_config = config.pipeline_configs.at(type);
-  Shader vertexShader{dev,
-                      pipe_config.vertex_shader_path,
-                      {.uniformBufferCount = pipe_config.num_vertex_uniforms}};
-  Shader fragmentShader{dev,
-                        pipe_config.fragment_shader_path,
-                        {.uniformBufferCount = pipe_config.num_frag_uniforms}};
+  auto vertexShader =
+      Shader::fromMetadata(device, pipe_config.vertex_shader_path);
+  auto fragmentShader =
+      Shader::fromMetadata(device, pipe_config.fragment_shader_path);
 
   SDL_GPUColorTargetDescription color_target;
   SDL_zero(color_target);
@@ -339,7 +337,7 @@ RobotScene::createPipeline(const Device &dev, const MeshLayout &layout,
   };
   desc.rasterizer_state.cull_mode = pipe_config.cull_mode;
   desc.rasterizer_state.fill_mode = pipe_config.fill_mode;
-  return SDL_CreateGPUGraphicsPipeline(dev, &desc);
+  return SDL_CreateGPUGraphicsPipeline(device, &desc);
 }
 
 } // namespace candlewick::multibody
