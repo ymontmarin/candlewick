@@ -44,6 +44,7 @@ target_compile_definitions(
   PUBLIC CANDLEWICK_SHADER_BIN_DIR="${CANDLEWICK_SHADERS_DIR}/compiled"
 )
 target_include_directories(candlewick_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_precompile_headers(candlewick_core PRIVATE <format>)
 
 if(FFmpeg_FOUND)
   message(STATUS "FFmpeg found. Building video module.")
