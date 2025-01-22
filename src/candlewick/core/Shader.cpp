@@ -36,7 +36,6 @@ ShaderCode loadShaderFile(const char *filename, const char *shader_ext) {
                CANDLEWICK_SHADER_BIN_DIR, filename, shader_ext);
 
   size_t code_size;
-  SDL_Log("Loading shader %s", shader_path);
   void *code = SDL_LoadFile(shader_path, &code_size);
   if (!code) {
     throw RAIIException(
@@ -68,6 +67,7 @@ Shader::Shader(const Device &device, const char *filename, const Config &config)
         "Failed to load shader: no available supported shader format.");
   }
 
+  SDL_Log("Loading shader file %s/%s", filename, shader_ext);
   ShaderCode shader_code = loadShaderFile(filename, shader_ext);
 
   SDL_GPUShaderCreateInfo info{

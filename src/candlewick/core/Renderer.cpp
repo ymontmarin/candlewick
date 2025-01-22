@@ -101,16 +101,4 @@ void Renderer::drawViews(SDL_GPURenderPass *pass,
   }
 }
 
-void Renderer::bindFragmentSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
-                                   SDL_GPUTextureSamplerBinding binding) {
-  SDL_BindGPUFragmentSamplers(pass, first_slot, &binding, 1);
-}
-
-void Renderer::bindFragmentSamplers(
-    SDL_GPURenderPass *pass, Uint32 first_slot,
-    const std::vector<SDL_GPUTextureSamplerBinding> bindings) {
-  SDL_BindGPUFragmentSamplers(pass, first_slot, bindings.data(),
-                              Uint32(bindings.size()));
-}
-
 } // namespace candlewick
