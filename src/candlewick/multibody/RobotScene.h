@@ -58,9 +58,14 @@ public:
 
   struct MeshMaterialComponent {
     Mesh mesh;
-    std::vector<MeshView> views;
     std::vector<PbrMaterialData> materials;
     PipelineType pipeline_type;
+    MeshMaterialComponent(Mesh &&mesh, std::vector<PbrMaterialData> &&materials,
+                          PipelineType pipelineType)
+        : mesh(std::move(mesh)), materials(std::move(materials)),
+          pipeline_type(pipelineType) {
+      assert(mesh.numViews() == materials.size());
+    }
   };
 
   entt::registry &registry;

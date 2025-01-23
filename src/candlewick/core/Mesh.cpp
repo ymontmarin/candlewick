@@ -3,7 +3,23 @@
 #include "MeshLayout.h"
 #include "./errors.h"
 
+#include <cassert>
+
 namespace candlewick {
+
+MeshView::MeshView(const MeshView &parent, Uint32 subVertexOffset,
+                   Uint32 subVertexCount, Uint32 subIndexOffset,
+                   Uint32 subIndexCount)
+    : vertexBuffers(parent.vertexBuffers), indexBuffer(parent.indexBuffer),
+      vertexOffset(parent.vertexOffset + subVertexOffset),
+      vertexCount(subVertexCount),
+      indexOffset(parent.indexOffset + subIndexOffset),
+      indexCount(subIndexCount) {
+  // assumption: parent MeshView is validated
+  assert(validateMeshView(*this));
+  assert(subVertexOffset + subVertexCount <= parent.vertexCount);
+  assert(subIndexOffset + subIndexCount <= parent.indexCount);
+}
 
 Mesh::Mesh(NoInitT) : layout() {}
 
@@ -44,6 +60,19 @@ void Mesh::release(SDL_GPUDevice *device) {
     SDL_ReleaseGPUBuffer(device, indexBuffer);
     indexBuffer = nullptr;
   }
+}
+
+MeshView &Mesh::addView(Uint32 vertexOffset, Uint32 vertexSubCount,
+                        Uint32 indexOffset, Uint32 indexSubCount) {
+  MeshView v;
+  v.vertexBuffers = vertexBuffers;
+  v.indexBuffer = indexBuffer;
+  v.vertexOffset = vertexOffset;
+  v.vertexCount = vertexSubCount;
+  v.indexOffset = indexOffset;
+  v.indexCount = indexSubCount;
+
+  return views_.emplace_back(v);
 }
 
 } // namespace candlewick

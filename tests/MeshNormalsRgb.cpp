@@ -56,14 +56,10 @@ int main() {
   std::vector<Mesh> meshes;
   for (std::size_t j = 0; j < meshDatas.size(); j++) {
     Mesh mesh = createMesh(device, meshDatas[j]);
+    uploadMeshToDevice(device, mesh, meshDatas[j]);
     meshes.push_back(std::move(mesh));
   }
   SDL_assert(meshDatas[0].numIndices() == meshes[0].indexCount);
-
-  /** COPY DATA TO GPU **/
-
-  SDL_Log("Uploading mesh...");
-  uploadMeshToDevice(device, meshes[0].toView(), meshDatas[0]);
 
   /** CREATE PIPELINE **/
   Shader vertexShader{device, "VertexNormal.vert", {.uniform_buffers = 1}};

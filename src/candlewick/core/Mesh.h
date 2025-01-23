@@ -5,9 +5,44 @@
 #include "MeshLayout.h"
 
 #include <vector>
+#include <span>
 #include <SDL3/SDL_assert.h>
 
 namespace candlewick {
+
+/// \brief A view into a Mesh object.
+///
+/// Objects of this class are copyable and movable, since they only "borrow" the
+/// buffers.
+/// \warning A MeshView is expected to be non-empty: positive vertex count and
+/// index count (if initial Mesh is indexed).
+/// \sa Mesh
+class MeshView {
+public:
+  /// Vertex buffers.
+  std::vector<SDL_GPUBuffer *> vertexBuffers;
+  /// Index buffer.
+  SDL_GPUBuffer *indexBuffer;
+
+  /// Vertex offsets, expressed in elements.
+  Uint32 vertexOffset;
+  /// Number of vertices in the mesh view.
+  Uint32 vertexCount;
+
+  /// Index offset (in elements).
+  Uint32 indexOffset;
+  /// Number of indices in the mesh view.
+  Uint32 indexCount;
+
+  bool isIndexed() const { return indexBuffer != NULL; }
+
+  MeshView(const MeshView &parent, Uint32 subVertexOffset,
+           Uint32 vertexSubCount, Uint32 subIndexOffset, Uint32 indexSubCount);
+
+private:
+  friend class Mesh;
+  MeshView() noexcept = default;
+};
 
 /// \brief Handle class for meshes (vertex buffers and an optional index buffer)
 /// on the GPU.
@@ -18,7 +53,10 @@ namespace candlewick {
 /// A Mesh **owns** its vertex and index buffers.
 ///
 /// \sa MeshView
-struct Mesh {
+class Mesh {
+  std::vector<MeshView> views_;
+
+public:
   MeshLayout layout;
   Uint32 vertexCount;
   Uint32 indexCount{0u};
@@ -32,8 +70,9 @@ struct Mesh {
   /// `[pos0, norm0, col0, pos1, ...]`.
   std::vector<SDL_GPUBuffer *> vertexBuffers;
 
-  /// Index buffer for the Mesh 's index data. If this is NULL, then the
-  /// Mesh is considered to be *non*-indexed.
+  /// Index buffer for the mesh's index data. If this is NULL, then the
+  /// Mesh is considered to be *non*-indexed when it is bound or when draw
+  /// commands are issued.
   SDL_GPUBuffer *indexBuffer{NULL};
 
   explicit Mesh(const MeshLayout &layout);
@@ -45,12 +84,23 @@ struct Mesh {
   Mesh &operator=(const Mesh &) = delete;
   Mesh &operator=(Mesh &&) noexcept = default;
 
+  const MeshView &view(size_t i) const { return views_[i]; }
+  std::span<const MeshView> views() const { return views_; }
+  size_t numViews() const { return views_.size(); }
+
+  /// \brief Add a stored MeshView object. The added view will be drawn when
+  /// calling Renderer::draw() with a Mesh argument.
+  /// \returns Reference to the created MeshView object.
+  MeshView &addView(Uint32 vertexOffset, Uint32 vertexSubCount,
+                    Uint32 indexOffset, Uint32 indexSubCount);
+
   /// \brief Bind an existing vertex buffer to a given slot of the Mesh.
   /// \warning This function will **take ownership of the buffer**.
   ///
   /// \param slot Binding slot of the vertex buffer. Used by
   /// SDL_GPUVertexAttribute.
   /// \param buffer Existing buffer.
+  /// \returns Reference to \c this, for method chaining.
   Mesh &bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer);
 
   /// \brief Bind an existing index buffer for the Mesh.
@@ -61,6 +111,7 @@ struct Mesh {
   /// \warning This function will **take ownership of the buffer**.
   ///
   /// \param buffer Existing index buffer.
+  /// \returns Reference to \c this, for method chaining.
   Mesh &setIndexBuffer(SDL_GPUBuffer *buffer);
 
   /// \brief Number of vertex buffers.
@@ -78,60 +129,15 @@ struct Mesh {
   SDL_GPUBufferBinding getIndexBinding() const {
     return {.buffer = indexBuffer, .offset = 0u};
   }
-
-  /// \brief Conversion operator to a MeshView object. This will produce a
-  /// full-view of \c this.
-  MeshView toView() const;
 };
-
-/// \brief A view into a Mesh object.
-///
-/// Objects of this class are copyable and movable, since they only "borrow" the
-/// buffers.
-/// \warning A MeshView is expected to be non-empty: positive vertex count and
-/// index count (if initial Mesh is indexed).
-/// \sa Mesh
-struct MeshView {
-  std::vector<SDL_GPUBuffer *> vertexBuffers;
-  /// Vertex offsets, expressed in indices of the original vertices.
-  std::vector<Uint32> vertexOffsets;
-  Uint32 vertexCount;
-  SDL_GPUBuffer *indexBuffer;
-  /// Index offset (not in bytes).
-  Uint32 indexOffset;
-  Uint32 indexCount;
-  Uint32 vertexSize;
-  Uint32 indexSize;
-
-  bool isIndexed() const { return indexBuffer != NULL; }
-  SDL_GPUBufferBinding getVertexBinding(Uint32 slot) const {
-    return {vertexBuffers[slot], vertexOffsets[slot] * vertexSize};
-  }
-  SDL_GPUBufferBinding getIndexBinding() const {
-    return {indexBuffer, indexOffset * indexSize};
-  }
-};
-
-inline MeshView Mesh::toView() const {
-  std::vector<Uint32> vtxOffsets;
-  vtxOffsets.resize(numVertexBuffers(), 0u);
-  return MeshView{
-      .vertexBuffers = vertexBuffers,
-      .vertexOffsets = std::move(vtxOffsets),
-      .vertexCount = vertexCount,
-      .indexBuffer = indexBuffer,
-      .indexOffset = 0,
-      .indexCount = indexCount,
-      .vertexSize = layout.vertexSize(),
-      .indexSize = layout.indexSize(),
-  };
-}
 
 /// \brief Check that all vertex buffers were set, and consistency in the
 /// "indexed/non-indexed" status.
 /// \sa validateMeshView()
 [[nodiscard]] inline bool validateMesh(const Mesh &mesh) {
   if (!validateMeshLayout(mesh.layout))
+    return false;
+  if (mesh.views().size() == 0)
     return false;
   for (size_t i = 0; i < mesh.numVertexBuffers(); i++) {
     if (!mesh.vertexBuffers[i])
@@ -143,8 +149,9 @@ inline MeshView Mesh::toView() const {
 
 /// \brief Validation for a MeshView object.
 ///
-/// Check that all vertex buffer handles are non-null, check consistency of
-/// indexing status (that index buffer is non-NULL iff )
+/// Check that all vertex buffer handles are non-null, check that vertex count
+/// is nonzero, check consistency of indexing status (that index buffer is
+/// non-NULL iff the index count of this view is nonzero).
 /// \param view Input view to validate.
 /// \sa validateMesh()
 [[nodiscard]] inline bool validateMeshView(const MeshView &view) {
@@ -155,7 +162,7 @@ inline MeshView Mesh::toView() const {
   // views of indexed meshes cannot have zero indices.
   if (view.isIndexed() != (view.indexCount > 0))
     return false;
-  return view.vertexCount >= 0;
+  return view.vertexCount > 0;
 }
 
 } // namespace candlewick

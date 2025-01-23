@@ -185,18 +185,18 @@ int main(int argc, char **argv) {
   // Load plane
   MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
   Mesh plane = createMesh(device, plane_data);
-  uploadMeshToDevice(device, plane.toView(), plane_data);
+  uploadMeshToDevice(device, plane, plane_data);
 
   // Load grid
   MeshData grid_data = loadGrid(10);
   gridMesh = createMesh(device, grid_data);
-  uploadMeshToDevice(device, gridMesh.toView(), grid_data);
+  uploadMeshToDevice(device, gridMesh, grid_data);
 
   std::array triad_data = createTriad();
   std::vector<Mesh> triad_meshes;
   for (auto &&arrow_data : std::move(triad_data)) {
     Mesh arrow_mesh = createMesh(device, arrow_data);
-    uploadMeshToDevice(device, arrow_mesh.toView(), arrow_data);
+    uploadMeshToDevice(device, arrow_mesh, arrow_data);
     triad_meshes.push_back(std::move(arrow_mesh));
   }
 
@@ -257,7 +257,6 @@ int main(int argc, char **argv) {
   struct RobotObject {
     pin::GeomIndex geom_index;
     Mesh mesh;
-    std::vector<MeshView> views;
     std::vector<PbrMaterialData> materials;
   };
   std::vector<RobotObject> robotShapes;
@@ -265,10 +264,9 @@ int main(int argc, char **argv) {
     const auto &gobj = geom_model.geometryObjects[i];
     /// Create a Mesh, upload to device
     auto meshDatas = multibody::loadGeometryObject(gobj);
-    auto [mesh, views] = createMeshFromBatch(device, meshDatas, true);
+    auto mesh = createMeshFromBatch(device, meshDatas, true);
 
-    robotShapes.push_back(
-        {i, std::move(mesh), std::move(views), extractMaterials(meshDatas)});
+    robotShapes.push_back({i, std::move(mesh), extractMaterials(meshDatas)});
     SDL_Log("Loaded %zu MeshData objects. Meshes:", meshDatas.size());
     for (size_t i = 0; i < meshDatas.size(); i++) {
       SDL_Log("   [%zu] %u vertices, %u indices", i, meshDatas[i].numVertices(),
@@ -400,13 +398,14 @@ int main(int argc, char **argv) {
             normalMatrix,
         };
         const auto &obj = robotShapes[i];
+        const auto &mesh = obj.mesh;
 
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
-        renderer.bindMesh(render_pass, obj.mesh);
-        for (size_t j = 0; j < obj.views.size(); j++) {
+        renderer.bindMesh(render_pass, mesh);
+        for (size_t j = 0; j < mesh.numViews(); j++) {
           const auto material = obj.materials[j].toUniform();
           renderer.pushFragmentUniform(0, &material, sizeof(material));
-          renderer.drawView(render_pass, obj.views[j]);
+          renderer.drawView(render_pass, mesh.view(j));
         }
       }
 

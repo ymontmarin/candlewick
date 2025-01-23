@@ -48,12 +48,17 @@ struct Renderer {
 
   bool hasDepthTexture() const { return depth_texture != nullptr; }
 
-  /// \brief Bind the Mesh object.
-  void bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
-    bindMeshView(pass, mesh.toView());
-  }
+  /// \brief Bind a Mesh object.
+  /// \sa bindMeshView()
+  void bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh);
 
   /// \brief Bind a MeshView object.
+  /// \warning This performs the same logic as bindMesh(). The entire buffer is
+  /// bound, because drawView() uses the vertex and index offsets to draw.
+  /// Binding offset buffers would, then, be incorrect.
+  /// \sa bindMesh()
+  /// \sa drawView()
+  /// \sa drawViews()
   void bindMeshView(SDL_GPURenderPass *pass, const MeshView &view);
 
   /// Render an individual Mesh as part of a render pass, using a provided first
@@ -66,7 +71,7 @@ struct Renderer {
   /// \param mesh The Mesh to draw.
   void draw(SDL_GPURenderPass *pass, const Mesh &mesh,
             Uint32 numInstances = 1) {
-    this->drawView(pass, mesh.toView(), numInstances);
+    this->drawViews(pass, mesh.views(), numInstances);
   }
 
   /// \brief Draw a MeshView.

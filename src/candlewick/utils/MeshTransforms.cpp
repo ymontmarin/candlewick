@@ -45,8 +45,8 @@ MeshData generateIndices(const MeshData &meshData) {
   Uint32 vertexCount = Uint32(meshData.numVertices());
   triangleStripGenerateIndices(vertexCount, indices);
   std::vector<char> vertexData(meshData.vertexData);
-  return MeshData(SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, meshData.layout(),
-                  std::move(vertexData), std::move(indices));
+  return MeshData{SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, meshData.layout(),
+                  std::move(vertexData), std::move(indices)};
 }
 
 namespace detail {
@@ -115,7 +115,7 @@ MeshData mergeMeshes(std::span<const MeshData> meshes) {
     vtxOffset += mesh.numVertices();
   }
 
-  return MeshData(primitive, layout, vertexData, indexData);
+  return MeshData{primitive, layout, vertexData, indexData};
 }
 
 MeshData mergeMeshes(std::vector<MeshData> &&meshes) {
