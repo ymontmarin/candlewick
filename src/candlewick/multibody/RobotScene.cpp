@@ -255,12 +255,15 @@ void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
       const auto &placement = _geomData->oMg[geom_id].cast<float>();
       const Mat4f modelMat = placement.toHomogeneousMatrix();
       const Mat4f mvp = viewProj * modelMat;
+      const auto &color = obj.materials[0].baseColor;
 
       renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &mvp,
                                  sizeof(mvp));
+      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &color,
+                                   sizeof(color));
       // draw the entire object
       renderer.bindMesh(render_pass, mesh);
-      renderer.draw(render_pass, obj.mesh);
+      renderer.draw(render_pass, mesh);
     }
 
     auto env_view =
