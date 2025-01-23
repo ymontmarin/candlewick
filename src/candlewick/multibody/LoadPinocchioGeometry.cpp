@@ -2,7 +2,6 @@
 #include "LoadCoalPrimitives.h"
 #include "../core/errors.h"
 #include "../utils/LoadMesh.h"
-#include "../third-party/magic_enum.hpp"
 
 #include <pinocchio/multibody/geometry.hpp>
 
@@ -13,7 +12,6 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
                         std::vector<MeshData> &meshData) {
   using hpp::fcl::OBJECT_TYPE;
   using enum OBJECT_TYPE;
-  using hpp::fcl::NODE_TYPE;
 
   const CollisionGeometry &collgom = *gobj.geometry.get();
   const OBJECT_TYPE objType = collgom.getObjectType();

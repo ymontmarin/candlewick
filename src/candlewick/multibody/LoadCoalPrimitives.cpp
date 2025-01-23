@@ -6,7 +6,6 @@
 #include "../primitives/Cube.h"
 #include "../primitives/Heightfield.h"
 #include "../utils/MeshTransforms.h"
-#include "../third-party/magic_enum.hpp"
 
 #include <coal/shape/geometric_shapes.h>
 #include <coal/hfield.h>
