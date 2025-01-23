@@ -46,15 +46,15 @@ auto RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom)
 entt::entity RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
                                               PipelineType pipe_type) {
   Mesh mesh = createMesh(_device, data);
-  uploadMeshToDevice(_device, mesh.toView(), data);
+  uploadMeshToDevice(_device, mesh, data);
   auto entity = registry.create();
   registry.emplace<TransformComponent>(entity, placement);
   if (pipe_type != PIPELINE_POINTCLOUD)
     registry.emplace<Opaque>(entity);
   registry.emplace<VisibilityComponent>(entity, true);
-  registry.emplace<MeshMaterialComponent>(
-      entity, std::move(mesh), std::vector{mesh.toView()},
-      std::vector{std::move(data.material)}, pipe_type);
+  registry.emplace<MeshMaterialComponent>(entity, std::move(mesh),
+                                          std::vector{std::move(data.material)},
+                                          pipe_type);
   return entity;
 }
 
@@ -84,7 +84,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     const auto &geom_obj = geom_model.geometryObjects[geom_id];
     auto meshDatas = loadGeometryObject(geom_obj);
     PipelineType pipeline_type = pinGeomToPipeline(*geom_obj.geometry);
-    auto [mesh, views] = createMeshFromBatch(dev, meshDatas, true);
+    auto mesh = createMeshFromBatch(dev, meshDatas, true);
     assert(validateMesh(mesh));
 
     // local copy for use
@@ -95,8 +95,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     if (pipeline_type != PIPELINE_POINTCLOUD)
       registry.emplace<Opaque>(entity);
     registry.emplace<MeshMaterialComponent>(
-        entity, std::move(mesh), std::move(views), extractMaterials(meshDatas),
-        pipeline_type);
+        entity, std::move(mesh), extractMaterials(meshDatas), pipeline_type);
 
     if (!renderPipelines.contains(pipeline_type)) {
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
@@ -195,11 +194,11 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
                                sizeof(data));
     renderer.bindMesh(render_pass, mesh);
     // loop over views and materials
-    for (size_t j = 0; j < obj.views.size(); j++) {
+    for (size_t j = 0; j < mesh.numViews(); j++) {
       auto material = obj.materials[j].toUniform();
       renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
                                    sizeof(material));
-      renderer.drawView(render_pass, obj.views[j]);
+      renderer.drawView(render_pass, mesh.view(j));
     }
   }
 
@@ -261,7 +260,7 @@ void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
                                  sizeof(mvp));
       // draw the entire object
       renderer.bindMesh(render_pass, mesh);
-      renderer.drawViews(render_pass, obj.views);
+      renderer.draw(render_pass, obj.mesh);
     }
 
     auto env_view =

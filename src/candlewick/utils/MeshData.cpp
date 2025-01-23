@@ -12,7 +12,8 @@ MeshData::MeshData(NoInitT) {}
 MeshData::MeshData(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
                    std::vector<char> vertexData,
                    std::vector<IndexType> indexData)
-    : primitiveType(primitiveType), vertexData(std::move(vertexData), layout),
+    : primitiveType(primitiveType),
+      vertexData(std::move(vertexData), std::move(layout)),
       indexData(std::move(indexData)) {}
 
 Mesh createMesh(const Device &device, const MeshData &meshData) {
@@ -44,17 +45,14 @@ Mesh createMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
   if (meshData.isIndexed()) {
     mesh.setIndexBuffer(indexBuffer);
   }
+  mesh.addView(0u, mesh.vertexCount, 0u, mesh.indexCount);
   return mesh;
 }
 
-std::pair<Mesh, std::vector<MeshView>>
-createMeshFromBatch(const Device &device, std::span<const MeshData> meshDatas,
-                    bool upload) {
+Mesh createMeshFromBatch(const Device &device,
+                         std::span<const MeshData> meshDatas, bool upload) {
   // index type size, in bytes
-  const size_t N = meshDatas.size();
-  SDL_assert(N > 0);
-  std::vector<MeshView> views;
-  views.resize(N);
+  SDL_assert(meshDatas.size() > 0);
   auto &layout = meshDatas[0].layout();
 
   Uint32 numVertices = 0, numIndices = 0;
@@ -88,19 +86,15 @@ createMeshFromBatch(const Device &device, std::span<const MeshData> meshDatas,
       .setIndexBuffer(masterIndexBuffer);
 
   Uint32 vertexOffset = 0, indexOffset = 0;
-  for (size_t i = 0; i < N; i++) {
-    views[i] = {.vertexBuffers = mesh.vertexBuffers,
-                .vertexOffsets = {vertexOffset},
-                .vertexCount = meshDatas[i].numVertices(),
-                .indexBuffer = mesh.indexBuffer,
-                .indexOffset = indexOffset,
-                .indexCount = meshDatas[i].numIndices()};
+  for (size_t i = 0; i < meshDatas.size(); i++) {
+    auto &view = mesh.addView(vertexOffset, meshDatas[i].numVertices(),
+                              indexOffset, meshDatas[i].numIndices());
     vertexOffset += meshDatas[i].numVertices();
     indexOffset += meshDatas[i].numIndices();
     if (upload)
-      uploadMeshToDevice(device, views[i], meshDatas[i]);
+      uploadMeshToDevice(device, view, meshDatas[i]);
   }
-  return {std::move(mesh), std::move(views)};
+  return mesh;
 }
 
 void uploadMeshToDevice(const Device &device, const MeshView &meshView,
@@ -137,7 +131,7 @@ void uploadMeshToDevice(const Device &device, const MeshView &meshView,
       };
       SDL_GPUBufferRegion dst_region{
           .buffer = meshView.vertexBuffers[0],
-          .offset = meshView.vertexOffsets[0] * layout.vertexSize(),
+          .offset = meshView.vertexOffset * layout.vertexSize(),
           .size = vertex_payload_size,
       };
       SDL_UploadToGPUBuffer(copy_pass, &src_location, &dst_region, false);
@@ -167,6 +161,14 @@ void uploadMeshToDevice(const Device &device, const MeshView &meshView,
                  SDL_GetError());
     SDL_assert(false);
   }
+}
+
+void uploadMeshToDevice(const Device &device, const Mesh &mesh,
+                        const MeshData &meshData) {
+  assert(validateMesh(mesh));
+  assert(mesh.numViews() == 1);
+  auto &view = mesh.views()[0];
+  uploadMeshToDevice(device, view, meshData);
 }
 
 std::vector<PbrMaterialData>

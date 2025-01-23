@@ -51,7 +51,7 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
   depth_texture = SDL_CreateGPUTexture(this->device, &texInfo);
 }
 
-void Renderer::bindMeshView(SDL_GPURenderPass *pass, const MeshView &mesh) {
+void Renderer::bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
   const Uint32 num_buffers = Uint32(mesh.vertexBuffers.size());
   std::vector<SDL_GPUBufferBinding> vertex_bindings;
   vertex_bindings.reserve(num_buffers);
@@ -67,16 +67,32 @@ void Renderer::bindMeshView(SDL_GPURenderPass *pass, const MeshView &mesh) {
   }
 }
 
+void Renderer::bindMeshView(SDL_GPURenderPass *pass, const MeshView &meshView) {
+  const Uint32 num_buffers = Uint32(meshView.vertexBuffers.size());
+  std::vector<SDL_GPUBufferBinding> vertex_bindings;
+  vertex_bindings.reserve(num_buffers);
+  for (Uint32 j = 0; j < num_buffers; j++) {
+    vertex_bindings.push_back({meshView.vertexBuffers[j], 0u});
+  }
+
+  SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(), num_buffers);
+  if (meshView.isIndexed()) {
+    SDL_GPUBufferBinding index_binding = {meshView.indexBuffer, 0u};
+    SDL_BindGPUIndexBuffer(pass, &index_binding,
+                           SDL_GPU_INDEXELEMENTSIZE_32BIT);
+  }
+}
+
 void Renderer::drawView(SDL_GPURenderPass *pass, const MeshView &mesh,
                         Uint32 numInstances) {
   assert(validateMeshView(mesh));
   if (mesh.isIndexed()) {
     SDL_DrawGPUIndexedPrimitives(pass, mesh.indexCount, numInstances,
-                                 mesh.indexOffset,
-                                 Sint32(mesh.vertexOffsets[0]), 0);
+                                 mesh.indexOffset, Sint32(mesh.vertexOffset),
+                                 0);
   } else {
     SDL_DrawGPUPrimitives(pass, mesh.vertexCount, numInstances,
-                          mesh.vertexOffsets[0], 0);
+                          mesh.vertexOffset, 0);
   }
 }
 

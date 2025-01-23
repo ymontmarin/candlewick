@@ -178,9 +178,8 @@ void runDepthPrepass(Renderer &renderer, const Camera &camera,
     auto pose = geom_data.oMg[geom_id].cast<float>();
     GpuMat4 transform = pose.toHomogeneousMatrix();
     // do *not* put the whole Mesh in. the indices collide!
-    for (auto &v : meshMaterial.views) {
+    for (auto &v : meshMaterial.mesh.views())
       castables.emplace_back(v, transform);
-    }
   }
 
   for (auto [ent, tr, vis, meshMaterial] : env_view.each()) {
@@ -189,7 +188,8 @@ void runDepthPrepass(Renderer &renderer, const Camera &camera,
 
     const Mesh &mesh = meshMaterial.mesh;
     GpuMat4 transform = tr.transform;
-    castables.emplace_back(mesh.toView(), transform);
+    for (auto &v : mesh.views())
+      castables.emplace_back(v, transform);
   }
   SDL_assert(castables.size() > 0);
   const GpuMat4 viewProj = camera.viewProj();
