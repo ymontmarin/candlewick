@@ -99,10 +99,10 @@ Mat4f perspectiveMatrix(float left, float right, float bottom, float top,
 
 /// \brief Get perspective projection matrix given fov, aspect ratio, and
 /// clipping planes.
-/// \p fovY Vertical field of view in radians
-/// \p aspectRatio Width / Height
-/// \p nearZ Near clipping plane
-/// \p farZ Far clipping plane
+/// \param fovY Vertical field of view in radians
+/// \param aspectRatio Width / Height
+/// \param nearZ Near clipping plane
+/// \param farZ Far clipping plane
 Mat4f perspectiveFromFov(Radf fovY, float aspectRatio, float nearZ, float farZ);
 
 /// \brief Get an orthographic projection matrix.
