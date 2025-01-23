@@ -22,4 +22,12 @@ inline Float4 operator""_rgbaf(unsigned long long hex) {
   return hexToRgbaf(hex);
 }
 
+inline Eigen::Vector3d operator""_rgb(unsigned long long hex) {
+  return hexToRgbi(hex).cast<double>() / 255.;
+}
+
+inline Eigen::Vector4d operator""_rgba(unsigned long long hex) {
+  return hexToRgbai(hex).cast<double>() / 255.;
+}
+
 } // namespace candlewick
