@@ -313,7 +313,8 @@ RobotScene::createPipeline(const Device &device, const MeshLayout &layout,
       (type == PIPELINE_TRIANGLEMESH) && config.triangle_has_prepass;
   SDL_GPUCompareOp depth_compare_op =
       had_prepass ? SDL_GPU_COMPAREOP_EQUAL : SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
-  SDL_Log("Triangle pipeline uses depth compare op %s",
+  SDL_Log("Pipeline type %s uses depth compare op %s",
+          magic_enum::enum_name(type).data(),
           magic_enum::enum_name(depth_compare_op).data());
   SDL_assert(validateMeshLayout(layout));
   SDL_GPUGraphicsPipelineCreateInfo desc{
