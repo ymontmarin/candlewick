@@ -3,13 +3,13 @@
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/math_util.h"
+#include "candlewick/core/CameraControl.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
 #include "candlewick/core/TransformUniforms.h"
+
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
-#include "candlewick/core/CameraControl.h"
 #include "candlewick/multibody/LoadPinocchioGeometry.h"
 
 #include "candlewick/primitives/Arrow.h"

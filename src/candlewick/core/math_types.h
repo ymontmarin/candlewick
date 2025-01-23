@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Core>
 #include <concepts>
+#include <SDL3/SDL_stdinc.h>
 
 namespace candlewick {
 
@@ -9,8 +10,8 @@ using Float3 = Eigen::Vector3f;
 using Float4 = Eigen::Vector4f;
 using Mat3f = Eigen::Matrix3f;
 using Mat4f = Eigen::Matrix4f;
-using Vec3u8 = Eigen::Matrix<uint8_t, 3, 1>;
-using Vec4u8 = Eigen::Matrix<uint8_t, 4, 1>;
+using Vec3u8 = Eigen::Matrix<Uint8, 3, 1>;
+using Vec4u8 = Eigen::Matrix<Uint8, 4, 1>;
 
 /** GPU typedefs and adapters **/
 
@@ -115,4 +116,52 @@ inline constexpr auto operator""_degf(long double t) {
 using Radf = Rad<float>;
 using Degf = Deg<float>;
 
+extern template struct Rad<float>;
+extern template struct Deg<float>;
+
+Vec3u8 hexToRgbi(unsigned long hex);
+
+Vec4u8 hexToRgbai(unsigned long hex);
+
+inline Float3 hexToRgbf(unsigned long hex) {
+  return hexToRgbi(hex).cast<float>() / 255.f;
+};
+
+inline Float4 hexToRgbaf(unsigned long hex) {
+  return hexToRgbai(hex).cast<float>() / 255.f;
+};
+
+inline Float3 operator""_rgbf(unsigned long long hex) { return hexToRgbf(hex); }
+
+inline Float4 operator""_rgbaf(unsigned long long hex) {
+  return hexToRgbaf(hex);
+}
+
+inline Eigen::Vector3d operator""_rgb(unsigned long long hex) {
+  return hexToRgbi(hex).cast<double>() / 255.;
+}
+
+inline Eigen::Vector4d operator""_rgba(unsigned long long hex) {
+  return hexToRgbai(hex).cast<double>() / 255.;
+}
+
+namespace math {
+template <typename T> constexpr T max(const T &a, const T &b) {
+  if (a < b)
+    return b;
+  return a;
+}
+
+constexpr Uint32 roundUpTo16(Uint32 value) {
+  Uint32 q = value / 16;
+  Uint32 r = value % 16;
+  if (r == 0)
+    return value;
+  return (q + 1) * 16u;
+}
+
+inline Mat3f computeNormalMatrix(const Mat4f &M) {
+  return M.topLeftCorner<3, 3>().inverse().transpose();
+}
+} // namespace math
 } // namespace candlewick

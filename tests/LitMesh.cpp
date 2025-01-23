@@ -6,6 +6,7 @@
 #include "candlewick/utils/LoadMesh.h"
 #include "candlewick/core/CameraControl.h"
 #include "candlewick/core/LightUniforms.h"
+#include "candlewick/core/TransformUniforms.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>

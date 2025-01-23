@@ -6,22 +6,6 @@
 
 namespace candlewick {
 
-namespace math {
-template <typename T> constexpr T max(const T &a, const T &b) {
-  if (a < b)
-    return b;
-  return a;
-}
-
-constexpr Uint32 roundUpTo16(Uint32 value) {
-  Uint32 q = value / 16;
-  Uint32 r = value % 16;
-  if (r == 0)
-    return value;
-  return (q + 1) * 16u;
-}
-} // namespace math
-
 constexpr Uint64 vertexElementSize(SDL_GPUVertexElementFormat format) {
   switch (format) {
   case SDL_GPU_VERTEXELEMENTFORMAT_INT:

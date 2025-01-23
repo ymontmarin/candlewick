@@ -6,8 +6,6 @@
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/DebugScene.h"
 #include "candlewick/core/DepthAndShadowPass.h"
-
-#include "candlewick/core/math_util.h"
 #include "candlewick/core/LightUniforms.h"
 
 #include "candlewick/multibody/RobotScene.h"
