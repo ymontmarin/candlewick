@@ -1,7 +1,7 @@
 #include "DepthAndShadowPass.h"
 #include "Renderer.h"
 #include "Shader.h"
-#include "BoundingBox.h"
+#include "AABB.h"
 #include "CameraControl.h"
 
 #include <stdexcept>
@@ -114,7 +114,7 @@ static Mat4f orthoFromAABB(const AABB &sceneBounds) {
                             sceneBounds.min.z(), sceneBounds.max.z());
 }
 
-void renderShadowPass(Renderer &renderer, const DepthPassInfo &shadowPass,
+void renderShadowPass(Renderer &renderer, const DepthPassInfo &passInfo,
                       const DirectionalLight &dirLight,
                       std::span<const OpaqueCastable> castables,
                       const AABB &sceneBounds) {
@@ -124,6 +124,6 @@ void renderShadowPass(Renderer &renderer, const DepthPassInfo &shadowPass,
   GpuMat4 lightProj = orthoFromAABB(sceneBounds);
   GpuMat4 viewProj = lightProj * lightView;
 
-  renderDepthOnlyPass(renderer, shadowPass, viewProj, castables);
+  renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }
 } // namespace candlewick

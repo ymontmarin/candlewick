@@ -98,7 +98,10 @@ void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
 
 struct AABB;
 
-void renderShadowPass(Renderer &renderer, DepthPassInfo &shadowing,
+/// \brief Render shadow pass, using provided scene bounds.
+///
+/// The scene bounds are in view-space.
+void renderShadowPass(Renderer &renderer, DepthPassInfo &passInfo,
                       const DirectionalLight &dirLight,
                       std::span<const OpaqueCastable> castables,
                       const AABB &sceneBounds);

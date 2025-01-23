@@ -12,7 +12,7 @@ struct AABB {
   AABB(NoInitT) {}
   AABB()
       : min(Float3::Constant(std::numeric_limits<float>::max())),
-        max(Float3::Constant(-std::numeric_limits<float>::max())) {}
+        max(Float3::Constant(std::numeric_limits<float>::lowest())) {}
   AABB(const Float3 &v) : min(v), max(v) {}
   AABB(const Float3 &a, const Float3 &b)
       : min(a.cwiseMin(b)), max(a.cwiseMax(b)) {}
@@ -60,9 +60,12 @@ struct AABB {
     return ret.grow(other);
   }
 
+  /// \brief Produce array of 3D corners of the bounding box.
+  ///
+  /// Useful for producing a camera frustum.
   std::array<Float3, 8> corners() const {
     std::array<Float3, 8> out;
-    Float3 ab[2];
+    const Float3 ab[2] = {min, max};
     for (uint8_t i = 0; i < 8; i++) {
       uint8_t l = i & 1;
       uint8_t k = (i >> 1) & 1;
