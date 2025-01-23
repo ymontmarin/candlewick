@@ -6,6 +6,12 @@
 
 namespace candlewick {
 
+namespace math {
+inline Mat3f computeNormalMatrix(const Eigen::Affine3f &M) {
+  return M.inverse().linear().transpose();
+}
+} // namespace math
+
 enum class CameraProjection { PERSPECTIVE, ORTHOGRAPHIC };
 
 /// \brief The main way of using a camera to render things.
@@ -22,6 +28,14 @@ struct Camera {
 
   /// View-projection matrix \f$\mathbf{P} \cdot \mathbf{V}\f$
   auto viewProj() const { return projection * view.matrix(); }
+
+  /// \brief Transform a vector to view-space.
+  /// This applies the view matrix linear part.
+  Float3 transformVector(const Float3 &v) const { return view.linear() * v; }
+
+  /// \brief Transform a point to view-space.
+  /// This applies the view matrix as a 3D transform.
+  Float3 transformPoint(const Float3 &p) const { return view * p; }
 
   /// \name Shortcuts for the basis vectors of the pose matrix
   /// i.e. the world-space camera orientation vectors.

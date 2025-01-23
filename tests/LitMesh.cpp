@@ -37,10 +37,10 @@ const float aspectRatio = float(wWidth) / wHeight;
 
 Context ctx;
 
-struct alignas(16) TransformUniformData {
-  GpuMat4 model;
-  alignas(16) GpuMat4 mvp;
-  alignas(16) GpuMat3 normalMatrix;
+struct light_ubo_t {
+  GpuVec3 viewSpaceDir;
+  alignas(16) GpuVec3 color;
+  float intensity;
 };
 
 int main() {
@@ -185,9 +185,9 @@ int main() {
       }
     }
     // MVP matrix
-    const Mat4f viewProj = camera.viewProj();
-    const Mat4f projViewMat = viewProj * modelMat.matrix();
-    const Mat3f normalMatrix = modelMat.inverse().linear().transpose();
+    const Eigen::Affine3f modelView = camera.view * modelMat;
+    const Mat4f mvp = camera.projection * modelView.matrix();
+    const Mat3f normalMatrix = math::computeNormalMatrix(modelView);
 
     // render pass
 
@@ -219,14 +219,15 @@ int main() {
                              SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
       TransformUniformData cameraUniform{
-          modelMat.matrix(),
-          projViewMat,
-          normalMatrix,
+          .modelView = modelView.matrix(),
+          .mvp = mvp,
+          .normalMatrix = normalMatrix,
       };
-      struct {
-        DirectionalLight a;
-        GpuVec3 viewPos;
-      } lightUbo{myLight, camera.position()};
+      light_ubo_t lightUbo{
+          camera.transformVector(myLight.direction),
+          myLight.color,
+          myLight.intensity,
+      };
 
       auto materialUbo = meshDatas[0].material.toUniform();
 

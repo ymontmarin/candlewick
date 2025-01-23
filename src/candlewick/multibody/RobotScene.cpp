@@ -11,6 +11,13 @@
 #include <pinocchio/multibody/geometry.hpp>
 
 namespace candlewick::multibody {
+
+struct alignas(16) light_ubo_t {
+  GpuVec3 viewSpaceDir;
+  alignas(16) GpuVec3 color;
+  float intensity;
+};
+
 auto RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom)
     -> PipelineType {
   using enum coal::OBJECT_TYPE;
@@ -153,11 +160,11 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
     return;
   }
 
-  struct alignas(16) light_ubo_t {
-    DirectionalLight a;
-    GpuVec3 viewPos;
+  const light_ubo_t lightUbo{
+      camera.transformVector(directionalLight.direction),
+      directionalLight.color,
+      directionalLight.intensity,
   };
-  const light_ubo_t lightUbo{directionalLight, camera.position()};
   const Mat4f viewProj = camera.viewProj();
 
   // this is the first render pass, hence:
@@ -179,16 +186,13 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
   for (auto [entity, geom_id, obj] : robot_view.each()) {
     if (obj.pipeline_type != PIPELINE_TRIANGLEMESH)
       continue;
-    const auto &mesh = obj.mesh;
-    const auto &placement = _geomData->oMg[geom_id].cast<float>();
-    const Mat4f modelMat = placement.toHomogeneousMatrix();
-    const Mat3f normalMatrix =
-        modelMat.topLeftCorner<3, 3>().inverse().transpose();
-    const Mat4f mvp = viewProj * modelMat;
+    const Mesh &mesh = obj.mesh;
+    const Mat4f placement{_geomData->oMg[geom_id].cast<float>()};
+    const Mat4f modelView = camera.view * placement;
     TransformUniformData data{
-        .model = modelMat,
-        .mvp = mvp,
-        .normalMatrix = normalMatrix,
+        .modelView = modelView,
+        .mvp{camera.viewProj() * placement},
+        .normalMatrix = math::computeNormalMatrix(modelView),
     };
     renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
                                sizeof(data));
@@ -210,15 +214,12 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
       continue;
 
     auto material = obj.materials[0].toUniform();
-    auto modelMat = tr.transform;
-    auto &mesh = obj.mesh;
-    const Mat3f normalMatrix =
-        modelMat.topLeftCorner<3, 3>().inverse().transpose();
-    const Mat4f mvp = viewProj * modelMat;
+    const Mat4f modelView = camera.view * tr.transform;
+    const Mesh &mesh = obj.mesh;
     TransformUniformData data{
-        .model = modelMat,
-        .mvp = mvp,
-        .normalMatrix = normalMatrix,
+        .modelView = modelView,
+        .mvp{camera.viewProj() * tr.transform},
+        .normalMatrix = math::computeNormalMatrix(modelView),
     };
     renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
                                sizeof(data));

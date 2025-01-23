@@ -15,7 +15,6 @@ struct DirectionalLight
 struct LightBlock
 {
     DirectionalLight light;
-    float3 viewPos;
 };
 
 struct PbrMaterial
@@ -38,8 +37,8 @@ struct main0_out
 
 struct main0_in
 {
-    float3 fragWorldPos [[user(locn0)]];
-    float3 fragNormal [[user(locn1)]];
+    float3 fragViewPos [[user(locn0)]];
+    float3 fragViewNormal [[user(locn1)]];
 };
 
 static inline __attribute__((always_inline))
@@ -108,26 +107,26 @@ float3 uncharted2ToneMapping(thread const float3& color)
     return curr * white_scale;
 }
 
-fragment main0_out main0(main0_in in [[stage_in]], constant Material& _254 [[buffer(0)]], constant LightBlock& _212 [[buffer(1)]], bool gl_FrontFacing [[front_facing]])
+fragment main0_out main0(main0_in in [[stage_in]], constant Material& _251 [[buffer(0)]], constant LightBlock& _212 [[buffer(1)]], bool gl_FrontFacing [[front_facing]])
 {
     main0_out out = {};
     float3 lightDir = fast::normalize(-_212.light.direction);
-    float3 normal = fast::normalize(in.fragNormal);
-    float3 V = fast::normalize(_212.viewPos - in.fragWorldPos);
+    float3 normal = fast::normalize(in.fragViewNormal);
+    float3 V = fast::normalize(-in.fragViewPos);
     float3 H = fast::normalize(lightDir + V);
     if (!gl_FrontFacing)
     {
         normal = -normal;
     }
-    float3 specColor = mix(float3(0.039999999105930328369140625), _254.material.baseColor.xyz, float3(_254.material.metalness));
+    float3 specColor = mix(float3(0.039999999105930328369140625), _251.material.baseColor.xyz, float3(_251.material.metalness));
     float3 param = normal;
     float3 param_1 = H;
-    float param_2 = _254.material.roughness;
+    float param_2 = _251.material.roughness;
     float NDF = distributionGGX(param, param_1, param_2);
     float3 param_3 = normal;
     float3 param_4 = V;
     float3 param_5 = lightDir;
-    float param_6 = _254.material.roughness;
+    float param_6 = _251.material.roughness;
     float G = geometrySmith(param_3, param_4, param_5, param_6);
     float param_7 = fast::max(dot(H, V), 0.0);
     float3 param_8 = specColor;
@@ -136,15 +135,15 @@ fragment main0_out main0(main0_in in [[stage_in]], constant Material& _254 [[buf
     float3 specular = (F * (NDF * G)) / float3(denominator);
     float3 kS = F;
     float3 kD = float3(1.0) - kS;
-    kD *= (1.0 - _254.material.metalness);
+    kD *= (1.0 - _251.material.metalness);
     float NdotL = fast::max(dot(normal, lightDir), 0.0);
     float3 lightCol = float3(_212.light.color) * _212.light.intensity;
-    float3 Lo = ((((kD * _254.material.baseColor.xyz) / float3(3.1415927410125732421875)) + specular) * lightCol) * NdotL;
-    float3 ambient = (float3(0.02999999932944774627685546875) * _254.material.baseColor.xyz) * _254.material.ao;
+    float3 Lo = ((((kD * _251.material.baseColor.xyz) / float3(3.1415927410125732421875)) + specular) * lightCol) * NdotL;
+    float3 ambient = (float3(0.02999999932944774627685546875) * _251.material.baseColor.xyz) * _251.material.ao;
     float3 color = ambient + Lo;
     float3 param_9 = color;
     color = uncharted2ToneMapping(param_9);
     color = powr(color, float3(0.4545454680919647216796875));
-    out.fragColor = float4(color, _254.material.baseColor.w);
+    out.fragColor = float4(color, _251.material.baseColor.w);
     return out;
 }

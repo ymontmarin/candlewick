@@ -2,8 +2,8 @@
 
 #include "tone_mapping.glsl"
 
-layout(location=0) in vec3 fragWorldPos;
-layout(location=1) in vec3 fragNormal;
+layout(location=0) in vec3 fragViewPos;
+layout(location=1) in vec3 fragViewNormal;
 
 // Light structure
 struct DirectionalLight {
@@ -28,7 +28,6 @@ layout (set=3, binding=0) uniform Material {
 
 layout(set=3, binding=1) uniform LightBlock {
     DirectionalLight light;
-    vec3 viewPos;
 };
 
 layout(location=0) out vec4 fragColor;
@@ -77,8 +76,8 @@ float geometrySmith(vec3 normal, vec3 V, vec3 L, float roughness) {
 
 void main() {
     vec3 lightDir = normalize(-light.direction);
-    vec3 normal = normalize(fragNormal);
-    vec3 V = normalize(viewPos - fragWorldPos);
+    vec3 normal = normalize(fragViewNormal);
+    vec3 V = normalize(-fragViewPos);
     vec3 H = normalize(lightDir + V);
 
     if (!gl_FrontFacing) {

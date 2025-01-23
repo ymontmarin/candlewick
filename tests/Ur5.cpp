@@ -71,8 +71,9 @@ static DirectionalLight myLight{
 };
 
 struct alignas(16) light_ubo_t {
-  DirectionalLight a;
-  GpuVec3 viewPos;
+  GpuVec3 viewSpaceDir;
+  alignas(16) GpuVec3 color;
+  float intensity;
 };
 
 static void updateFov(Radf newFov) {
@@ -378,24 +379,26 @@ int main(int argc, char **argv) {
       SDL_assert(robotShapes.size() == geom_model.ngeoms);
 
       /// Model-view-projection (MVP) matrix
+      Mat4f modelView;
       Mat4f mvp;
 
-      const light_ubo_t lightUbo{myLight, camera.position()};
-
+      const light_ubo_t lightUbo{
+          camera.transformVector(myLight.direction),
+          myLight.color,
+          myLight.intensity,
+      };
       SDL_BindGPUGraphicsPipeline(render_pass, meshPipeline);
       renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
 
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
-        const pin::SE3 &placement = geom_data.oMg[i];
-        Mat4f modelMat = placement.toHomogeneousMatrix().cast<float>();
-        mvp = camera.viewProj() * modelMat.matrix();
-        const Mat3f normalMatrix =
-            modelMat.topLeftCorner<3, 3>().inverse().transpose();
+        const Mat4f placement{geom_data.oMg[i].cast<float>()};
+        modelView = camera.view * placement;
+        mvp = camera.projection * modelView;
         TransformUniformData cameraUniform{
-            modelMat,
+            modelView,
             mvp,
-            normalMatrix,
+            math::computeNormalMatrix(modelView),
         };
         const auto &obj = robotShapes[i];
         const auto &mesh = obj.mesh;
@@ -412,11 +415,13 @@ int main(int argc, char **argv) {
       // RENDER PLANE
       if (renderPlane) {
         Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-        mvp.noalias() = camera.viewProj() * plane_transform.matrix();
-        const Mat3f normalMatrix =
-            plane_transform.linear().inverse().transpose();
-        TransformUniformData cameraUniform{plane_transform.matrix(), mvp,
-                                           normalMatrix};
+        modelView = camera.view * plane_transform.matrix();
+        mvp.noalias() = camera.projection * modelView;
+        TransformUniformData cameraUniform{
+            modelView,
+            mvp,
+            math::computeNormalMatrix(modelView),
+        };
         const auto material = plane_data.material.toUniform();
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
         renderer.pushFragmentUniform(0, &material, sizeof(PbrMaterialUniform));
