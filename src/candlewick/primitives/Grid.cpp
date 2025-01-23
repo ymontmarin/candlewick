@@ -1,26 +1,13 @@
 #include "Grid.h"
+
+#include "Internal.h"
 #include <SDL3/SDL_assert.h>
 
 namespace candlewick {
 
-struct alignas(16) MyVertex {
-  GpuVec3 pos;
-};
-
-template <> struct VertexTraits<MyVertex> {
-  static auto layout() {
-    return MeshLayout{}
-        .addBinding(0, sizeof(MyVertex))
-        .addAttribute("pos", 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(MyVertex, pos));
-  }
-};
-
-MeshData loadGrid(Uint32 xyHalfSize) {
-  // one square = 50cm
-  constexpr float scale = 0.5f;
+MeshData loadGrid(Uint32 xyHalfSize, float scale) {
   const Uint32 size = std::max(2 * xyHalfSize, 1u) - 1;
-  std::vector<MyVertex> vertexData;
+  std::vector<PosOnlyVertex> vertexData;
   std::vector<MeshData::IndexType> indexData;
 
   vertexData.reserve(size * size);
