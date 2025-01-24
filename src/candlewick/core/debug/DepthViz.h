@@ -12,12 +12,12 @@ struct DepthDebugPass {
     float near;
     float far;
   };
-  SDL_GPUTexture *depth_texture;
+  SDL_GPUTexture *depthTexture;
   SDL_GPUSampler *sampler;
   SDL_GPUGraphicsPipeline *pipeline;
 
   static DepthDebugPass create(const Renderer &renderer,
-                               SDL_GPUTexture *depth_texture);
+                               SDL_GPUTexture *depthTexture);
 
   void release(SDL_GPUDevice *device);
 };

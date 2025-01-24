@@ -6,7 +6,7 @@
 namespace candlewick {
 
 DepthDebugPass DepthDebugPass::create(const Renderer &renderer,
-                                      SDL_GPUTexture *depth_texture) {
+                                      SDL_GPUTexture *depthTexture) {
   const auto &device = renderer.device;
   auto vertexShader = Shader::fromMetadata(device, "DrawQuad.vert");
   auto fragmentShader = Shader::fromMetadata(device, "RenderDepth.frag");
@@ -50,7 +50,7 @@ DepthDebugPass DepthDebugPass::create(const Renderer &renderer,
     throw std::runtime_error(msg);
   }
 
-  return {depth_texture, sampler, pipeline};
+  return {depthTexture, sampler, pipeline};
 }
 
 void renderDepthDebug(Renderer &renderer, const DepthDebugPass &pass,
@@ -68,7 +68,7 @@ void renderDepthDebug(Renderer &renderer, const DepthDebugPass &pass,
 
   renderer.bindFragmentSampler(render_pass, 0,
                                {
-                                   .texture = pass.depth_texture,
+                                   .texture = pass.depthTexture,
                                    .sampler = pass.sampler,
                                });
 
