@@ -35,14 +35,13 @@ struct AABB {
   float volume() const { return width() * height() * depth(); }
 
   AABB &grow(const Float3 &delta) {
-    assert(delta.minCoeff() >= 0);
-    min -= delta;
-    max += delta;
+    min = min.cwiseMin(delta);
+    max = max.cwiseMax(delta);
     return *this;
   }
 
   AABB &grow(float delta) {
-    assert(delta >= 0);
+    delta = std::abs(delta);
     min.array() -= delta;
     max.array() += delta;
     return *this;
