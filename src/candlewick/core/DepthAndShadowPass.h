@@ -46,25 +46,14 @@ struct DepthPassInfo {
   /// \param renderer The Renderer object.
   /// \param layout %Mesh layout used for the render pipeline's vertex input
   /// state.
-  /// \param depth_texture If NULL, we assume that the depth texture to use is
+  /// \param depth_texture If null, we assume that the depth texture to use is
   /// the shared depth texture stored in \p renderer.
   /// \sa createShadowPass()
-  static DepthPassInfo create(const Renderer &renderer,
-                              const MeshLayout &layout,
-                              SDL_GPUTexture *depth_texture = NULL);
+  [[nodiscard]] static DepthPassInfo
+  create(const Renderer &renderer, const MeshLayout &layout,
+         SDL_GPUTexture *depth_texture = NULL);
   void release(SDL_GPUDevice *device);
 };
-
-inline void DepthPassInfo::release(SDL_GPUDevice *device) {
-  if (depthTexture) {
-    SDL_ReleaseGPUTexture(device, depthTexture);
-    depthTexture = NULL;
-  }
-  if (pipeline) {
-    SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
-    pipeline = NULL;
-  }
-}
 
 /// \brief Shadow pass configuration, to use in createShadowPass().
 struct ShadowPassConfig {
@@ -73,11 +62,16 @@ struct ShadowPassConfig {
   Uint32 height = 2048;
 };
 
-/// \brief Run a shadow (depth-testing) pass using specific config.
-/// \sa DepthPassInfo::create()
-DepthPassInfo createShadowPass(const Renderer &renderer,
-                               const MeshLayout &layout,
-                               const ShadowPassConfig &config);
+struct ShadowPassInfo : DepthPassInfo {
+  SDL_GPUSampler *sampler;
+
+  /// \sa DepthPassInfo::create()
+  [[nodiscard]] static ShadowPassInfo create(const Renderer &renderer,
+                                             const MeshLayout &layout,
+                                             const ShadowPassConfig &config);
+
+  void release(SDL_GPUDevice *device);
+};
 
 /// \ingroup depth_pass
 /// \brief Struct for shadow-casting or opaque objects. For use in depth or
@@ -93,17 +87,27 @@ struct OpaqueCastable {
 /// \ingroup depth_pass
 /// \brief Render a depth-only pass, built from a set of OpaqueCastable.
 void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
-                         const GpuMat4 &viewProj,
+                         const Mat4f &viewProj,
                          std::span<const OpaqueCastable> castables);
 
 struct AABB;
 
 /// \brief Render shadow pass, using provided scene bounds.
 ///
-/// The scene bounds are in view-space.
-void renderShadowPass(Renderer &renderer, DepthPassInfo &passInfo,
+/// The scene bounds are in world-space.
+void renderShadowPass(Renderer &renderer, const ShadowPassInfo &passInfo,
                       const DirectionalLight &dirLight,
                       std::span<const OpaqueCastable> castables,
-                      const AABB &sceneBounds);
+                      const AABB &worldSceneBounds);
+
+/// \brief Render shadow pass, using a provided world-space frustum.
+///
+/// The frustum can be obtained from the world-space camera.
+/// \sa frustumFromCameraProjection()
+void renderShadowPassFromFrustum(Renderer &renderer,
+                                 const ShadowPassInfo &passInfo,
+                                 const DirectionalLight &dirLight,
+                                 std::span<const OpaqueCastable> castables,
+                                 const FrustumCornersType &worldSpaceCorners);
 
 } // namespace candlewick

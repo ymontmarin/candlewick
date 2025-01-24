@@ -1,7 +1,7 @@
 #include "DepthAndShadowPass.h"
 #include "Renderer.h"
 #include "Shader.h"
-#include "AABB.h"
+#include "OBB.h"
 #include "CameraControl.h"
 
 #include <stdexcept>
@@ -36,9 +36,20 @@ DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
   return {depth_texture, pipeline};
 }
 
-DepthPassInfo createShadowPass(const Renderer &renderer,
-                               const MeshLayout &layout,
-                               const ShadowPassConfig &config) {
+void DepthPassInfo::release(SDL_GPUDevice *device) {
+  if (depthTexture) {
+    SDL_ReleaseGPUTexture(device, depthTexture);
+    depthTexture = nullptr;
+  }
+  if (pipeline) {
+    SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
+    pipeline = nullptr;
+  }
+}
+
+ShadowPassInfo ShadowPassInfo::create(const Renderer &renderer,
+                                      const MeshLayout &layout,
+                                      const ShadowPassConfig &config) {
   const Device &device = renderer.device;
 
   // TEXTURE
@@ -64,7 +75,7 @@ DepthPassInfo createShadowPass(const Renderer &renderer,
     throw std::runtime_error(msg);
   }
 
-  auto passInfo = DepthPassInfo::create(renderer, layout, shadowMap);
+  DepthPassInfo passInfo = DepthPassInfo::create(renderer, layout, shadowMap);
   if (!passInfo.pipeline) {
     SDL_ReleaseGPUTexture(device, shadowMap);
     auto msg =
@@ -72,11 +83,29 @@ DepthPassInfo createShadowPass(const Renderer &renderer,
     throw std::runtime_error(msg);
   }
 
-  return passInfo;
+  SDL_GPUSamplerCreateInfo sample_desc{
+      .min_filter = SDL_GPU_FILTER_LINEAR,
+      .mag_filter = SDL_GPU_FILTER_LINEAR,
+      .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
+      .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+      .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+      .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+      .compare_op = SDL_GPU_COMPAREOP_LESS,
+      .enable_compare = true,
+  };
+  return ShadowPassInfo{passInfo, SDL_CreateGPUSampler(device, &sample_desc)};
+}
+
+void ShadowPassInfo::release(SDL_GPUDevice *device) {
+  DepthPassInfo::release(device);
+  if (sampler) {
+    SDL_ReleaseGPUSampler(device, sampler);
+    sampler = nullptr;
+  }
 }
 
 void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
-                         const GpuMat4 &viewProj,
+                         const Mat4f &viewProj,
                          std::span<const OpaqueCastable> castables) {
   SDL_GPUDepthStencilTargetInfo depth_info;
   SDL_zero(depth_info);
@@ -114,16 +143,48 @@ static Mat4f orthoFromAABB(const AABB &sceneBounds) {
                             sceneBounds.min.z(), sceneBounds.max.z());
 }
 
-void renderShadowPass(Renderer &renderer, const DepthPassInfo &passInfo,
+void lightProjFromWorldBounds(const Mat4f &lightView,
+                              const AABB &worldSceneBounds, Mat4f &lightProj) {
+  OBB viewSpaceBounds = OBB::fromAABB(worldSceneBounds).transform(lightView);
+  lightProj = orthoFromAABB(viewSpaceBounds.toAabb());
+}
+
+void lightProjFromWorldFrustum(const Mat4f &lightView,
+                               const FrustumCornersType &worldSpaceCorners,
+                               Mat4f &lightProj) {
+  AABB viewSpaceBounds;
+  // transform corners to view space
+  for (auto &c : worldSpaceCorners) {
+    Float4 ch = c.homogeneous();
+    ch.applyOnTheLeft(lightView);
+    Float3 p = ch.head<3>() / ch.w();
+    viewSpaceBounds.grow(p);
+  }
+
+  lightProj = orthoFromAABB(viewSpaceBounds);
+}
+
+void renderShadowPassFromFrustum(Renderer &renderer,
+                                 const ShadowPassInfo &passInfo,
+                                 const DirectionalLight &dirLight,
+                                 std::span<const OpaqueCastable> castables,
+                                 const FrustumCornersType &worldSpaceCorners) {
+  Float3 eye = -dirLight.direction;
+  Mat4f lightView = lookAt(eye, Float3::Zero());
+  Mat4f lightProj;
+  lightProjFromWorldFrustum(lightView, worldSpaceCorners, lightProj);
+  renderDepthOnlyPass(renderer, passInfo, lightProj * lightView, castables);
+}
+
+void renderShadowPass(Renderer &renderer, const ShadowPassInfo &passInfo,
                       const DirectionalLight &dirLight,
                       std::span<const OpaqueCastable> castables,
-                      const AABB &sceneBounds) {
-  // not sure if - or +
-  Float3 eye = dirLight.direction;
-  GpuMat4 lightView = lookAt(eye, Float3::Zero());
-  GpuMat4 lightProj = orthoFromAABB(sceneBounds);
-  GpuMat4 viewProj = lightProj * lightView;
-
+                      const AABB &worldSceneBounds) {
+  Float3 eye = -dirLight.direction;
+  Mat4f lightView = lookAt(eye, Float3::Zero());
+  Mat4f lightProj;
+  lightProjFromWorldBounds(lightView, worldSceneBounds, lightProj);
+  Mat4f viewProj = lightProj * lightView;
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }
 } // namespace candlewick
