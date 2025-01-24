@@ -13,6 +13,8 @@ using Mat4f = Eigen::Matrix4f;
 using Vec3u8 = Eigen::Matrix<Uint8, 3, 1>;
 using Vec4u8 = Eigen::Matrix<Uint8, 4, 1>;
 
+using FrustumCornersType = std::array<Float3, 8ul>;
+
 /** GPU typedefs and adapters **/
 
 using GpuVec2 = Eigen::Matrix<float, 2, 1, Eigen::DontAlign>;
@@ -164,4 +166,20 @@ inline Mat3f computeNormalMatrix(const Mat4f &M) {
   return M.topLeftCorner<3, 3>().inverse().transpose();
 }
 } // namespace math
+
+inline FrustumCornersType frustumFromCameraProjection(const Mat4f &camProj) {
+  auto invProj = camProj.inverse();
+  FrustumCornersType out;
+  for (uint8_t i = 0; i < 8; i++) {
+    uint8_t j = i & 1;
+    uint8_t k = (i >> 1) & 1;
+    uint8_t l = (i >> 2) & 1;
+
+    Float4 ndc{2.f * j - 1.f, 2.f * k - 1.f, 2.f * l - 1.f, 1.f};
+    Float4 viewSpace = invProj * ndc;
+    out[i] = viewSpace.head<3>() / viewSpace.w();
+  }
+  return out;
+}
+
 } // namespace candlewick

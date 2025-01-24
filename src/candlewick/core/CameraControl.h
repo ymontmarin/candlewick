@@ -50,6 +50,12 @@ struct Camera {
   /// \}
 };
 
+FrustumCornersType frustumFromCameraProjection(const Mat4f &camProj);
+
+inline FrustumCornersType frustumFromCamera(const Camera &camera) {
+  return frustumFromCameraProjection(camera.projection);
+}
+
 /// \name Camera control functions.
 /// These functions are prefixed `camera` but take the view matrix and
 /// not the camera's pose matrix.

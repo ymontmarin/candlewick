@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../utils/Frustum.h"
 #include "../utils/MeshData.h"
 
 namespace candlewick {
