@@ -18,6 +18,7 @@ add_library(
   candlewick/core/Shader.cpp
   candlewick/core/DepthAndShadowPass.cpp
   candlewick/core/debug/DepthViz.cpp
+  candlewick/core/debug/Frustum.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/MaterialData.cpp
   candlewick/utils/MeshData.cpp
@@ -28,7 +29,6 @@ add_library(
   candlewick/utils/WriteTextureToImage.cpp
   candlewick/primitives/Arrow.cpp
   candlewick/primitives/Cube.cpp
-  candlewick/primitives/Frustum.cpp
   candlewick/primitives/Grid.cpp
   candlewick/primitives/Heightfield.cpp
   candlewick/primitives/Plane.cpp
