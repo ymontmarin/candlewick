@@ -67,9 +67,9 @@ struct AABB {
     std::array<Float3, 8> out;
     const Float3 ab[2] = {min, max};
     for (uint8_t i = 0; i < 8; i++) {
-      uint8_t l = i & 1;
+      uint8_t j = i & 1;
       uint8_t k = (i >> 1) & 1;
-      uint8_t j = (i >> 2) & 1;
+      uint8_t l = (i >> 2) & 1;
 
       out[i] = Float3{ab[j].x(), ab[k].y(), ab[l].z()};
     }
