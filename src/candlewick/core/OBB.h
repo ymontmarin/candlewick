@@ -9,13 +9,14 @@ namespace candlewick {
 struct OBB {
   Mat3f axes;
   Float3 center;
-  Float3 extents;
+  /// Half-sizes along the axes. This is consistent with COAL.
+  Float3 halfExtents;
 
   static OBB fromAABB(const AABB &aabb) {
     OBB obb;
     obb.axes = Mat3f::Identity();
     obb.center = aabb.center();
-    obb.extents = aabb.extents();
+    obb.halfExtents = 0.5f * aabb.extents();
     return obb;
   }
 
@@ -34,14 +35,14 @@ struct OBB {
     auto tr = transform.topRightCorner<3, 1>();
     res.axes.noalias() = R * axes;
     res.center.noalias() = R * center + tr;
-    res.extents = extents;
+    res.halfExtents = halfExtents;
     return res;
   }
 
   AABB toAabb() const {
     Float3 min = center, max = center;
     for (long i = 0; i < 3; i++) {
-      Float3 axis = extents[i] * axes.col(i);
+      Float3 axis = halfExtents[i] * axes.col(i);
       min -= axis.cwiseAbs();
       max += axis.cwiseAbs();
     }
@@ -55,9 +56,9 @@ struct OBB {
 
 inline Mat4f OBB::toTransformationMatrix() const {
   Mat4f transform = Mat4f::Identity();
-  auto D = extents.asDiagonal();
+  auto D = halfExtents.asDiagonal();
 
-  transform.block<3, 3>(0, 0) = 0.5f * axes * D;
+  transform.block<3, 3>(0, 0) = axes * D;
   transform.block<3, 1>(0, 3) = center;
   return transform;
 }
