@@ -14,8 +14,6 @@ using Vec4u8 = Eigen::Matrix<Uint8, 4, 1>;
 
 using FrustumCornersType = std::array<Float3, 8ul>;
 
-/** GPU typedefs and adapters **/
-
 using GpuVec2 = Eigen::Matrix<float, 2, 1, Eigen::DontAlign>;
 struct GpuVec3 : public Eigen::Matrix<float, 3, 1, Eigen::DontAlign> {
   using Matrix::Matrix;
@@ -34,8 +32,6 @@ private:
 };
 using GpuMat4 = Eigen::Matrix<float, 4, 4, Eigen::ColMajor | Eigen::DontAlign>;
 
-/* ANGLES */
-
 namespace constants {
 inline constexpr double Pi = 3.1415926535897932;
 inline constexpr float Pif = 3.141592654f;
@@ -46,6 +42,14 @@ inline constexpr double Pi_2f = 1.5707963267f;
 inline constexpr double deg2rad(double t) { return t * constants::Pi / 180.0; }
 inline constexpr float deg2rad(float t) { return t * constants::Pif / 180.0f; }
 inline constexpr float rad2deg(float t) { return t * 180.0f / constants::Pif; }
+
+/// \defgroup angle-strong Angle strong types
+/// \brief Strong types for angle quantities.
+///
+/// These are used to explicitly mark a floating point value as being degrees or
+/// radians. This avoids passing values in degrees to functions expecting
+/// radians (which use e.g. trigonometric functions internally).
+/// \{
 
 template <std::floating_point T> struct Rad;
 template <std::floating_point T> struct Deg;
@@ -120,6 +124,8 @@ using Degf = Deg<float>;
 extern template struct Rad<float>;
 extern template struct Deg<float>;
 
+/// \}
+
 Vec3u8 hexToRgbi(unsigned long hex);
 
 Vec4u8 hexToRgbai(unsigned long hex);
@@ -147,12 +153,6 @@ inline Eigen::Vector4d operator""_rgba(unsigned long long hex) {
 }
 
 namespace math {
-template <typename T> constexpr T max(const T &a, const T &b) {
-  if (a < b)
-    return b;
-  return a;
-}
-
 constexpr Uint32 roundUpTo16(Uint32 value) {
   Uint32 q = value / 16;
   Uint32 r = value % 16;

@@ -72,14 +72,14 @@ public:
   entt::dense_map<PipelineType, SDL_GPUGraphicsPipeline *> renderPipelines;
   DirectionalLight directionalLight;
 
+  struct PipelineConfig {
+    // shader set
+    const char *vertex_shader_path;
+    const char *fragment_shader_path;
+    SDL_GPUCullMode cull_mode = SDL_GPU_CULLMODE_BACK;
+    SDL_GPUFillMode fill_mode = SDL_GPU_FILLMODE_FILL;
+  };
   struct Config {
-    struct PipelineConfig {
-      // shader set
-      const char *vertex_shader_path;
-      const char *fragment_shader_path;
-      SDL_GPUCullMode cull_mode = SDL_GPU_CULLMODE_BACK;
-      SDL_GPUFillMode fill_mode = SDL_GPU_FILLMODE_FILL;
-    };
     std::unordered_map<PipelineType, PipelineConfig> pipeline_configs = {
         {PIPELINE_TRIANGLEMESH,
          {

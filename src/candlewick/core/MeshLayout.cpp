@@ -45,7 +45,7 @@ MeshLayout &MeshLayout::addAttribute(std::string_view name, Uint32 loc,
       .offset = offset,
   });
   const Uint32 attrSize = math::roundUpTo16(Uint32(vertexElementSize(format)));
-  _totalVertexSize = math::max(_totalVertexSize, offset + attrSize);
+  _totalVertexSize = std::max(_totalVertexSize, offset + attrSize);
   return *this;
 }
 

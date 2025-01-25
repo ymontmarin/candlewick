@@ -304,7 +304,7 @@ RobotScene::createPipeline(const Device &device, const MeshLayout &layout,
                            SDL_GPUTextureFormat render_target_format,
                            SDL_GPUTextureFormat depth_stencil_format,
                            PipelineType type, const Config &config) {
-  const Config::PipelineConfig &pipe_config = config.pipeline_configs.at(type);
+  const PipelineConfig &pipe_config = config.pipeline_configs.at(type);
   auto vertexShader =
       Shader::fromMetadata(device, pipe_config.vertex_shader_path);
   auto fragmentShader =
