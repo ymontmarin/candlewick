@@ -67,7 +67,7 @@ Shader::Shader(const Device &device, const char *filename, const Config &config)
         "Failed to load shader: no available supported shader format.");
   }
 
-  SDL_Log("Loading shader file %s/%s", filename, shader_ext);
+  SDL_Log("Loading shader file %s.%s", filename, shader_ext);
   ShaderCode shader_code = loadShaderFile(filename, shader_ext);
 
   SDL_GPUShaderCreateInfo info{
