@@ -2,6 +2,8 @@
 #include "GenHeightfield.h"
 
 #include "candlewick/core/debug/DepthViz.h"
+#include "candlewick/core/debug/Frustum.h"
+#include "candlewick/core/OBB.h"
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/DebugScene.h"
@@ -56,7 +58,12 @@ static Camera camera{
     .view{lookAt({2.0, 0, 2.}, Float3::Zero())},
 };
 static bool quitRequested = false;
-static bool showDebugViz = false;
+enum VizMode {
+  FULL_RENDER,
+  DEPTH_DEBUG,
+  LIGHT_DEBUG,
+};
+static VizMode showDebugViz = FULL_RENDER;
 
 static float pixelDensity;
 static float displayScale;
@@ -151,8 +158,8 @@ Renderer createRenderer(Uint32 width, Uint32 height,
   return Renderer{std::move(dev), window, depth_stencil_format};
 }
 
-void runDepthPrepass(Renderer &renderer, const Camera &camera,
-                     const RobotScene &scene, DepthPassInfo &depthPassInfo) {
+/// Collect all opaque shadow-casting objects in the RobotScene.
+auto collectOpaqueCastables(const RobotScene &scene) {
   RobotScene::PipelineType pipeline_type = RobotScene::PIPELINE_TRIANGLEMESH;
   entt::registry &registry = scene.registry;
   auto &geom_data = scene.geomData();
@@ -189,9 +196,7 @@ void runDepthPrepass(Renderer &renderer, const Camera &camera,
     for (auto &v : mesh.views())
       castables.emplace_back(v, transform);
   }
-  SDL_assert(castables.size() > 0);
-  const GpuMat4 viewProj = camera.viewProj();
-  renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
+  return castables;
 }
 
 int main(int argc, char **argv) {
@@ -220,9 +225,10 @@ int main(int argc, char **argv) {
                                          &geom_model, NULL);
   // ADD HEIGHTFIELD GEOM
   // {
-  //   auto hfield = generatePerlinNoiseHeightfield(42, 40u, 0.2f);
+  //   auto hfield = generatePerlinNoiseHeightfield(40, 10u, 6.f);
   //   pin::GeometryObject gobj{"custom_hfield", 0ul, pin::SE3::Identity(),
   //                            hfield};
+  //   gobj.meshColor = 0xA03232FF_rgba;
   //   geom_model.addGeometryObject(gobj);
   // }
   pin::Data pin_data{model};
@@ -259,6 +265,12 @@ int main(int argc, char **argv) {
   static DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
 
   auto depthPassInfo = DepthPassInfo::create(renderer, plane_obj.mesh.layout);
+  auto shadowPassInfo =
+      ShadowPassInfo::create(renderer, plane_obj.mesh.layout, {});
+  auto shadowDebugPass =
+      DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);
+
+  auto frustumBoundsDebug = FrustumAndBoundsDebug::create(renderer);
 
   GuiSystem gui_system{[&](Renderer &r) {
     static bool demo_window_open = true;
@@ -285,7 +297,9 @@ int main(int argc, char **argv) {
       Degf newFov{currentFov};
       persp_change |= ImGui::DragFloat("fov", newFov, 1.f, 15.f, 90.f, "%.3f",
                                        ImGuiSliderFlags_AlwaysClamp);
-      persp_change |= ImGui::SliderFloat("Far plane", &farZ, 1.0f, 10.f);
+      persp_change |=
+          ImGui::SliderFloat("Near plane", &nearZ, 0.01f, 0.8f * farZ);
+      persp_change |= ImGui::SliderFloat("Far plane", &farZ, nearZ, 10.f);
       if (persp_change)
         updateFov(Radf(newFov));
       break;
@@ -295,13 +309,14 @@ int main(int argc, char **argv) {
     ImGui::Checkbox("Render plane", &plane_vis.status);
     ImGui::Checkbox("Render grid", &basic_debug_module.enableGrid);
     ImGui::Checkbox("Render triad", &basic_debug_module.enableTriad);
-    if (ImGui::Checkbox("Show depth debug", &showDebugViz)) {
-      // do stuff here
-      if (showDebugViz) {
-        SDL_Log("Turned on depth debug viz.");
-      }
-    }
-    if (showDebugViz) {
+
+    ImGui::RadioButton("Full render mode", (int *)&showDebugViz, FULL_RENDER);
+    ImGui::SameLine();
+    ImGui::RadioButton("Depth debug", (int *)&showDebugViz, DEPTH_DEBUG);
+    ImGui::SameLine();
+    ImGui::RadioButton("Light mode", (int *)&showDebugViz, LIGHT_DEBUG);
+
+    if (showDebugViz & (DEPTH_DEBUG | LIGHT_DEBUG)) {
       ImGui::RadioButton("Grayscale", (int *)&depth_mode, 0);
       ImGui::SameLine();
       ImGui::RadioButton("Heatmap", (int *)&depth_mode, 1);
@@ -309,6 +324,7 @@ int main(int argc, char **argv) {
 
     ImGui::SeparatorText("Lights");
     ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
+    ImGui::DragFloat3("direction", myLight.direction.data(), 0.0f, -1.f, 1.f);
     ImGui::ColorEdit3("color", myLight.color.data());
     ImGui::Separator();
     ImGui::ColorEdit4("grid color", basic_debug_module.grid_color.data(),
@@ -350,18 +366,36 @@ int main(int argc, char **argv) {
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
 
     // acquire command buffer and swapchain
-    robot_scene.directionalLight = myLight;
     renderer.beginFrame();
 
+    // FrustumCornersType camFrustum = frustumFromCamera(camera);
+    AABB worldSpaceBounds{{-1.f, -1.f, -0.02f}, {1.f, 1.f, 1.f}};
+
     if (renderer.waitAndAcquireSwapchain()) {
-      if (showDebugViz) {
-        runDepthPrepass(renderer, camera, robot_scene, depthPassInfo);
+      std::vector castables = collectOpaqueCastables(robot_scene);
+      const GpuMat4 viewProj = camera.viewProj();
+      // renderShadowPassFromFrustum(renderer, shadowPassInfo, myLight,
+      //                             castables, camFrustum);
+      renderShadowPass(renderer, shadowPassInfo, myLight, castables,
+                       worldSpaceBounds);
+      if (showDebugViz == DEPTH_DEBUG) {
+        renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
         renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});
+      } else if (showDebugViz == LIGHT_DEBUG) {
+        renderDepthDebug(renderer, shadowDebugPass, {depth_mode, 0.1f, .4f});
       } else {
         if (robot_scene.pbrHasPrepass())
-          runDepthPrepass(renderer, camera, robot_scene, depthPassInfo);
+          renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
         robot_scene.render(renderer, camera);
         debug_scene.render(renderer, camera);
+
+        // debug frustum for directional light
+        frustumBoundsDebug.renderLightFrustum(
+            renderer, camera,
+            {shadowPassInfo.lightProj,
+             Eigen::Isometry3f{shadowPassInfo.lightView}});
+        frustumBoundsDebug.renderBounds(renderer, camera, worldSpaceBounds,
+                                        0x00BFFFff_rgbaf);
       }
       gui_system.render(renderer);
     } else {
@@ -377,7 +411,10 @@ int main(int argc, char **argv) {
     frameNo++;
   }
 
+  frustumBoundsDebug.release(renderer.device);
+  shadowPassInfo.release(renderer.device);
   depthPassInfo.release(renderer.device);
+  shadowDebugPass.release(renderer.device);
   depth_debug.release(renderer.device);
   robot_scene.release();
   debug_scene.release();
