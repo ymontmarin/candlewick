@@ -83,7 +83,7 @@ static void updateFov(Radf newFov) {
 
 static void updateOrtho(float zoom) {
   float iz = 1.f / zoom;
-  camera.projection = orthographicMatrix(iz * aspectRatio, iz, -4., 4.);
+  camera.projection = orthographicMatrix({iz * aspectRatio, iz}, 0.01f, 4.f);
   currentOrthoScale = zoom;
   auto pos = camera.position();
   SDL_Log("Current ortho cam. pos: (%f, %f, %f)", pos.x(), pos.y(), pos.z());

@@ -1,6 +1,7 @@
 #include "DepthAndShadowPass.h"
 #include "Renderer.h"
 #include "Shader.h"
+#include "OBB.h"
 #include "CameraControl.h"
 
 #include <stdexcept>
@@ -154,8 +155,8 @@ void renderShadowPass(Renderer &renderer, const ShadowPassInfo &passInfo,
                       const AABB &worldSceneBounds) {
   Float3 eye = -dirLight.direction;
   Mat4f lightView = lookAt(eye, Float3::Zero());
-  Mat4f lightProj;
-  orthoProjFromWorldBounds(lightView, worldSceneBounds, lightProj);
+  OBB viewSpaceBounds = OBB::fromAABB(worldSceneBounds).transform(lightView);
+  Mat4f lightProj = orthoFromAABB(viewSpaceBounds.toAabb());
   Mat4f viewProj = lightProj * lightView;
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }

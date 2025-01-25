@@ -87,13 +87,14 @@ inline Mat4f AABB::toTransformationMatrix() const {
   return transform;
 }
 
+// fwd declaration. sync with CameraControl.h
 Mat4f orthographicMatrix(float left, float right, float bottom, float top,
                          float near, float far);
 
 inline Mat4f orthoFromAABB(const AABB &sceneBounds) {
   return orthographicMatrix(sceneBounds.min.x(), sceneBounds.max.x(),
                             sceneBounds.min.y(), sceneBounds.max.y(),
-                            sceneBounds.min.z(), sceneBounds.max.z());
+                            -sceneBounds.max.z(), -sceneBounds.min.z());
 }
 
 } // namespace candlewick

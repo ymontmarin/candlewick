@@ -107,7 +107,7 @@ inline void cameraSetWorldPosition(Camera &camera, const Float3 &pos) {
 Mat4f lookAt(const Float3 &eye, const Float3 &center,
              const Float3 &up = Float3::UnitZ());
 
-/// \brief Compute orthographic projection matrix, from clipping plane
+/// \brief Compute perspective projection matrix, from clipping plane
 /// parameters (left, right, bottom, top, near, far).
 Mat4f perspectiveMatrix(float left, float right, float bottom, float top,
                         float near, float far);
@@ -118,31 +118,22 @@ Mat4f perspectiveMatrix(float left, float right, float bottom, float top,
 /// \param aspectRatio Width / Height
 /// \param nearZ Near clipping plane
 /// \param farZ Far clipping plane
+/// \warning This function uses the *vertical* field of view.
 Mat4f perspectiveFromFov(Radf fovY, float aspectRatio, float nearZ, float farZ);
 
-/// \brief Compute an orthographic projection matrix.
+/// \brief Compute a **centered** orthographic projection matrix.
 ///
-/// \param sx x-direction view size
-/// \param sy y-direction view size
+/// \param size xy-plane view sizes
 /// \param nearZ Near clipping plane. This is where the rendering starts on the
 /// Z-axis (the positive direction of which points up towards you).
 /// \param farZ Far clipping plane, where rendering ends. A value of \f$0\f$
 /// stops the rendered volume at the camera (_only_ things in front of camera
 /// will be rendered).
-Mat4f orthographicMatrix(float sx, float sy, float nearZ, float farZ);
+Mat4f orthographicMatrix(const Float2 &sizes, float nearZ, float farZ);
 
-/// \copybrief orthographicMatrix()
-inline Mat4f orthographicMatrix(float left, float right, float bottom,
-                                float top, float near, float far) {
-  float sx = right - left;
-  float sy = top - bottom;
-  return orthographicMatrix(sx, sy, near, far);
-}
-
-/// \brief Given world-space bounds and a view matrix, obtain an orthographic
-/// projection matrix.
-void orthoProjFromWorldBounds(const Mat4f &view, const AABB &worldSceneBounds,
-                              Eigen::Ref<Mat4f> proj);
+/// \brief Compute an off-center orthographic projection matrix.
+Mat4f orthographicMatrix(float left, float right, float bottom, float top,
+                         float near, float far);
 
 /// \brief Given world-space frustum corners and a view matrix, obtain an
 /// orthographic projection matrix.
