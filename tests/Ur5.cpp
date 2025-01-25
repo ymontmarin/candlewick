@@ -3,7 +3,7 @@
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/CameraControl.h"
+#include "candlewick/core/Camera.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
 #include "candlewick/core/TransformUniforms.h"

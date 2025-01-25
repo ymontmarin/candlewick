@@ -1,4 +1,4 @@
-#include "CameraControl.h"
+#include "Camera.h"
 #include "AABB.h"
 
 namespace candlewick {

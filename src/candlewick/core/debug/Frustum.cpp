@@ -2,7 +2,7 @@
 
 #include "../Renderer.h"
 #include "../Shader.h"
-#include "../CameraControl.h"
+#include "../Camera.h"
 #include "../OBB.h"
 
 namespace candlewick {

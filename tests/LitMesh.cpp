@@ -4,7 +4,7 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
-#include "candlewick/core/CameraControl.h"
+#include "candlewick/core/Camera.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/TransformUniforms.h"
 

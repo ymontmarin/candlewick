@@ -10,6 +10,7 @@ namespace candlewick {
 /// models,  etc.
 namespace multibody {
 namespace pin = pinocchio;
+struct RobotDebugModule;
 class RobotScene;
 class Visualizer;
 } // namespace multibody

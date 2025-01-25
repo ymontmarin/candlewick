@@ -2,7 +2,7 @@
 #include "Renderer.h"
 #include "Shader.h"
 #include "OBB.h"
-#include "CameraControl.h"
+#include "Camera.h"
 
 #include <stdexcept>
 #include <format>

@@ -2,7 +2,7 @@
 
 #include "../Core.h"
 #include <SDL3/SDL_gpu.h>
-#include "../CameraControl.h"
+#include "../Camera.h"
 
 namespace candlewick {
 

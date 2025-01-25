@@ -52,8 +52,8 @@ struct Camera {
 };
 
 /// \name Camera control functions.
-/// These functions are prefixed `camera` but take the view matrix and
-/// not the camera's pose matrix.
+///
+/// These functions are meant for modifying a camera's pose and view.
 /// \{
 
 inline void cameraLocalRotateX(Camera &camera, Rad<float> angle) {
@@ -102,6 +102,43 @@ inline void cameraSetWorldPosition(Camera &camera, const Float3 &pos) {
   camera.view.translation() = R * pos;
 }
 
+struct CylinderCameraControl {
+  Camera &camera;
+
+  static constexpr bool DEFAULT_Y_INVERT = true;
+
+  auto &dolly(float height) {
+    cameraWorldTranslateZ(camera, height);
+    return *this;
+  }
+
+  auto &orbit(Radf angle) {
+    cameraWorldRotateZ(camera, angle);
+    return *this;
+  }
+
+  auto &viewportDrag(Float2 step, float rotSensitivity, float panSensitivity,
+                     bool yinvert = DEFAULT_Y_INVERT) {
+    const float rotStep = step.x() * rotSensitivity;
+    const float panStep = step.y() * panSensitivity;
+    float ystep = yinvert ? -panStep : panStep;
+    return dolly(ystep).orbit(Rad{rotStep});
+  }
+
+  auto &moveInOut(float scale, float offset) {
+    const float alpha = 1.f - (offset > 0 ? 1.f / scale : scale);
+    const float curDist = camera.view.translation().norm();
+    camera.view.matrix()(2, 3) += curDist * alpha;
+    return *this;
+  }
+};
+
+/// \}
+
+/// \name Camera view-projection utilities.
+/// These functions should be used to construct Camera objects.
+/// \{
+
 /// Compute view matrix looking at \p center from \p eye, with
 /// the camera pointing up towards \p up.
 Mat4f lookAt(const Float3 &eye, const Float3 &center,
@@ -141,39 +178,8 @@ void orthoProjFromWorldFrustum(const Mat4f &view,
                                const FrustumCornersType &worldSpaceCorners,
                                Eigen::Ref<Mat4f> proj);
 
-/// \}
-
-struct CylinderCameraControl {
-  Camera &camera;
-
-  static constexpr bool DEFAULT_Y_INVERT = true;
-
-  auto &dolly(float height) {
-    cameraWorldTranslateZ(camera, height);
-    return *this;
-  }
-
-  auto &orbit(Radf angle) {
-    cameraWorldRotateZ(camera, angle);
-    return *this;
-  }
-
-  auto &viewportDrag(Float2 step, float rotSensitivity, float panSensitivity,
-                     bool yinvert = DEFAULT_Y_INVERT) {
-    const float rotStep = step.x() * rotSensitivity;
-    const float panStep = step.y() * panSensitivity;
-    float ystep = yinvert ? -panStep : panStep;
-    return dolly(ystep).orbit(Rad{rotStep});
-  }
-
-  auto &moveInOut(float scale, float offset) {
-    const float alpha = 1.f - (offset > 0 ? 1.f / scale : scale);
-    const float curDist = camera.view.translation().norm();
-    camera.view.matrix()(2, 3) += curDist * alpha;
-    return *this;
-  }
-};
-
+/// \brief Extract the array of frustum corners, given a camera projection
+/// matrix.
 inline FrustumCornersType frustumFromCameraProjection(const Mat4f &camProj) {
   auto invProj = camProj.inverse();
   FrustumCornersType out;
@@ -191,5 +197,12 @@ inline FrustumCornersType frustumFromCameraProjection(const Mat4f &camProj) {
   }
   return out;
 }
+
+/// \brief Get the corners of a Camera's view frustum.
+inline FrustumCornersType frustumFromCamera(const Camera &camera) {
+  return frustumFromCameraProjection(camera.projection);
+}
+
+/// \}
 
 } // namespace candlewick

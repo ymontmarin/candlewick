@@ -3,7 +3,7 @@
 #include <pinocchio-visualizers/base-visualizer.hpp>
 #include "RobotScene.h"
 #include "../core/Device.h"
-#include "../core/CameraControl.h"
+#include "../core/Camera.h"
 #include "../core/GuiSystem.h"
 #include "../core/DebugScene.h"
 #include "../core/Renderer.h"

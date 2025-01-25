@@ -1,5 +1,5 @@
 #include "RobotDebug.h"
-#include "../core/CameraControl.h"
+#include "../core/Camera.h"
 #include "../primitives/Arrow.h"
 
 #include <pinocchio/multibody/data.hpp>

@@ -87,7 +87,7 @@ inline Mat4f AABB::toTransformationMatrix() const {
   return transform;
 }
 
-// fwd declaration. sync with CameraControl.h
+// fwd declaration. sync with Camera.h
 Mat4f orthographicMatrix(float left, float right, float bottom, float top,
                          float near, float far);
 

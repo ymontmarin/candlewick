@@ -1,5 +1,5 @@
 #include "DebugScene.h"
-#include "CameraControl.h"
+#include "Camera.h"
 #include "Shader.h"
 
 #include "../primitives/Arrow.h"
