@@ -3,6 +3,7 @@
 #include "../Renderer.h"
 #include "../Shader.h"
 #include "../CameraControl.h"
+#include "../OBB.h"
 
 namespace candlewick {
 
@@ -30,9 +31,14 @@ FrustumAndBoundsDebug FrustumAndBoundsDebug::create(const Renderer &renderer) {
   return {SDL_CreateGPUGraphicsPipeline(device, &info)};
 }
 
-void FrustumAndBoundsDebug::render(Renderer &renderer, const Camera &camera,
-                                   const Camera &otherCam) {
+struct alignas(16) ubo_t {
+  GpuMat4 invProj;
+  alignas(16) GpuMat4 mvp;
+  alignas(16) GpuVec4 color;
+};
 
+void render_impl(Renderer &renderer, const FrustumAndBoundsDebug &passInfo,
+                 const Mat4f &invProj, const Mat4f &mvp, const Float4 &color) {
   SDL_GPUColorTargetInfo color_target;
   SDL_zero(color_target);
   color_target.texture = renderer.swapchain;
@@ -50,24 +56,42 @@ void FrustumAndBoundsDebug::render(Renderer &renderer, const Camera &camera,
   SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
       renderer.command_buffer, &color_target, 1, &depth_target);
 
-  SDL_BindGPUGraphicsPipeline(render_pass, this->pipeline);
+  SDL_BindGPUGraphicsPipeline(render_pass, passInfo.pipeline);
 
-  const GpuMat4 mvp = camera.viewProj() * otherCam.pose().matrix();
-  struct alignas(16) ubo_t {
-    GpuMat4 invProj;
-    alignas(16) GpuMat4 mvp;
-    alignas(16) GpuVec4 color;
-  };
   ubo_t ubo{
-      otherCam.projection.inverse(),
+      invProj,
       mvp,
-      0x40FF00CC_rgbaf,
+      color,
   };
   renderer.pushVertexUniform(0, &ubo, sizeof(ubo));
 
   SDL_DrawGPUPrimitives(render_pass, 24, 1, 0, 0);
 
   SDL_EndGPURenderPass(render_pass);
+}
+
+void FrustumAndBoundsDebug::renderLightFrustum(Renderer &renderer,
+                                               const Camera &camera,
+                                               const Camera &otherCam,
+                                               const Float4 &color) {
+  Mat4f invProj = otherCam.projection.inverse();
+  GpuMat4 mvp = camera.viewProj() * otherCam.pose().matrix();
+  render_impl(renderer, *this, invProj, mvp, color);
+}
+
+void FrustumAndBoundsDebug::renderOBB(Renderer &renderer, const Camera &camera,
+                                      const OBB &obb, const Float4 &color) {
+  Mat4f transform = obb.toTransformationMatrix();
+  Mat4f mvp = camera.viewProj() * transform;
+  render_impl(renderer, *this, Mat4f::Identity(), mvp, color);
+}
+
+void FrustumAndBoundsDebug::renderBounds(Renderer &renderer,
+                                         const Camera &camera, const AABB &aabb,
+                                         const Float4 &color) {
+  Mat4f transform = aabb.toTransformationMatrix();
+  Mat4f mvp = camera.viewProj() * transform;
+  render_impl(renderer, *this, Mat4f::Identity(), mvp, color);
 }
 
 void FrustumAndBoundsDebug::release(const Device &device) {
