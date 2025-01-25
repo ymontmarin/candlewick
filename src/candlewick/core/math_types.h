@@ -1,6 +1,5 @@
 #pragma once
 #include <Eigen/Core>
-#include <concepts>
 #include <SDL3/SDL_stdinc.h>
 
 namespace candlewick {
