@@ -1,7 +1,6 @@
 #include "DepthAndShadowPass.h"
 #include "Renderer.h"
 #include "Shader.h"
-#include "OBB.h"
 #include "CameraControl.h"
 
 #include <stdexcept>
@@ -137,33 +136,6 @@ void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
   SDL_EndGPURenderPass(render_pass);
 }
 
-static Mat4f orthoFromAABB(const AABB &sceneBounds) {
-  return orthographicMatrix(sceneBounds.min.x(), sceneBounds.max.x(),
-                            sceneBounds.min.y(), sceneBounds.max.y(),
-                            sceneBounds.min.z(), sceneBounds.max.z());
-}
-
-void lightProjFromWorldBounds(const Mat4f &lightView,
-                              const AABB &worldSceneBounds, Mat4f &lightProj) {
-  OBB viewSpaceBounds = OBB::fromAABB(worldSceneBounds).transform(lightView);
-  lightProj = orthoFromAABB(viewSpaceBounds.toAabb());
-}
-
-void lightProjFromWorldFrustum(const Mat4f &lightView,
-                               const FrustumCornersType &worldSpaceCorners,
-                               Mat4f &lightProj) {
-  AABB viewSpaceBounds;
-  // transform corners to view space
-  for (auto &c : worldSpaceCorners) {
-    Float4 ch = c.homogeneous();
-    ch.applyOnTheLeft(lightView);
-    Float3 p = ch.head<3>() / ch.w();
-    viewSpaceBounds.grow(p);
-  }
-
-  lightProj = orthoFromAABB(viewSpaceBounds);
-}
-
 void renderShadowPassFromFrustum(Renderer &renderer,
                                  const ShadowPassInfo &passInfo,
                                  const DirectionalLight &dirLight,
@@ -172,7 +144,7 @@ void renderShadowPassFromFrustum(Renderer &renderer,
   Float3 eye = -dirLight.direction;
   Mat4f lightView = lookAt(eye, Float3::Zero());
   Mat4f lightProj;
-  lightProjFromWorldFrustum(lightView, worldSpaceCorners, lightProj);
+  orthoProjFromWorldFrustum(lightView, worldSpaceCorners, lightProj);
   renderDepthOnlyPass(renderer, passInfo, lightProj * lightView, castables);
 }
 
@@ -183,7 +155,7 @@ void renderShadowPass(Renderer &renderer, const ShadowPassInfo &passInfo,
   Float3 eye = -dirLight.direction;
   Mat4f lightView = lookAt(eye, Float3::Zero());
   Mat4f lightProj;
-  lightProjFromWorldBounds(lightView, worldSceneBounds, lightProj);
+  orthoProjFromWorldBounds(lightView, worldSceneBounds, lightProj);
   Mat4f viewProj = lightProj * lightView;
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }

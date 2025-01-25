@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../core/math_types.h"
+#include "Core.h"
+#include "math_types.h"
 
 #include <Eigen/Geometry>
 
@@ -49,12 +50,6 @@ struct Camera {
 
   /// \}
 };
-
-FrustumCornersType frustumFromCameraProjection(const Mat4f &camProj);
-
-inline FrustumCornersType frustumFromCamera(const Camera &camera) {
-  return frustumFromCameraProjection(camera.projection);
-}
 
 /// \name Camera control functions.
 /// These functions are prefixed `camera` but take the view matrix and
@@ -125,18 +120,35 @@ Mat4f perspectiveMatrix(float left, float right, float bottom, float top,
 /// \param farZ Far clipping plane
 Mat4f perspectiveFromFov(Radf fovY, float aspectRatio, float nearZ, float farZ);
 
-/// \brief Get an orthographic projection matrix.
-Mat4f orthographicMatrix(float left, float right, float bottom, float top,
-                         float near, float far);
-
-/// \copybrief orthographicMatrix()
-/// \param size xy-plane view-space sizes
+/// \brief Compute an orthographic projection matrix.
+///
+/// \param sx x-direction view size
+/// \param sy y-direction view size
 /// \param nearZ Near clipping plane. This is where the rendering starts on the
 /// Z-axis (the positive direction of which points up towards you).
 /// \param farZ Far clipping plane, where rendering ends. A value of \f$0\f$
 /// stops the rendered volume at the camera (_only_ things in front of camera
 /// will be rendered).
-Mat4f orthographicMatrix(const Float2 &size, float nearZ, float farZ);
+Mat4f orthographicMatrix(float sx, float sy, float nearZ, float farZ);
+
+/// \copybrief orthographicMatrix()
+inline Mat4f orthographicMatrix(float left, float right, float bottom,
+                                float top, float near, float far) {
+  float sx = right - left;
+  float sy = top - bottom;
+  return orthographicMatrix(sx, sy, near, far);
+}
+
+/// \brief Given world-space bounds and a view matrix, obtain an orthographic
+/// projection matrix.
+void orthoProjFromWorldBounds(const Mat4f &view, const AABB &worldSceneBounds,
+                              Eigen::Ref<Mat4f> proj);
+
+/// \brief Given world-space frustum corners and a view matrix, obtain an
+/// orthographic projection matrix.
+void orthoProjFromWorldFrustum(const Mat4f &view,
+                               const FrustumCornersType &worldSpaceCorners,
+                               Eigen::Ref<Mat4f> proj);
 
 /// \}
 
@@ -170,5 +182,23 @@ struct CylinderCameraControl {
     return *this;
   }
 };
+
+inline FrustumCornersType frustumFromCameraProjection(const Mat4f &camProj) {
+  auto invProj = camProj.inverse();
+  FrustumCornersType out;
+  for (Uint8 i = 0; i < 8; i++) {
+    Uint8 j = i & 1;
+    Uint8 k = (i >> 1) & 1;
+    Uint8 l = (i >> 2) & 1;
+    assert(j <= 1);
+    assert(k <= 1);
+    assert(l <= 1);
+
+    Float4 ndc{2.f * j - 1.f, 2.f * k - 1.f, 2.f * l - 1.f, 1.f};
+    Float4 viewSpace = invProj * ndc;
+    out[i] = viewSpace.head<3>() / viewSpace.w();
+  }
+  return out;
+}
 
 } // namespace candlewick

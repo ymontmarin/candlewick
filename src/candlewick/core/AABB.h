@@ -76,4 +76,13 @@ struct AABB {
   }
 };
 
+Mat4f orthographicMatrix(float left, float right, float bottom, float top,
+                         float near, float far);
+
+inline Mat4f orthoFromAABB(const AABB &sceneBounds) {
+  return orthographicMatrix(sceneBounds.min.x(), sceneBounds.max.x(),
+                            sceneBounds.min.y(), sceneBounds.max.y(),
+                            sceneBounds.min.z(), sceneBounds.max.z());
+}
+
 } // namespace candlewick
