@@ -8,4 +8,10 @@ class MeshView;
 struct MeshLayout;
 struct Shader;
 struct Renderer;
+
+// Geometry classes
+
+struct AABB;
+struct OBB;
+
 } // namespace candlewick
