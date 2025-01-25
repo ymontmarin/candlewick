@@ -10,6 +10,7 @@ struct CameraParams
     int mode;
     float near;
     float far;
+    uint isOrtho;
 };
 
 struct main0_out
@@ -23,6 +24,12 @@ struct main0_in
 };
 
 static inline __attribute__((always_inline))
+float linearizeDepthOrtho(thread const float& depth, thread const float& near, thread const float& far)
+{
+    return near + (depth * (far - near));
+}
+
+static inline __attribute__((always_inline))
 float linearizeDepth(thread const float& depth, thread const float& near, thread const float& far)
 {
     float z_ndc = (2.0 * depth) - 1.0;
@@ -30,24 +37,46 @@ float linearizeDepth(thread const float& depth, thread const float& near, thread
 }
 
 static inline __attribute__((always_inline))
-float3 visualizeDepthGrayscale(thread const float& depth, constant CameraParams& _48)
+float3 visualizeDepthGrayscale(thread const float& depth, constant CameraParams& _62)
 {
-    float param = depth;
-    float param_1 = _48.near;
-    float param_2 = _48.far;
-    float lin = linearizeDepth(param, param_1, param_2);
-    float norm = (lin - _48.near) / (_48.far - _48.near);
+    float lin;
+    if (_62.isOrtho == 1u)
+    {
+        float param = depth;
+        float param_1 = _62.near;
+        float param_2 = _62.far;
+        lin = linearizeDepthOrtho(param, param_1, param_2);
+    }
+    else
+    {
+        float param_3 = depth;
+        float param_4 = _62.near;
+        float param_5 = _62.far;
+        lin = linearizeDepth(param_3, param_4, param_5);
+    }
+    float norm = (lin - _62.near) / (_62.far - _62.near);
     return float3(norm);
 }
 
 static inline __attribute__((always_inline))
-float3 visualizeDepthHeatmap(thread const float& depth, constant CameraParams& _48)
+float3 visualizeDepthHeatmap(thread const float& depth, constant CameraParams& _62)
 {
-    float param = depth;
-    float param_1 = _48.near;
-    float param_2 = _48.far;
-    float linear_depth = linearizeDepth(param, param_1, param_2);
-    float normalized = (linear_depth - _48.near) / (_48.far - _48.near);
+    float lin;
+    if (_62.isOrtho == 1u)
+    {
+        float param = depth;
+        float param_1 = _62.near;
+        float param_2 = _62.far;
+        lin = linearizeDepthOrtho(param, param_1, param_2);
+    }
+    else
+    {
+        float param_3 = depth;
+        float param_4 = _62.near;
+        float param_5 = _62.far;
+        lin = linearizeDepth(param_3, param_4, param_5);
+    }
+    float normalized = (lin - _62.near) / (_62.far - _62.near);
     float3 color;
     if (normalized < 0.25)
     {
@@ -78,23 +107,23 @@ float3 visualizeDepthHeatmap(thread const float& depth, constant CameraParams& _
     return color;
 }
 
-fragment main0_out main0(main0_in in [[stage_in]], constant CameraParams& _48 [[buffer(0)]], texture2d<float> depthTex [[texture(0)]], sampler depthTexSmplr [[sampler(0)]])
+fragment main0_out main0(main0_in in [[stage_in]], constant CameraParams& _62 [[buffer(0)]], texture2d<float> depthTex [[texture(0)]], sampler depthTexSmplr [[sampler(0)]])
 {
     main0_out out = {};
     float depth = depthTex.sample(depthTexSmplr, in.inUV).x;
     float3 color;
-    switch (_48.mode)
+    switch (_62.mode)
     {
         case 0:
         {
             float param = depth;
-            color = visualizeDepthGrayscale(param, _48);
+            color = visualizeDepthGrayscale(param, _62);
             break;
         }
         case 1:
         {
             float param_1 = depth;
-            color = visualizeDepthHeatmap(param_1, _48);
+            color = visualizeDepthHeatmap(param_1, _62);
             break;
         }
     }

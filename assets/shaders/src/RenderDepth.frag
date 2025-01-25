@@ -12,18 +12,29 @@ layout (set=3, binding=0) uniform CameraParams {
     int mode;
     float near;
     float far;
+    uint isOrtho; // 0 for perspective, 1 for ortho
 };
 
 vec3 visualizeDepthGrayscale(float depth) {
-    float lin = linearizeDepth(depth, near, far);
+    float lin;
+    if (isOrtho == 1) {
+        lin = linearizeDepthOrtho(depth, near, far);
+    } else {
+        lin = linearizeDepth(depth, near, far);
+    }
     float norm = (lin - near) / (far - near);
     return vec3(norm);
 }
 
 vec3 visualizeDepthHeatmap(float depth) {
-    float linear_depth = linearizeDepth(depth, near, far);
+    float lin;
+    if (isOrtho == 1) {
+        lin = linearizeDepthOrtho(depth, near, far);
+    } else {
+        lin = linearizeDepth(depth, near, far);
+    }
     // Normalize to 0-1 range based on near/far planes
-    float normalized = (linear_depth - near) / (far - near);
+    float normalized = (lin - near) / (far - near);
 
     // Convert to heatmap colors:
     // Blue (cold) -> Cyan -> Green -> Yellow -> Red (hot)

@@ -2,6 +2,7 @@
 
 #include "../Core.h"
 #include <SDL3/SDL_gpu.h>
+#include "../CameraControl.h"
 
 namespace candlewick {
 
@@ -11,6 +12,7 @@ struct DepthDebugPass {
     VizStyle mode;
     float near;
     float far;
+    CameraProjection cam_proj = CameraProjection::PERSPECTIVE;
   };
   SDL_GPUTexture *depthTexture;
   SDL_GPUSampler *sampler;

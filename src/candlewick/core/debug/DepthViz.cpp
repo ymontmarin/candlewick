@@ -53,6 +53,13 @@ DepthDebugPass DepthDebugPass::create(const Renderer &renderer,
   return {depthTexture, sampler, pipeline};
 }
 
+struct alignas(16) cam_param_ubo_t {
+  Sint32 mode;
+  float near_plane;
+  float far_plane;
+  Uint32 is_ortho;
+};
+
 void renderDepthDebug(Renderer &renderer, const DepthDebugPass &pass,
                       const DepthDebugPass::Options &opts) {
   SDL_GPUColorTargetInfo color_target;
@@ -72,11 +79,8 @@ void renderDepthDebug(Renderer &renderer, const DepthDebugPass &pass,
                                    .sampler = pass.sampler,
                                });
 
-  struct alignas(16) cam_param_ubo_t {
-    Sint32 mode;
-    float near_plane;
-    float far_plane;
-  } cam_ubo{opts.mode, opts.near, opts.far};
+  cam_param_ubo_t cam_ubo{opts.mode, opts.near, opts.far,
+                          opts.cam_proj == CameraProjection::ORTHOGRAPHIC};
 
   renderer.pushFragmentUniform(0, &cam_ubo, sizeof(cam_ubo));
   SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
