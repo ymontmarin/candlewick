@@ -191,7 +191,7 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
     const Mat4f modelView = camera.view * placement;
     TransformUniformData data{
         .modelView = modelView,
-        .mvp{camera.viewProj() * placement},
+        .mvp{viewProj * placement},
         .normalMatrix = math::computeNormalMatrix(modelView),
     };
     renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
@@ -218,7 +218,7 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
     const Mesh &mesh = obj.mesh;
     TransformUniformData data{
         .modelView = modelView,
-        .mvp{camera.viewProj() * tr.transform},
+        .mvp{viewProj * tr.transform},
         .normalMatrix = math::computeNormalMatrix(modelView),
     };
     renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
