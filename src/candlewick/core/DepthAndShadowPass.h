@@ -63,6 +63,7 @@ struct ShadowPassConfig {
 };
 
 struct ShadowPassInfo : DepthPassInfo {
+  /// Sampler to use for main render passes.
   SDL_GPUSampler *sampler;
 
   /// \sa DepthPassInfo::create()
