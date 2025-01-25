@@ -74,7 +74,18 @@ struct AABB {
     }
     return out;
   }
+
+  /// \brief Get a scale and translation matrix which transforms the NDC [-1,1]
+  /// cube to the AABB.
+  Mat4f toTransformationMatrix() const;
 };
+
+inline Mat4f AABB::toTransformationMatrix() const {
+  Mat4f transform = Mat4f::Identity();
+  transform.block<3, 3>(0, 0) = 0.5f * extents().asDiagonal();
+  transform.block<3, 1>(0, 3) = center();
+  return transform;
+}
 
 Mat4f orthographicMatrix(float left, float right, float bottom, float top,
                          float near, float far);

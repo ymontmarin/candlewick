@@ -19,6 +19,14 @@ struct OBB {
     return obb;
   }
 
+  void transformInPlace(const Mat4f &transform) {
+    auto R = transform.topLeftCorner<3, 3>();
+    auto tr = transform.topRightCorner<3, 1>();
+    axes.applyOnTheLeft(R);
+    center.applyOnTheLeft(R);
+    center += tr;
+  }
+
   /// Assuming rigid transform matrix.
   OBB transform(const Mat4f &transform) const {
     OBB res;
@@ -39,6 +47,19 @@ struct OBB {
     }
     return AABB{min, max};
   }
+
+  /// \brief Get a scale and translation matrix which transforms the NDC [-1,1]
+  /// cube to the OBB.
+  Mat4f toTransformationMatrix() const;
 };
+
+inline Mat4f OBB::toTransformationMatrix() const {
+  Mat4f transform = Mat4f::Identity();
+  auto D = extents.asDiagonal();
+
+  transform.block<3, 3>(0, 0) = 0.5f * axes * D;
+  transform.block<3, 1>(0, 3) = center;
+  return transform;
+}
 
 } // namespace candlewick
