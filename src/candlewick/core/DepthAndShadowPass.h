@@ -65,6 +65,8 @@ struct ShadowPassConfig {
 struct ShadowPassInfo : DepthPassInfo {
   /// Sampler to use for main render passes.
   SDL_GPUSampler *sampler;
+  Mat4f lightView;
+  Mat4f lightProj;
 
   /// \sa DepthPassInfo::create()
   [[nodiscard]] static ShadowPassInfo create(const Renderer &renderer,
@@ -96,7 +98,7 @@ struct AABB;
 /// \brief Render shadow pass, using provided scene bounds.
 ///
 /// The scene bounds are in world-space.
-void renderShadowPass(Renderer &renderer, const ShadowPassInfo &passInfo,
+void renderShadowPass(Renderer &renderer, ShadowPassInfo &passInfo,
                       const DirectionalLight &dirLight,
                       std::span<const OpaqueCastable> castables,
                       const AABB &worldSceneBounds);
@@ -105,8 +107,7 @@ void renderShadowPass(Renderer &renderer, const ShadowPassInfo &passInfo,
 ///
 /// The frustum can be obtained from the world-space camera.
 /// \sa frustumFromCameraProjection()
-void renderShadowPassFromFrustum(Renderer &renderer,
-                                 const ShadowPassInfo &passInfo,
+void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
                                  const DirectionalLight &dirLight,
                                  std::span<const OpaqueCastable> castables,
                                  const FrustumCornersType &worldSpaceCorners);

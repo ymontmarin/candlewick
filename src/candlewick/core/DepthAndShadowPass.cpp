@@ -137,27 +137,28 @@ void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
   SDL_EndGPURenderPass(render_pass);
 }
 
-void renderShadowPassFromFrustum(Renderer &renderer,
-                                 const ShadowPassInfo &passInfo,
+void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
                                  const DirectionalLight &dirLight,
                                  std::span<const OpaqueCastable> castables,
                                  const FrustumCornersType &worldSpaceCorners) {
   Float3 eye = -dirLight.direction;
-  Mat4f lightView = lookAt(eye, Float3::Zero());
-  Mat4f lightProj;
-  orthoProjFromWorldFrustum(lightView, worldSpaceCorners, lightProj);
-  renderDepthOnlyPass(renderer, passInfo, lightProj * lightView, castables);
+  passInfo.lightView = lookAt(eye, Float3::Zero());
+  orthoProjFromWorldFrustum(passInfo.lightView, worldSpaceCorners,
+                            passInfo.lightProj);
+  Mat4f viewProj = passInfo.lightProj * passInfo.lightView;
+  renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }
 
-void renderShadowPass(Renderer &renderer, const ShadowPassInfo &passInfo,
+void renderShadowPass(Renderer &renderer, ShadowPassInfo &passInfo,
                       const DirectionalLight &dirLight,
                       std::span<const OpaqueCastable> castables,
                       const AABB &worldSceneBounds) {
   Float3 eye = -dirLight.direction;
-  Mat4f lightView = lookAt(eye, Float3::Zero());
-  OBB viewSpaceBounds = OBB::fromAABB(worldSceneBounds).transform(lightView);
-  Mat4f lightProj = orthoFromAABB(viewSpaceBounds.toAabb());
-  Mat4f viewProj = lightProj * lightView;
+  passInfo.lightView = lookAt(eye, Float3::Zero());
+  OBB viewSpaceBounds =
+      OBB::fromAABB(worldSceneBounds).transform(passInfo.lightView);
+  passInfo.lightProj = orthoFromAABB(viewSpaceBounds.toAabb());
+  Mat4f viewProj = passInfo.lightProj * passInfo.lightView;
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }
 } // namespace candlewick
