@@ -4,7 +4,6 @@
 #include "../core/Shader.h"
 #include "../core/TransformUniforms.h"
 #include "../core/Camera.h"
-#include "../third-party/magic_enum.hpp"
 
 #include <coal/BVH/BVH_model.h>
 #include <pinocchio/multibody/data.hpp>
@@ -84,14 +83,12 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     }
   }
 
-  auto &dev = renderer.device;
-
   for (pin::GeomIndex geom_id = 0; geom_id < geom_model.ngeoms; geom_id++) {
 
     const auto &geom_obj = geom_model.geometryObjects[geom_id];
     auto meshDatas = loadGeometryObject(geom_obj);
     PipelineType pipeline_type = pinGeomToPipeline(*geom_obj.geometry);
-    auto mesh = createMeshFromBatch(dev, meshDatas, true);
+    auto mesh = createMeshFromBatch(_device, meshDatas, true);
     assert(validateMesh(mesh));
 
     // local copy for use
@@ -104,14 +101,14 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     registry.emplace<MeshMaterialComponent>(
         entity, std::move(mesh), extractMaterials(meshDatas), pipeline_type);
 
-    if (!renderPipelines.contains(pipeline_type)) {
+    if (!renderPipelines[pipeline_type]) {
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
               magic_enum::enum_name(pipeline_type).data());
-      auto *pipeline =
-          createPipeline(dev, layout, renderer.getSwapchainTextureFormat(),
+      SDL_GPUGraphicsPipeline *pipeline =
+          createPipeline(_device, layout, renderer.getSwapchainTextureFormat(),
                          renderer.depth_format, pipeline_type, config);
       assert(pipeline);
-      renderPipelines.emplace(pipeline_type, pipeline);
+      renderPipelines[pipeline_type] = pipeline;
     }
   }
 }
@@ -154,7 +151,7 @@ static SDL_GPURenderPass *getRenderPass(Renderer &renderer,
 void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
                                            const Camera &camera) {
 
-  if (!renderPipelines.contains(PIPELINE_TRIANGLEMESH)) {
+  if (!renderPipelines[PIPELINE_TRIANGLEMESH]) {
     // skip of no triangle pipeline to use
     SDL_Log("Skipping triangle render pass...");
     return;
@@ -177,7 +174,8 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                                sizeof(lightUbo));
 
-  auto *pipeline = renderPipelines.at(PIPELINE_TRIANGLEMESH);
+  auto *pipeline = renderPipelines[PIPELINE_TRIANGLEMESH];
+  assert(pipeline);
   SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
   auto robot_view =
@@ -213,7 +211,6 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
     if (!visible || (obj.pipeline_type != PIPELINE_TRIANGLEMESH))
       continue;
 
-    auto material = obj.materials[0].toUniform();
     const Mat4f modelView = camera.view * tr.transform;
     const Mesh &mesh = obj.mesh;
     TransformUniformData data{
@@ -224,9 +221,12 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
     renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
                                sizeof(data));
     renderer.bindMesh(render_pass, mesh);
-    renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
-                                 sizeof(material));
-    renderer.draw(render_pass, mesh);
+    for (size_t j = 0; j < mesh.numViews(); j++) {
+      auto material = obj.materials[j].toUniform();
+      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
+                                   sizeof(material));
+      renderer.drawView(render_pass, mesh.view(j));
+    }
   }
 
   SDL_EndGPURenderPass(render_pass);
@@ -239,11 +239,12 @@ void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
   const Mat4f viewProj = camera.viewProj();
 
   // iterate over primitive types in the keys
-  for (const auto &[current_pipeline_type, pipeline] : renderPipelines) {
+  for (auto current_pipeline_type : magic_enum::enum_values<PipelineType>()) {
     if (current_pipeline_type == PIPELINE_TRIANGLEMESH)
       // handled by other function
       continue;
 
+    auto *pipeline = renderPipelines[current_pipeline_type];
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
     auto robot_view =
@@ -293,7 +294,7 @@ void RobotScene::release() {
   if (!_device)
     return;
 
-  for (auto [primType, pipeline] : renderPipelines) {
+  for (auto &pipeline : renderPipelines) {
     SDL_ReleaseGPUGraphicsPipeline(_device, pipeline);
     pipeline = nullptr;
   }

@@ -5,6 +5,7 @@
 #include "../core/Scene.h"
 #include "../core/LightUniforms.h"
 #include "../utils/MeshData.h"
+#include "../third-party/magic_enum.hpp"
 
 #include <entt/entity/registry.hpp>
 #include <coal/fwd.hh>
@@ -32,6 +33,8 @@ public:
     PIPELINE_HEIGHTFIELD,
     PIPELINE_POINTCLOUD,
   };
+  static constexpr size_t kNumPipelineTypes =
+      magic_enum::enum_count<PipelineType>();
   enum VertexUniformSlots : Uint32 { TRANSFORM = 0 };
   enum FragmentUniformSlots : Uint32 { MATERIAL = 0, LIGHTING = 1 };
 
@@ -51,6 +54,8 @@ public:
     }
   }
 
+  /// \brief Tag struct for denoting an entity as opaque, for render pass
+  /// organization.
   struct Opaque {};
   struct TransformComponent {
     Mat4f transform;
@@ -69,7 +74,7 @@ public:
   };
 
   entt::registry &registry;
-  entt::dense_map<PipelineType, SDL_GPUGraphicsPipeline *> renderPipelines;
+  SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
   DirectionalLight directionalLight;
 
   struct PipelineConfig {
