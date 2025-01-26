@@ -11,7 +11,8 @@ namespace candlewick {
 
 DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
                                     const MeshLayout &layout,
-                                    SDL_GPUTexture *depth_texture) {
+                                    SDL_GPUTexture *depth_texture,
+                                    Config config) {
   if (depth_texture == nullptr)
     depth_texture = renderer.depth_texture;
   const Device &device = renderer.device;
@@ -22,8 +23,12 @@ DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
       .fragment_shader = fragmentShader,
       .vertex_input_state = layout.toVertexInputState(),
       .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-      .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
-                        .cull_mode = SDL_GPU_CULLMODE_BACK},
+      .rasterizer_state{
+          .fill_mode = SDL_GPU_FILLMODE_FILL,
+          .cull_mode = SDL_GPU_CULLMODE_NONE,
+          .depth_bias_constant_factor = config.depth_bias_constant_factor,
+          .depth_bias_slope_factor = config.depth_bias_slope_factor,
+          .enable_depth_bias = config.enable_depth_bias},
       .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS,
                            .enable_depth_test = true,
                            .enable_depth_write = true},
@@ -75,7 +80,13 @@ ShadowPassInfo ShadowPassInfo::create(const Renderer &renderer,
     throw std::runtime_error(msg);
   }
 
-  DepthPassInfo passInfo = DepthPassInfo::create(renderer, layout, shadowMap);
+  DepthPassInfo passInfo =
+      DepthPassInfo::create(renderer, layout, shadowMap,
+                            {
+                                .depth_bias_constant_factor = 0.f,
+                                .depth_bias_slope_factor = 0.f,
+                                .enable_depth_bias = false,
+                            });
   if (!passInfo.pipeline) {
     SDL_ReleaseGPUTexture(device, shadowMap);
     auto msg =
@@ -86,7 +97,7 @@ ShadowPassInfo ShadowPassInfo::create(const Renderer &renderer,
   SDL_GPUSamplerCreateInfo sample_desc{
       .min_filter = SDL_GPU_FILTER_LINEAR,
       .mag_filter = SDL_GPU_FILTER_LINEAR,
-      .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
+      .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
       .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
       .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
       .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,

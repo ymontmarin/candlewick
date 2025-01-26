@@ -37,6 +37,11 @@ struct DepthPassInfo {
   enum DepthPassSlots : Uint32 {
     TRANSFORM_SLOT = 0,
   };
+  struct Config {
+    float depth_bias_constant_factor;
+    float depth_bias_slope_factor;
+    bool enable_depth_bias;
+  };
   SDL_GPUTexture *depthTexture;
   SDL_GPUGraphicsPipeline *pipeline;
 
@@ -51,7 +56,7 @@ struct DepthPassInfo {
   /// \sa createShadowPass()
   [[nodiscard]] static DepthPassInfo
   create(const Renderer &renderer, const MeshLayout &layout,
-         SDL_GPUTexture *depth_texture = NULL);
+         SDL_GPUTexture *depth_texture = NULL, Config config = {});
   void release(SDL_GPUDevice *device);
 };
 
