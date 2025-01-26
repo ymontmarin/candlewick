@@ -209,6 +209,9 @@ int main(int argc, char **argv) {
       registry.get<RobotScene::MeshMaterialComponent,
                    multibody::VisibilityComponent>(plane_entity);
 
+  robot_scene.addEnvironmentObject(loadCube(.4f, {-0.45f, -0.4f}),
+                                   Mat4f::Identity());
+
   const size_t numRobotShapes =
       registry.view<const multibody::PinGeomObjComponent>().size();
   SDL_assert(numRobotShapes == geom_model.ngeoms);
