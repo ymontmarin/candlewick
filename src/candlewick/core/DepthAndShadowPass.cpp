@@ -152,11 +152,30 @@ void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
                                  const DirectionalLight &dirLight,
                                  std::span<const OpaqueCastable> castables,
                                  const FrustumCornersType &worldSpaceCorners) {
-  Float3 eye = -dirLight.direction;
-  passInfo.lightView = lookAt(eye, Float3::Zero());
-  orthoProjFromWorldFrustum(passInfo.lightView, worldSpaceCorners,
-                            passInfo.lightProj);
-  Mat4f viewProj = passInfo.lightProj * passInfo.lightView;
+
+  auto &lightView = passInfo.lightView;
+  auto &lightProj = passInfo.lightProj;
+
+  Float3 frustumCenter = Float3::Zero();
+  for (auto &c : worldSpaceCorners) {
+    frustumCenter += c;
+  }
+  frustumCenter /= 8.f;
+
+  float radius = 0.f;
+  for (auto &c : worldSpaceCorners) {
+    radius = std::max(radius, (c - frustumCenter).norm());
+  }
+  radius = std::ceil(radius * 16.f) / 16.f;
+
+  Float3 eye = frustumCenter - (radius * dirLight.direction);
+
+  AABB bounds{Float3::Constant(-radius), Float3::Constant(+radius)};
+  lightView = lookAt(eye, frustumCenter);
+  lightProj = orthographicMatrix({bounds.width(), bounds.height()}, 0.f,
+                                 bounds.depth());
+
+  Mat4f viewProj = lightProj * lightView;
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }
 

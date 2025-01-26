@@ -3,7 +3,6 @@
 
 #include "candlewick/core/debug/DepthViz.h"
 #include "candlewick/core/debug/Frustum.h"
-#include "candlewick/core/OBB.h"
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/DebugScene.h"
@@ -205,7 +204,7 @@ int main(int argc, char **argv) {
   // Add plane
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
   entt::entity plane_entity = robot_scene.addEnvironmentObject(
-      loadPlaneTiled(0.25f, 5, 5), plane_transform.matrix());
+      loadPlaneTiled(0.5f, 20, 20), plane_transform.matrix());
   auto [plane_obj, plane_vis] =
       registry.get<RobotScene::MeshMaterialComponent,
                    multibody::VisibilityComponent>(plane_entity);
@@ -224,8 +223,7 @@ int main(int argc, char **argv) {
   static DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
 
   auto depthPassInfo = DepthPassInfo::create(renderer, plane_obj.mesh.layout);
-  auto shadowPassInfo =
-      ShadowPassInfo::create(renderer, plane_obj.mesh.layout, {});
+  auto &shadowPassInfo = robot_scene.shadowPass;
   auto shadowDebugPass =
       DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);
 
@@ -324,23 +322,27 @@ int main(int argc, char **argv) {
     pin::forwardKinematics(model, pin_data, q);
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
 
+    FrustumCornersType main_cam_frustum = frustumFromCamera(camera);
+
     // acquire command buffer and swapchain
     renderer.beginFrame();
 
     if (renderer.waitAndAcquireSwapchain()) {
       const GpuMat4 viewProj = camera.viewProj();
-      const AABB &worldSpaceBounds = robot_scene.worldSpaceBounds;
       multibody::updateRobotTransforms(registry, robot_scene.geomData());
       std::vector castables = robot_scene.collectOpaqueCastables();
-      renderShadowPass(renderer, shadowPassInfo, myLight, castables,
-                       worldSpaceBounds);
+      // renderShadowPass(renderer, shadowPassInfo, myLight, castables,
+      //                  worldSpaceBounds);
+      renderShadowPassFromFrustum(renderer, shadowPassInfo, myLight, castables,
+                                  main_cam_frustum);
       if (showDebugViz == DEPTH_DEBUG) {
         renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
         renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});
       } else if (showDebugViz == LIGHT_DEBUG) {
-        renderDepthDebug(
-            renderer, shadowDebugPass,
-            {depth_mode, 0.1f, 4.f, CameraProjection::ORTHOGRAPHIC});
+        renderDepthDebug(renderer, shadowDebugPass,
+                         {depth_mode, orthoProjNear(shadowPassInfo.lightProj),
+                          orthoProjFar(shadowPassInfo.lightProj),
+                          CameraProjection::ORTHOGRAPHIC});
       } else {
         if (robot_scene.pbrHasPrepass())
           renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);

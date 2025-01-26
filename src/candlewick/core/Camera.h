@@ -172,12 +172,6 @@ Mat4f orthographicMatrix(const Float2 &sizes, float nearZ, float farZ);
 Mat4f orthographicMatrix(float left, float right, float bottom, float top,
                          float near, float far);
 
-/// \brief Given world-space frustum corners and a view matrix, obtain an
-/// orthographic projection matrix.
-void orthoProjFromWorldFrustum(const Mat4f &view,
-                               const FrustumCornersType &worldSpaceCorners,
-                               Eigen::Ref<Mat4f> proj);
-
 inline float orthoProjNear(const Mat4f &proj) {
   return (proj(2, 2) + 1.0f) / proj(2, 2);
 }
@@ -214,9 +208,9 @@ inline FrustumCornersType frustumFromCameraProjection(const Mat4f &camProj) {
   return out;
 }
 
-/// \brief Get the corners of a Camera's view frustum.
+/// \brief Get the corners of a Camera's view frustum, in world space.
 inline FrustumCornersType frustumFromCamera(const Camera &camera) {
-  return frustumFromCameraProjection(camera.projection);
+  return frustumFromCameraProjection(camera.viewProj());
 }
 
 /// \}

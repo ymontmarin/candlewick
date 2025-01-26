@@ -64,19 +64,4 @@ Mat4f orthographicMatrix(const Float2 &sizes, float near, float far) {
   // clang-format on
   return proj;
 }
-
-void orthoProjFromWorldFrustum(const Mat4f &lightView,
-                               const FrustumCornersType &worldSpaceCorners,
-                               Eigen::Ref<Mat4f> lightProj) {
-  AABB viewSpaceBounds;
-  // transform corners to view space
-  for (auto &c : worldSpaceCorners) {
-    Float4 ch = c.homogeneous();
-    ch.applyOnTheLeft(lightView);
-    Float3 p = ch.head<3>() / ch.w();
-    viewSpaceBounds.grow(p);
-  }
-
-  lightProj = orthoFromAABB(viewSpaceBounds);
-}
 } // namespace candlewick
