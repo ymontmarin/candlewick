@@ -4,6 +4,7 @@
 #include "../core/Device.h"
 #include "../core/Scene.h"
 #include "../core/LightUniforms.h"
+#include "../core/AABB.h"
 #include "../utils/MeshData.h"
 #include "../third-party/magic_enum.hpp"
 
@@ -118,6 +119,7 @@ public:
              const pin::GeometryModel &geom_model,
              const pin::GeometryData &geom_data, Config config);
 
+  std::vector<OpaqueCastable> collectOpaqueCastables();
 
   entt::entity
   addEnvironmentObject(MeshData &&data, Mat4f placement,

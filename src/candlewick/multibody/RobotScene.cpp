@@ -129,6 +129,27 @@ void updateRobotTransforms(entt::registry &registry,
   }
 }
 
+std::vector<OpaqueCastable> RobotScene::collectOpaqueCastables() {
+  const PipelineType pipeline_type = PIPELINE_TRIANGLEMESH;
+  auto all_view =
+      registry.view<const Opaque, const TransformComponent,
+                    const VisibilityComponent, const MeshMaterialComponent>();
+
+  std::vector<OpaqueCastable> castables;
+  castables.reserve(all_view.size_hint());
+
+  // collect castable objects
+  for (auto [ent, tr, vis, meshMaterial] : all_view.each()) {
+    if (!vis || meshMaterial.pipeline_type != pipeline_type)
+      continue;
+
+    const Mesh &mesh = meshMaterial.mesh;
+    for (auto &v : mesh.views())
+      castables.emplace_back(v, tr.transform);
+  }
+  return castables;
+}
+
 void RobotScene::render(Renderer &renderer, const Camera &camera) {
   // render geometry which participated in the prepass
   renderPBRTriangleGeometry(renderer, camera);

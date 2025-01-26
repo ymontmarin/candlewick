@@ -158,47 +158,6 @@ Renderer createRenderer(Uint32 width, Uint32 height,
   return Renderer{std::move(dev), window, depth_stencil_format};
 }
 
-/// Collect all opaque shadow-casting objects in the RobotScene.
-auto collectOpaqueCastables(const RobotScene &scene) {
-  RobotScene::PipelineType pipeline_type = RobotScene::PIPELINE_TRIANGLEMESH;
-  entt::registry &registry = scene.registry;
-  auto &geom_data = scene.geomData();
-
-  auto robot_view =
-      registry
-          .view<const RobotScene::Opaque, const multibody::PinGeomObjComponent,
-                const RobotScene::MeshMaterialComponent>();
-  auto env_view =
-      registry
-          .view<const RobotScene::Opaque, const RobotScene::TransformComponent,
-                const multibody::VisibilityComponent,
-                const RobotScene::MeshMaterialComponent>();
-
-  std::vector<OpaqueCastable> castables;
-  // collect castable objects
-  for (auto [ent, geom_id, meshMaterial] : robot_view.each()) {
-    if (meshMaterial.pipeline_type != pipeline_type)
-      continue;
-
-    auto pose = geom_data.oMg[geom_id].cast<float>();
-    GpuMat4 transform = pose.toHomogeneousMatrix();
-    // do *not* put the whole Mesh in. the indices collide!
-    for (auto &v : meshMaterial.mesh.views())
-      castables.emplace_back(v, transform);
-  }
-
-  for (auto [ent, tr, vis, meshMaterial] : env_view.each()) {
-    if (!vis || meshMaterial.pipeline_type != pipeline_type)
-      continue;
-
-    const Mesh &mesh = meshMaterial.mesh;
-    GpuMat4 transform = tr.transform;
-    for (auto &v : mesh.views())
-      castables.emplace_back(v, transform);
-  }
-  return castables;
-}
-
 int main(int argc, char **argv) {
   CLI::App app{"Ur5 example"};
   bool performRecording{false};
@@ -367,9 +326,6 @@ int main(int argc, char **argv) {
 
     // acquire command buffer and swapchain
     renderer.beginFrame();
-
-    // FrustumCornersType camFrustum = frustumFromCamera(camera);
-    AABB worldSpaceBounds{{-1.f, -1.f, -0.02f}, {1.f, 1.f, 1.f}};
 
     if (renderer.waitAndAcquireSwapchain()) {
       const GpuMat4 viewProj = camera.viewProj();
