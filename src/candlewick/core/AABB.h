@@ -97,4 +97,9 @@ inline Mat4f orthoFromAABB(const AABB &sceneBounds) {
                             -sceneBounds.max.z(), -sceneBounds.min.z());
 }
 
+inline std::ostream &operator<<(std::ostream &oss, const AABB &bounds) {
+  return oss << "{min: " << bounds.min.transpose()
+             << ", max: " << bounds.max.transpose() << "}";
+}
+
 } // namespace candlewick

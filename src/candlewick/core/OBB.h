@@ -63,4 +63,32 @@ inline Mat4f OBB::toTransformationMatrix() const {
   return transform;
 }
 
+inline FrustumCornersType obbToCorners(const OBB &obb) {
+  Mat4f tr = obb.toTransformationMatrix();
+  FrustumCornersType out;
+  for (Uint8 i = 0; i < 8; i++) {
+    Uint8 j = i & 1;
+    Uint8 k = (i >> 1) & 1;
+    Uint8 l = (i >> 2) & 1;
+    assert(j <= 1);
+    assert(k <= 1);
+    assert(l <= 1);
+
+    Float4 ndc{2.f * j - 1.f, 2.f * k - 1.f, 2.f * l - 1.f, 1.f};
+    Float4 viewSpace = tr * ndc;
+    out[i] = viewSpace.head<3>() / viewSpace.w();
+  }
+  return out;
+}
+
+inline std::ostream &operator<<(std::ostream &oss, const OBB &obb) {
+  FrustumCornersType corners = obbToCorners(obb);
+  oss << "Corners {\n";
+  for (Uint8 i = 0; i < 8; i++) {
+    oss << "  [" << std::to_string(i) << "] = " << corners[i].transpose()
+        << "\n";
+  }
+  return oss << "}";
+}
+
 } // namespace candlewick
