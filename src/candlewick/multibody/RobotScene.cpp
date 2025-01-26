@@ -104,6 +104,11 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     registry.emplace<MeshMaterialComponent>(
         entity, std::move(mesh), extractMaterials(meshDatas), pipeline_type);
 
+    // configure shadow pass
+    if (pipeline_type == PIPELINE_TRIANGLEMESH && !shadowPass.pipeline)
+      shadowPass =
+          ShadowPassInfo::create(renderer, layout, config.shadow_config);
+
     if (!renderPipelines[pipeline_type]) {
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
               magic_enum::enum_name(pipeline_type).data());
@@ -119,8 +124,8 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
 void updateRobotTransforms(entt::registry &registry,
                            const pin::GeometryData &geom_data) {
   auto robot_view =
-      registry.view<const Opaque, const PinGeomObjComponent,
-                    const VisibilityComponent, TransformComponent>();
+      registry.view<const PinGeomObjComponent, const VisibilityComponent,
+                    TransformComponent>();
   for (auto [ent, geom_id, visible, tr] : robot_view.each()) {
     if (!visible)
       continue;
@@ -199,6 +204,8 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
       directionalLight.color,
       directionalLight.intensity,
   };
+  Mat4f lightViewProj = shadowPass.lightProj * shadowPass.lightView;
+
   const Mat4f viewProj = camera.viewProj();
 
   // this is the first render pass, hence:
@@ -208,6 +215,13 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
   SDL_GPURenderPass *render_pass =
       getRenderPass(renderer, SDL_GPU_LOADOP_CLEAR, depth_load_op);
 
+  if (config.enable_shadows) {
+  renderer.bindFragmentSampler(render_pass, 0,
+                               {
+                                   .texture = shadowPass.depthTexture,
+                                   .sampler = shadowPass.sampler,
+                               });
+  }
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                                sizeof(lightUbo));
 
@@ -231,6 +245,8 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
     };
     renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
                                sizeof(data));
+    Mat4f lightMvp = lightViewProj * tr.transform;
+    renderer.pushVertexUniform(1, &lightMvp, sizeof(lightMvp));
     renderer.bindMesh(render_pass, mesh);
     for (size_t j = 0; j < mesh.numViews(); j++) {
       auto material = obj.materials[j].toUniform();
@@ -281,16 +297,19 @@ void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
 }
 
 void RobotScene::release() {
+  if (!_device)
+    return;
+
   for (auto [entity, obj] : registry.view<MeshMaterialComponent>()->each()) {
     obj.mesh.release(_device);
   }
-  if (!_device)
-    return;
 
   for (auto &pipeline : renderPipelines) {
     SDL_ReleaseGPUGraphicsPipeline(_device, pipeline);
     pipeline = nullptr;
   }
+
+  shadowPass.release(_device);
 }
 
 SDL_GPUGraphicsPipeline *

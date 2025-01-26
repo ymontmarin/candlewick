@@ -5,6 +5,7 @@
 #include "../core/Scene.h"
 #include "../core/LightUniforms.h"
 #include "../core/AABB.h"
+#include "../core/DepthAndShadowPass.h"
 #include "../utils/MeshData.h"
 #include "../third-party/magic_enum.hpp"
 
@@ -81,7 +82,7 @@ public:
   SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
   DirectionalLight directionalLight;
   ShadowPassInfo shadowPass;
-  AABB worldSpaceBounds{{-1.f, -1.f, -0.02f}, {1.f, 1.f, 1.f}};
+  AABB worldSpaceBounds;
 
   struct PipelineConfig {
     // shader set
@@ -105,8 +106,10 @@ public:
         // {PIPELINE_POINTCLOUD, {}}
     };
     bool enable_msaa = false;
+    bool enable_shadows = true;
     bool triangle_has_prepass = false;
     SDL_GPUSampleCount msaa_samples = SDL_GPU_SAMPLECOUNT_1;
+    ShadowPassConfig shadow_config;
   };
 
 private:
@@ -134,6 +137,8 @@ public:
                  SDL_GPUTextureFormat depth_stencil_format, PipelineType type,
                  const Config &config);
 
+  /// \warning Call updateRobotTransforms() before rendering the objects with
+  /// this function.
   void render(Renderer &renderer, const Camera &camera);
   /// \brief PBR render pass for triangle meshes.
   void renderPBRTriangleGeometry(Renderer &renderer, const Camera &camera);
