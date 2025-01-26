@@ -4,6 +4,7 @@ layout(set=1, binding=0) uniform DebugTransform {
    mat4 invProj;
    mat4 mvp;
    vec4 color;
+   vec3 eyePos;
 };
 
 layout(location=0) out vec4 outColor;
@@ -28,21 +29,31 @@ const uint[24] LINE_INDICES = uint[](
 );
 
 void main() {
-   uint cornerIdx = LINE_INDICES[gl_VertexIndex];
+    if (gl_VertexIndex < 24) {
+        uint cornerIdx = LINE_INDICES[gl_VertexIndex];
+        uint x = cornerIdx & 1;
+        uint y = (cornerIdx >> 1) & 1;
+        uint z = (cornerIdx >> 2) & 1;
 
-   uint x = cornerIdx & 1;
-   uint y = (cornerIdx >> 1) & 1;
-   uint z = (cornerIdx >> 2) & 1;
+        vec4 ndc = vec4(
+            2.0 * float(x) - 1.0,
+            2.0 * float(y) - 1.0,
+            2.0 * float(z) - 1.0,
+            1.0
+        );
 
-   vec4 ndc = vec4(
-       2.0 * float(x) - 1.0,
-       2.0 * float(y) - 1.0,
-       2.0 * float(z) - 1.0,
-       1.0
-   );
+        vec4 viewPos = invProj * ndc;
+        viewPos /= viewPos.w;
+        gl_Position = mvp * viewPos;
+    } else if (gl_VertexIndex >= 24) {
+        uint axisIdx = (gl_VertexIndex - 24) / 2;  // 0,1,2 for x,y,z
+        uint pointIdx = gl_VertexIndex & 1;        // 0,1 for start/end
 
-   vec4 viewPos = invProj * ndc;
-   viewPos /= viewPos.w;
-   gl_Position = mvp * viewPos;
-   outColor = color;
+        float size = 0.1;  // Size of marker
+        vec3 offset = vec3(0.0);
+        offset[axisIdx] = pointIdx == 0 ? -size : size;
+
+        gl_Position = mvp * vec4(eyePos + offset, 1.0);
+    }
+    outColor = color;
 }

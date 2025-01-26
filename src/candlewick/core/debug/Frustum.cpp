@@ -35,10 +35,12 @@ struct alignas(16) ubo_t {
   GpuMat4 invProj;
   alignas(16) GpuMat4 mvp;
   alignas(16) GpuVec4 color;
+  GpuVec3 eyePos;
 };
 
 void render_impl(Renderer &renderer, const FrustumAndBoundsDebug &passInfo,
-                 const Mat4f &invProj, const Mat4f &mvp, const Float4 &color) {
+                 const Mat4f &invProj, const Mat4f &mvp, const Float3 eyePos,
+                 const Float4 &color) {
   SDL_GPUColorTargetInfo color_target;
   SDL_zero(color_target);
   color_target.texture = renderer.swapchain;
@@ -62,10 +64,11 @@ void render_impl(Renderer &renderer, const FrustumAndBoundsDebug &passInfo,
       invProj,
       mvp,
       color,
+      eyePos,
   };
   renderer.pushVertexUniform(0, &ubo, sizeof(ubo));
 
-  SDL_DrawGPUPrimitives(render_pass, 24, 1, 0, 0);
+  SDL_DrawGPUPrimitives(render_pass, 30, 1, 0, 0);
 
   SDL_EndGPURenderPass(render_pass);
 }
@@ -76,14 +79,14 @@ void FrustumAndBoundsDebug::renderLightFrustum(Renderer &renderer,
                                                const Float4 &color) {
   Mat4f invProj = otherCam.projection.inverse();
   GpuMat4 mvp = camera.viewProj() * otherCam.pose().matrix();
-  render_impl(renderer, *this, invProj, mvp, color);
+  render_impl(renderer, *this, invProj, mvp, otherCam.position(), color);
 }
 
 void FrustumAndBoundsDebug::renderOBB(Renderer &renderer, const Camera &camera,
                                       const OBB &obb, const Float4 &color) {
   Mat4f transform = obb.toTransformationMatrix();
   Mat4f mvp = camera.viewProj() * transform;
-  render_impl(renderer, *this, Mat4f::Identity(), mvp, color);
+  render_impl(renderer, *this, Mat4f::Identity(), mvp, obb.center, color);
 }
 
 void FrustumAndBoundsDebug::renderBounds(Renderer &renderer,
@@ -91,7 +94,7 @@ void FrustumAndBoundsDebug::renderBounds(Renderer &renderer,
                                          const Float4 &color) {
   Mat4f transform = aabb.toTransformationMatrix();
   Mat4f mvp = camera.viewProj() * transform;
-  render_impl(renderer, *this, Mat4f::Identity(), mvp, color);
+  render_impl(renderer, *this, Mat4f::Identity(), mvp, aabb.center(), color);
 }
 
 void FrustumAndBoundsDebug::release(const Device &device) {

@@ -49,9 +49,10 @@ struct DebugTransform
     float4x4 invProj;
     float4x4 mvp;
     float4 color;
+    float3 eyePos;
 };
 
-constant spvUnsafeArray<uint, 24> _19 = spvUnsafeArray<uint, 24>({ 0u, 1u, 0u, 2u, 2u, 3u, 1u, 3u, 4u, 5u, 4u, 6u, 6u, 7u, 5u, 7u, 0u, 4u, 1u, 5u, 2u, 6u, 3u, 7u });
+constant spvUnsafeArray<uint, 24> _28 = spvUnsafeArray<uint, 24>({ 0u, 1u, 0u, 2u, 2u, 3u, 1u, 3u, 4u, 5u, 4u, 6u, 6u, 7u, 5u, 7u, 0u, 4u, 1u, 5u, 2u, 6u, 3u, 7u });
 
 struct main0_out
 {
@@ -59,17 +60,41 @@ struct main0_out
     float4 gl_Position [[position]];
 };
 
-vertex main0_out main0(constant DebugTransform& _64 [[buffer(0)]], uint gl_VertexIndex [[vertex_id]])
+vertex main0_out main0(constant DebugTransform& _71 [[buffer(0)]], uint gl_VertexIndex [[vertex_id]])
 {
     main0_out out = {};
-    uint cornerIdx = _19[int(gl_VertexIndex)];
-    uint x = cornerIdx & 1u;
-    uint y = (cornerIdx >> uint(1)) & 1u;
-    uint z = (cornerIdx >> uint(2)) & 1u;
-    float4 ndc = float4((2.0 * float(x)) - 1.0, (2.0 * float(y)) - 1.0, (2.0 * float(z)) - 1.0, 1.0);
-    float4 viewPos = _64.invProj * ndc;
-    viewPos /= float4(viewPos.w);
-    out.gl_Position = _64.mvp * viewPos;
-    out.outColor = _64.color;
+    if (int(gl_VertexIndex) < 24)
+    {
+        uint cornerIdx = _28[int(gl_VertexIndex)];
+        uint x = cornerIdx & 1u;
+        uint y = (cornerIdx >> uint(1)) & 1u;
+        uint z = (cornerIdx >> uint(2)) & 1u;
+        float4 ndc = float4((2.0 * float(x)) - 1.0, (2.0 * float(y)) - 1.0, (2.0 * float(z)) - 1.0, 1.0);
+        float4 viewPos = _71.invProj * ndc;
+        viewPos /= float4(viewPos.w);
+        out.gl_Position = _71.mvp * viewPos;
+    }
+    else
+    {
+        if (int(gl_VertexIndex) >= 24)
+        {
+            uint axisIdx = uint((int(gl_VertexIndex) - 24) / 2);
+            uint pointIdx = uint(int(gl_VertexIndex) & 1);
+            float size = 0.100000001490116119384765625;
+            float3 offset = float3(0.0);
+            float _117;
+            if (pointIdx == 0u)
+            {
+                _117 = -size;
+            }
+            else
+            {
+                _117 = size;
+            }
+            offset[axisIdx] = _117;
+            out.gl_Position = _71.mvp * float4(_71.eyePos + offset, 1.0);
+        }
+    }
+    out.outColor = _71.color;
     return out;
 }
