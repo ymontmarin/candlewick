@@ -382,7 +382,9 @@ int main(int argc, char **argv) {
         renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
         renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});
       } else if (showDebugViz == LIGHT_DEBUG) {
-        renderDepthDebug(renderer, shadowDebugPass, {depth_mode, 0.1f, .4f});
+        renderDepthDebug(
+            renderer, shadowDebugPass,
+            {depth_mode, 0.1f, 4.f, CameraProjection::ORTHOGRAPHIC});
       } else {
         if (robot_scene.pbrHasPrepass())
           renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
