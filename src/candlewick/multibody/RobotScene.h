@@ -25,6 +25,16 @@ struct VisibilityComponent {
   operator bool() const { return status; }
 };
 
+/// \brief Tag struct for denoting an entity as opaque, for render pass
+/// organization.
+struct Opaque {};
+struct TransformComponent {
+  Mat4f transform;
+};
+
+void updateRobotTransforms(entt::registry &registry,
+                           const pin::GeometryData &geom_data);
+
 /// \brief A scene/render system for robot geometries using Pinocchio.
 class RobotScene {
 public:
@@ -54,13 +64,6 @@ public:
     }
   }
 
-  /// \brief Tag struct for denoting an entity as opaque, for render pass
-  /// organization.
-  struct Opaque {};
-  struct TransformComponent {
-    Mat4f transform;
-  };
-
   struct MeshMaterialComponent {
     Mesh mesh;
     std::vector<PbrMaterialData> materials;
@@ -76,6 +79,8 @@ public:
   entt::registry &registry;
   SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
   DirectionalLight directionalLight;
+  ShadowPassInfo shadowPass;
+  AABB worldSpaceBounds{{-1.f, -1.f, -0.02f}, {1.f, 1.f, 1.f}};
 
   struct PipelineConfig {
     // shader set
@@ -103,9 +108,16 @@ public:
     SDL_GPUSampleCount msaa_samples = SDL_GPU_SAMPLECOUNT_1;
   };
 
+private:
+  Config config;
+  const Device &_device;
+  pin::GeometryData const *_geomData;
+
+public:
   RobotScene(entt::registry &registry, const Renderer &renderer,
              const pin::GeometryModel &geom_model,
              const pin::GeometryData &geom_data, Config config);
+
 
   entt::entity
   addEnvironmentObject(MeshData &&data, Mat4f placement,
@@ -131,11 +143,6 @@ public:
 
   /// \brief Getter for the referenced pinocchio GeometryData object.
   const pin::GeometryData &geomData() const { return *_geomData; }
-
-private:
-  Config config;
-  const Device &_device;
-  pin::GeometryData const *_geomData;
 };
 static_assert(Scene<RobotScene>);
 

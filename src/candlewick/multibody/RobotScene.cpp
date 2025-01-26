@@ -94,10 +94,13 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     // local copy for use
     const auto layout = mesh.layout;
 
+    // add entity for this geometry
     auto entity = registry.create();
     registry.emplace<PinGeomObjComponent>(entity, geom_id);
+    registry.emplace<TransformComponent>(entity);
     if (pipeline_type != PIPELINE_POINTCLOUD)
       registry.emplace<Opaque>(entity);
+    registry.emplace<VisibilityComponent>(entity, true);
     registry.emplace<MeshMaterialComponent>(
         entity, std::move(mesh), extractMaterials(meshDatas), pipeline_type);
 
@@ -110,6 +113,19 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
       assert(pipeline);
       renderPipelines[pipeline_type] = pipeline;
     }
+  }
+}
+
+void updateRobotTransforms(entt::registry &registry,
+                           const pin::GeometryData &geom_data) {
+  auto robot_view =
+      registry.view<const Opaque, const PinGeomObjComponent,
+                    const VisibilityComponent, TransformComponent>();
+  for (auto [ent, geom_id, visible, tr] : robot_view.each()) {
+    if (!visible)
+      continue;
+    auto pose = geom_data.oMg[geom_id].cast<float>();
+    tr.transform = pose.toHomogeneousMatrix();
   }
 }
 
@@ -178,36 +194,10 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
   assert(pipeline);
   SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
-  auto robot_view =
-      registry.view<const PinGeomObjComponent, const MeshMaterialComponent>();
-
-  for (auto [entity, geom_id, obj] : robot_view.each()) {
-    if (obj.pipeline_type != PIPELINE_TRIANGLEMESH)
-      continue;
-    const Mesh &mesh = obj.mesh;
-    const Mat4f placement{_geomData->oMg[geom_id].cast<float>()};
-    const Mat4f modelView = camera.view * placement;
-    TransformUniformData data{
-        .modelView = modelView,
-        .mvp{viewProj * placement},
-        .normalMatrix = math::computeNormalMatrix(modelView),
-    };
-    renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
-                               sizeof(data));
-    renderer.bindMesh(render_pass, mesh);
-    // loop over views and materials
-    for (size_t j = 0; j < mesh.numViews(); j++) {
-      auto material = obj.materials[j].toUniform();
-      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
-                                   sizeof(material));
-      renderer.drawView(render_pass, mesh.view(j));
-    }
-  }
-
-  auto env_view =
+  auto all_view =
       registry.view<const VisibilityComponent, const TransformComponent,
                     const MeshMaterialComponent>();
-  for (auto [entity, visible, tr, obj] : env_view.each()) {
+  for (auto [entity, visible, tr, obj] : all_view.each()) {
     if (!visible || (obj.pipeline_type != PIPELINE_TRIANGLEMESH))
       continue;
 
@@ -247,27 +237,6 @@ void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
     auto *pipeline = renderPipelines[current_pipeline_type];
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
-    auto robot_view =
-        registry.view<const PinGeomObjComponent, const MeshMaterialComponent>();
-
-    for (auto [entity, geom_id, obj] : robot_view.each()) {
-      if (obj.pipeline_type != current_pipeline_type)
-        continue;
-      const Mesh &mesh = obj.mesh;
-      const auto &placement = _geomData->oMg[geom_id].cast<float>();
-      const Mat4f modelMat = placement.toHomogeneousMatrix();
-      const Mat4f mvp = viewProj * modelMat;
-      const auto &color = obj.materials[0].baseColor;
-
-      renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &mvp,
-                                 sizeof(mvp));
-      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &color,
-                                   sizeof(color));
-      // draw the entire object
-      renderer.bindMesh(render_pass, mesh);
-      renderer.draw(render_pass, mesh);
-    }
-
     auto env_view =
         registry.view<const VisibilityComponent, const TransformComponent,
                       const MeshMaterialComponent>();
@@ -278,8 +247,11 @@ void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
       auto &modelMat = tr.transform;
       const Mesh &mesh = obj.mesh;
       const Mat4f mvp = viewProj * modelMat;
+      const auto &color = obj.materials[0].baseColor;
       renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &mvp,
                                  sizeof(mvp));
+      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &color,
+                                   sizeof(color));
       renderer.bindMesh(render_pass, mesh);
       renderer.draw(render_pass, mesh);
     }

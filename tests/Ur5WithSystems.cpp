@@ -372,10 +372,10 @@ int main(int argc, char **argv) {
     AABB worldSpaceBounds{{-1.f, -1.f, -0.02f}, {1.f, 1.f, 1.f}};
 
     if (renderer.waitAndAcquireSwapchain()) {
-      std::vector castables = collectOpaqueCastables(robot_scene);
       const GpuMat4 viewProj = camera.viewProj();
-      // renderShadowPassFromFrustum(renderer, shadowPassInfo, myLight,
-      //                             castables, camFrustum);
+      const AABB &worldSpaceBounds = robot_scene.worldSpaceBounds;
+      multibody::updateRobotTransforms(registry, robot_scene.geomData());
+      std::vector castables = robot_scene.collectOpaqueCastables();
       renderShadowPass(renderer, shadowPassInfo, myLight, castables,
                        worldSpaceBounds);
       if (showDebugViz == DEPTH_DEBUG) {
