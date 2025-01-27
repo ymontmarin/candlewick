@@ -6,6 +6,7 @@ find_package(FFmpeg COMPONENTS avformat avcodec swscale)
 add_library(
   candlewick_core
   SHARED
+  candlewick/core/AABB.cpp
   candlewick/core/Camera.cpp
   candlewick/core/DebugScene.cpp
   candlewick/core/Device.cpp

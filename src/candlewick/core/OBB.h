@@ -49,6 +49,8 @@ struct OBB {
     return AABB{min, max};
   }
 
+  float radius() const { return halfExtents.norm(); }
+
   /// \brief Get a scale and translation matrix which transforms the NDC [-1,1]
   /// cube to the OBB.
   Mat4f toTransformationMatrix() const;

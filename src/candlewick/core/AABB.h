@@ -34,6 +34,8 @@ struct AABB {
   float depth() const { return max.z() - min.z(); }
   float volume() const { return width() * height() * depth(); }
 
+  float radius() const { return 0.5f * extents().norm(); }
+
   AABB &grow(const Float3 &delta) {
     min = min.cwiseMin(delta);
     max = max.cwiseMax(delta);
@@ -87,15 +89,7 @@ inline Mat4f AABB::toTransformationMatrix() const {
   return transform;
 }
 
-// fwd declaration. sync with Camera.h
-Mat4f orthographicMatrix(float left, float right, float bottom, float top,
-                         float near, float far);
-
-inline Mat4f orthoFromAABB(const AABB &sceneBounds) {
-  return orthographicMatrix(sceneBounds.min.x(), sceneBounds.max.x(),
-                            sceneBounds.min.y(), sceneBounds.max.y(),
-                            -sceneBounds.max.z(), -sceneBounds.min.z());
-}
+Mat4f orthoFromAABB(const AABB &sceneBounds);
 
 inline std::ostream &operator<<(std::ostream &oss, const AABB &bounds) {
   return oss << "{min: " << bounds.min.transpose()
