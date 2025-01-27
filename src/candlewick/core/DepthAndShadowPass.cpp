@@ -25,10 +25,11 @@ DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
       .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
       .rasterizer_state{
           .fill_mode = SDL_GPU_FILLMODE_FILL,
-          .cull_mode = SDL_GPU_CULLMODE_NONE,
+          .cull_mode = config.cull_mode,
           .depth_bias_constant_factor = config.depth_bias_constant_factor,
           .depth_bias_slope_factor = config.depth_bias_slope_factor,
-          .enable_depth_bias = config.enable_depth_bias},
+          .enable_depth_bias = config.enable_depth_bias,
+          .enable_depth_clip = config.enable_depth_clip},
       .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS,
                            .enable_depth_test = true,
                            .enable_depth_write = true},
@@ -83,9 +84,11 @@ ShadowPassInfo ShadowPassInfo::create(const Renderer &renderer,
   DepthPassInfo passInfo =
       DepthPassInfo::create(renderer, layout, shadowMap,
                             {
+                                .cull_mode = SDL_GPU_CULLMODE_NONE,
                                 .depth_bias_constant_factor = 0.f,
                                 .depth_bias_slope_factor = 0.f,
                                 .enable_depth_bias = false,
+                                .enable_depth_clip = false,
                             });
   if (!passInfo.pipeline) {
     SDL_ReleaseGPUTexture(device, shadowMap);
@@ -160,7 +163,7 @@ void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
   auto &lightView = passInfo.lightView;
   auto &lightProj = passInfo.lightProj;
 
-  const Float3 eye = frustumCenter - (radius * dirLight.direction);
+  const Float3 eye = frustumCenter - radius * dirLight.direction.normalized();
   AABB bounds{Float3::Constant(-radius), Float3::Constant(+radius)};
   lightView = lookAt(eye, frustumCenter);
   lightProj = orthographicMatrix({bounds.width(), bounds.height()}, 0.f,

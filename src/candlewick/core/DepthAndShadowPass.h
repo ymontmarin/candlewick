@@ -38,9 +38,11 @@ struct DepthPassInfo {
     TRANSFORM_SLOT = 0,
   };
   struct Config {
+    SDL_GPUCullMode cull_mode;
     float depth_bias_constant_factor;
     float depth_bias_slope_factor;
     bool enable_depth_bias;
+    bool enable_depth_clip;
   };
   SDL_GPUTexture *depthTexture;
   SDL_GPUGraphicsPipeline *pipeline;
