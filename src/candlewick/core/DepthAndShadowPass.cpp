@@ -153,23 +153,14 @@ void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
                                  std::span<const OpaqueCastable> castables,
                                  const FrustumCornersType &worldSpaceCorners) {
 
+  auto [frustumCenter, radius] =
+      frustumBoundingSphereCenterRadius(worldSpaceCorners);
+  radius = std::ceil(radius * 16.f) / 16.f;
+
   auto &lightView = passInfo.lightView;
   auto &lightProj = passInfo.lightProj;
 
-  Float3 frustumCenter = Float3::Zero();
-  for (auto &c : worldSpaceCorners) {
-    frustumCenter += c;
-  }
-  frustumCenter /= 8.f;
-
-  float radius = 0.f;
-  for (auto &c : worldSpaceCorners) {
-    radius = std::max(radius, (c - frustumCenter).norm());
-  }
-  radius = std::ceil(radius * 16.f) / 16.f;
-
-  Float3 eye = frustumCenter - (radius * dirLight.direction);
-
+  const Float3 eye = frustumCenter - (radius * dirLight.direction);
   AABB bounds{Float3::Constant(-radius), Float3::Constant(+radius)};
   lightView = lookAt(eye, frustumCenter);
   lightProj = orthographicMatrix({bounds.width(), bounds.height()}, 0.f,

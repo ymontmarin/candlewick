@@ -213,6 +213,21 @@ inline FrustumCornersType frustumFromCamera(const Camera &camera) {
   return frustumFromCameraProjection(camera.viewProj());
 }
 
+inline std::pair<Float3, float>
+frustumBoundingSphereCenterRadius(const FrustumCornersType &worldSpaceCorners) {
+  Float3 frustumCenter = Float3::Zero();
+  for (auto &c : worldSpaceCorners) {
+    frustumCenter += c;
+  }
+  frustumCenter /= 8.f;
+
+  float radius = 0.f;
+  for (auto &c : worldSpaceCorners) {
+    radius = std::max(radius, (c - frustumCenter).norm());
+  }
+  return {frustumCenter, radius};
+}
+
 /// \}
 
 } // namespace candlewick
