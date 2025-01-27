@@ -333,11 +333,13 @@ int main(int argc, char **argv) {
     if (renderer.waitAndAcquireSwapchain()) {
       const GpuMat4 viewProj = camera.viewProj();
       multibody::updateRobotTransforms(registry, robot_scene.geomData());
-      std::vector castables = robot_scene.collectOpaqueCastables();
-      // renderShadowPass(renderer, shadowPassInfo, myLight, castables,
-      //                  worldSpaceBounds);
-      renderShadowPassFromFrustum(renderer, shadowPassInfo, myLight, castables,
-                                  main_cam_frustum);
+      robot_scene.collectOpaqueCastables();
+      auto castables = robot_scene.castables();
+      renderShadowPass(renderer, shadowPassInfo, myLight, castables,
+                       worldSpaceBounds);
+      // renderShadowPassFromFrustum(renderer, shadowPassInfo, myLight,
+      // castables,
+      //                             main_cam_frustum);
       if (showDebugViz == DEPTH_DEBUG) {
         renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
         renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});

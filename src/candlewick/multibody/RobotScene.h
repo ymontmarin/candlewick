@@ -116,13 +116,15 @@ private:
   Config config;
   const Device &_device;
   pin::GeometryData const *_geomData;
+  std::vector<OpaqueCastable> _castables;
 
 public:
   RobotScene(entt::registry &registry, const Renderer &renderer,
              const pin::GeometryModel &geom_model,
              const pin::GeometryData &geom_data, Config config);
 
-  std::vector<OpaqueCastable> collectOpaqueCastables();
+  void collectOpaqueCastables();
+  std::span<const OpaqueCastable> castables() const { return _castables; }
 
   entt::entity
   addEnvironmentObject(MeshData &&data, Mat4f placement,

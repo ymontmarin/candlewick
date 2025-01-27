@@ -134,14 +134,14 @@ void updateRobotTransforms(entt::registry &registry,
   }
 }
 
-std::vector<OpaqueCastable> RobotScene::collectOpaqueCastables() {
+void RobotScene::collectOpaqueCastables() {
   const PipelineType pipeline_type = PIPELINE_TRIANGLEMESH;
   auto all_view =
       registry.view<const Opaque, const TransformComponent,
                     const VisibilityComponent, const MeshMaterialComponent>();
 
-  std::vector<OpaqueCastable> castables;
-  castables.reserve(all_view.size_hint());
+  _castables.clear();
+  _castables.reserve(all_view.size_hint());
 
   // collect castable objects
   for (auto [ent, tr, vis, meshMaterial] : all_view.each()) {
@@ -150,12 +150,17 @@ std::vector<OpaqueCastable> RobotScene::collectOpaqueCastables() {
 
     const Mesh &mesh = meshMaterial.mesh;
     for (auto &v : mesh.views())
-      castables.emplace_back(v, tr.transform);
+      _castables.emplace_back(v, tr.transform);
   }
-  return castables;
 }
 
 void RobotScene::render(Renderer &renderer, const Camera &camera) {
+  // if (config.enable_shadows) {
+  //   std::vector<OpaqueCastable> castables = collectOpaqueCastables();
+  //   renderShadowPass(renderer, shadowPass, directionalLight, castables,
+  //                    worldSpaceBounds);
+  // }
+
   // render geometry which participated in the prepass
   renderPBRTriangleGeometry(renderer, camera);
 
@@ -216,11 +221,11 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
       getRenderPass(renderer, SDL_GPU_LOADOP_CLEAR, depth_load_op);
 
   if (config.enable_shadows) {
-  renderer.bindFragmentSampler(render_pass, 0,
-                               {
-                                   .texture = shadowPass.depthTexture,
-                                   .sampler = shadowPass.sampler,
-                               });
+    renderer.bindFragmentSampler(render_pass, 0,
+                                 {
+                                     .texture = shadowPass.depthTexture,
+                                     .sampler = shadowPass.sampler,
+                                 });
   }
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                                sizeof(lightUbo));
