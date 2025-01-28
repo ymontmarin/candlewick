@@ -3,13 +3,13 @@
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/Shader.h"
-#include "candlewick/core/math_util.h"
+#include "candlewick/core/Camera.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/MaterialUniform.h"
 #include "candlewick/core/TransformUniforms.h"
+
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/utils/MeshData.h"
-#include "candlewick/utils/CameraControl.h"
 #include "candlewick/multibody/LoadPinocchioGeometry.h"
 
 #include "candlewick/primitives/Arrow.h"
@@ -51,7 +51,11 @@ constexpr float aspectRatio = float(wWidth) / float(wHeight);
 static bool renderPlane = true;
 static bool renderGrid = true;
 static Camera camera;
+static CameraProjection cam_type = CameraProjection::PERSPECTIVE;
+// Current perspective matrix fov
 static Radf currentFov = 55.0_radf;
+// Current ortho matrix scale
+static float currentOrthoScale = 1.f;
 static bool quitRequested = false;
 
 static float pixelDensity;
@@ -67,13 +71,22 @@ static DirectionalLight myLight{
 };
 
 struct alignas(16) light_ubo_t {
-  DirectionalLight a;
-  GpuVec3 viewPos;
+  GpuVec3 viewSpaceDir;
+  alignas(16) GpuVec3 color;
+  float intensity;
 };
 
-void updateFov(Radf newFov) {
+static void updateFov(Radf newFov) {
+  camera.projection = perspectiveFromFov(newFov, aspectRatio, 0.01f, 10.0f);
   currentFov = newFov;
-  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
+}
+
+static void updateOrtho(float zoom) {
+  float iz = 1.f / zoom;
+  camera.projection = orthographicMatrix({iz * aspectRatio, iz}, 0.01f, 4.f);
+  currentOrthoScale = zoom;
+  auto pos = camera.position();
+  SDL_Log("Current ortho cam. pos: (%f, %f, %f)", pos.x(), pos.y(), pos.z());
 }
 
 void eventLoop(const Renderer &renderer) {
@@ -98,9 +111,15 @@ void eventLoop(const Renderer &renderer) {
       continue;
     switch (event.type) {
     case SDL_EVENT_MOUSE_WHEEL: {
-      float wy = event.wheel.y;
-      const float scaleFac = std::exp(kScrollZoom * wy);
-      updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
+      const float scaleFac = std::exp(kScrollZoom * event.wheel.y);
+      switch (cam_type) {
+      case CameraProjection::ORTHOGRAPHIC:
+        updateOrtho(std::clamp(scaleFac * currentOrthoScale, 0.1f, 2.f));
+        break;
+      case CameraProjection::PERSPECTIVE:
+        updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
+        break;
+      }
       break;
     }
     case SDL_EVENT_KEY_DOWN: {
@@ -167,34 +186,48 @@ int main(int argc, char **argv) {
   // Load plane
   MeshData plane_data = loadPlaneTiled(0.25f, 5, 5);
   Mesh plane = createMesh(device, plane_data);
-  uploadMeshToDevice(device, plane.toView(), plane_data);
+  uploadMeshToDevice(device, plane, plane_data);
 
   // Load grid
   MeshData grid_data = loadGrid(10);
   gridMesh = createMesh(device, grid_data);
-  uploadMeshToDevice(device, gridMesh.toView(), grid_data);
+  uploadMeshToDevice(device, gridMesh, grid_data);
 
   std::array triad_data = createTriad();
   std::vector<Mesh> triad_meshes;
   for (auto &&arrow_data : std::move(triad_data)) {
     Mesh arrow_mesh = createMesh(device, arrow_data);
-    uploadMeshToDevice(device, arrow_mesh.toView(), arrow_data);
+    uploadMeshToDevice(device, arrow_mesh, arrow_data);
     triad_meshes.push_back(std::move(arrow_mesh));
   }
 
   GuiSystem guiSys{[&plane_data](Renderer &r) {
     static bool demo_window_open = true;
-    const float minFov = 15.f;
-    const float maxFov = 90.f;
 
     ImGui::Begin("Renderer info & controls", nullptr,
                  ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("Device driver: %s", r.device.driverName());
     ImGui::SeparatorText("Camera");
-    Degf newFov{currentFov};
-    ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
-                     ImGuiSliderFlags_AlwaysClamp);
-    updateFov(Radf(newFov));
+    ImGui::RadioButton("Orthographic", (int *)&cam_type,
+                       int(CameraProjection::ORTHOGRAPHIC));
+    ImGui::SameLine();
+    ImGui::RadioButton("Perspective", (int *)&cam_type,
+                       int(CameraProjection::PERSPECTIVE));
+    switch (cam_type) {
+    case CameraProjection::ORTHOGRAPHIC:
+      if (ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f, "%.3f",
+                           ImGuiSliderFlags_AlwaysClamp))
+        updateOrtho(currentOrthoScale);
+      break;
+    case CameraProjection::PERSPECTIVE:
+      Degf newFov{currentFov};
+      if (ImGui::DragFloat("fov", newFov, 1.f, 15.f, 90.f, "%.3f",
+                           ImGuiSliderFlags_AlwaysClamp))
+        updateFov(Radf(newFov));
+      break;
+    }
+
+    ImGui::SeparatorText("Env. status");
     ImGui::Checkbox("Render plane", &renderPlane);
     ImGui::Checkbox("Render grid", &renderGrid);
 
@@ -225,7 +258,6 @@ int main(int argc, char **argv) {
   struct RobotObject {
     pin::GeomIndex geom_index;
     Mesh mesh;
-    std::vector<MeshView> views;
     std::vector<PbrMaterialData> materials;
   };
   std::vector<RobotObject> robotShapes;
@@ -233,10 +265,9 @@ int main(int argc, char **argv) {
     const auto &gobj = geom_model.geometryObjects[i];
     /// Create a Mesh, upload to device
     auto meshDatas = multibody::loadGeometryObject(gobj);
-    auto [mesh, views] = createMeshFromBatch(device, meshDatas, true);
+    auto mesh = createMeshFromBatch(device, meshDatas, true);
 
-    robotShapes.push_back(
-        {i, std::move(mesh), std::move(views), extractMaterials(meshDatas)});
+    robotShapes.push_back({i, std::move(mesh), extractMaterials(meshDatas)});
     SDL_Log("Loaded %zu MeshData objects. Meshes:", meshDatas.size());
     for (size_t i = 0; i < meshDatas.size(); i++) {
       SDL_Log("   [%zu] %u vertices, %u indices", i, meshDatas[i].numVertices(),
@@ -250,8 +281,8 @@ int main(int argc, char **argv) {
   const auto swapchain_format =
       SDL_GetGPUSwapchainTextureFormat(device, renderer.window);
   {
-    Shader vertexShader{device, "PbrBasic.vert", 1};
-    Shader fragmentShader{device, "PbrBasic.frag", 2};
+    Shader vertexShader = Shader::fromMetadata(device, "PbrBasic.vert");
+    Shader fragmentShader = Shader::fromMetadata(device, "PbrBasic.frag");
 
     SDL_GPUColorTargetDescription colorTarget;
     colorTarget.format = swapchain_format;
@@ -294,8 +325,8 @@ int main(int argc, char **argv) {
 
   Uint32 frameNo = 0;
 
-  camera.projection = perspectiveFromFov(currentFov, aspectRatio, 0.01f, 10.0f);
   camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
+  updateFov(currentFov);
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
@@ -348,44 +379,49 @@ int main(int argc, char **argv) {
       SDL_assert(robotShapes.size() == geom_model.ngeoms);
 
       /// Model-view-projection (MVP) matrix
+      Mat4f modelView;
       Mat4f mvp;
 
-      const light_ubo_t lightUbo{myLight, camera.position()};
-
+      const light_ubo_t lightUbo{
+          camera.transformVector(myLight.direction),
+          myLight.color,
+          myLight.intensity,
+      };
       SDL_BindGPUGraphicsPipeline(render_pass, meshPipeline);
       renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
 
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
-        const pin::SE3 &placement = geom_data.oMg[i];
-        Mat4f modelMat = placement.toHomogeneousMatrix().cast<float>();
-        mvp = camera.viewProj() * modelMat.matrix();
-        const Mat3f normalMatrix =
-            modelMat.topLeftCorner<3, 3>().inverse().transpose();
+        const Mat4f placement{geom_data.oMg[i].cast<float>()};
+        modelView = camera.view * placement;
+        mvp = camera.projection * modelView;
         TransformUniformData cameraUniform{
-            modelMat,
+            modelView,
             mvp,
-            normalMatrix,
+            math::computeNormalMatrix(modelView),
         };
         const auto &obj = robotShapes[i];
+        const auto &mesh = obj.mesh;
 
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
-        renderer.bindMesh(render_pass, obj.mesh);
-        for (size_t j = 0; j < obj.views.size(); j++) {
+        renderer.bindMesh(render_pass, mesh);
+        for (size_t j = 0; j < mesh.numViews(); j++) {
           const auto material = obj.materials[j].toUniform();
           renderer.pushFragmentUniform(0, &material, sizeof(material));
-          renderer.drawView(render_pass, obj.views[j]);
+          renderer.drawView(render_pass, mesh.view(j));
         }
       }
 
       // RENDER PLANE
       if (renderPlane) {
         Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-        mvp.noalias() = camera.viewProj() * plane_transform.matrix();
-        const Mat3f normalMatrix =
-            plane_transform.linear().inverse().transpose();
-        TransformUniformData cameraUniform{plane_transform.matrix(), mvp,
-                                           normalMatrix};
+        modelView = camera.view * plane_transform.matrix();
+        mvp.noalias() = camera.projection * modelView;
+        TransformUniformData cameraUniform{
+            modelView,
+            mvp,
+            math::computeNormalMatrix(modelView),
+        };
         const auto material = plane_data.material.toUniform();
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
         renderer.pushFragmentUniform(0, &material, sizeof(PbrMaterialUniform));

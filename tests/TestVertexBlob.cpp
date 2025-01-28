@@ -10,6 +10,8 @@ bool operator==(const DefaultVertex &lhs, const DefaultVertex &rhs) {
 }
 
 GTEST_TEST(TestErasedBlob, default_vertex) {
+  auto layout = meshLayoutFor<DefaultVertex>();
+  EXPECT_TRUE(layout == layout);
   std::vector<DefaultVertex> vertexData;
   Uint64 size = 10;
   for (Uint64 i = 0; i < size; i++) {
@@ -39,7 +41,7 @@ struct alignas(16) CustomVertex {
 static_assert(IsVertexType<CustomVertex>, "Invalid vertex type.");
 
 template <> struct VertexTraits<CustomVertex> {
-  constexpr static auto layout() {
+  static auto layout() {
     return MeshLayout{}
         .addBinding(0, sizeof(CustomVertex))
         .addAttribute("pos", 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
@@ -57,6 +59,8 @@ bool operator==(const CustomVertex &lhs, const CustomVertex &rhs) {
 
 GTEST_TEST(TestErasedBlob, custom_vertex) {
   auto layout = meshLayoutFor<CustomVertex>();
+  EXPECT_TRUE(layout == layout);
+  EXPECT_TRUE(layout != meshLayoutFor<DefaultVertex>());
   EXPECT_EQ(sizeof(CustomVertex), layout.vertexSize());
 
   std::vector<CustomVertex> vertexData;

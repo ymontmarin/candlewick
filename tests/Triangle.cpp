@@ -30,9 +30,8 @@ int main() {
     return 1;
   }
 
-  Shader vertexShader{device, "BasicTriangle.vert", 0};
-
-  Shader fragmentShader{device, "SolidColor.frag", 0};
+  Shader vertexShader{device, "BasicTriangle.vert", {}};
+  Shader fragmentShader{device, "SolidColor.frag", {}};
 
   SDL_GPUColorTargetDescription coldescs{
       .format = SDL_GetGPUSwapchainTextureFormat(device, window)};

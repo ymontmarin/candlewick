@@ -3,16 +3,41 @@
 #include "Multibody.h"
 #include "../core/Device.h"
 #include "../core/Scene.h"
-// #include "../core/Shape.h"
 #include "../core/LightUniforms.h"
+#include "../core/AABB.h"
+#include "../core/DepthAndShadowPass.h"
 #include "../utils/MeshData.h"
-// #include "../core/DebugScene.h"
+#include "../third-party/magic_enum.hpp"
 
-#include <pinocchio/multibody/geometry.hpp>
+#include <entt/entity/registry.hpp>
+#include <coal/fwd.hh>
+#include <pinocchio/multibody/fwd.hpp>
 
 namespace candlewick {
 namespace multibody {
 
+struct PinGeomObjComponent {
+  pin::GeomIndex geom_index;
+  operator pin::GeomIndex() const { return geom_index; }
+};
+
+/// \brief A visibility component for ECS.
+struct VisibilityComponent {
+  bool status;
+  operator bool() const { return status; }
+};
+
+/// \brief Tag struct for denoting an entity as opaque, for render pass
+/// organization.
+struct Opaque {};
+struct TransformComponent {
+  Mat4f transform;
+};
+
+void updateRobotTransforms(entt::registry &registry,
+                           const pin::GeometryData &geom_data);
+
+/// \brief A scene/render system for robot geometries using Pinocchio.
 class RobotScene {
 public:
   enum PipelineType {
@@ -20,6 +45,8 @@ public:
     PIPELINE_HEIGHTFIELD,
     PIPELINE_POINTCLOUD,
   };
+  static constexpr size_t kNumPipelineTypes =
+      magic_enum::enum_count<PipelineType>();
   enum VertexUniformSlots : Uint32 { TRANSFORM = 0 };
   enum FragmentUniformSlots : Uint32 { MATERIAL = 0, LIGHTING = 1 };
 
@@ -39,82 +66,94 @@ public:
     }
   }
 
-  struct RobotObject {
-    pin::GeomIndex geom_index;
+  struct MeshMaterialComponent {
     Mesh mesh;
-    std::vector<MeshView> views;
     std::vector<PbrMaterialData> materials;
     PipelineType pipeline_type;
+    MeshMaterialComponent(Mesh &&mesh, std::vector<PbrMaterialData> &&materials,
+                          PipelineType pipelineType)
+        : mesh(std::move(mesh)), materials(std::move(materials)),
+          pipeline_type(pipelineType) {
+      assert(mesh.numViews() == materials.size());
+    }
   };
-  struct EnvironmentObject {
-    bool status;
-    Mesh mesh;
-    PbrMaterialData materials;
-    Mat4f transform;
-    PipelineType pipeline_type;
-  };
-  std::vector<RobotObject> robotObjects;
-  std::unordered_map<PipelineType, SDL_GPUGraphicsPipeline *> pipelines;
-  std::vector<EnvironmentObject> environmentShapes;
-  DirectionalLight directionalLight;
 
+  entt::registry &registry;
+  SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
+  DirectionalLight directionalLight;
+  ShadowPassInfo shadowPass;
+  AABB worldSpaceBounds;
+
+  struct PipelineConfig {
+    // shader set
+    const char *vertex_shader_path;
+    const char *fragment_shader_path;
+    SDL_GPUCullMode cull_mode = SDL_GPU_CULLMODE_BACK;
+    SDL_GPUFillMode fill_mode = SDL_GPU_FILLMODE_FILL;
+  };
   struct Config {
-    struct PipelineConfig {
-      // shader set
-      const char *vertex_shader_path;
-      const char *fragment_shader_path;
-      Uint32 num_vertex_uniforms;
-      Uint32 num_frag_uniforms;
-      SDL_GPUCullMode cull_mode = SDL_GPU_CULLMODE_BACK;
-      SDL_GPUFillMode fill_mode = SDL_GPU_FILLMODE_FILL;
-    };
     std::unordered_map<PipelineType, PipelineConfig> pipeline_configs = {
         {PIPELINE_TRIANGLEMESH,
-         {.vertex_shader_path = "PbrBasic.vert",
-          .fragment_shader_path = "PbrBasic.frag",
-          .num_vertex_uniforms = 1,
-          .num_frag_uniforms = 2}},
+         {
+             .vertex_shader_path = "PbrBasic.vert",
+             .fragment_shader_path = "PbrBasic.frag",
+         }},
         {PIPELINE_HEIGHTFIELD,
-         {.vertex_shader_path = "Hud3dElement.vert",
-          .fragment_shader_path = "Hud3dElement.frag",
-          .num_vertex_uniforms = 1,
-          .num_frag_uniforms = 1}},
+         {
+             .vertex_shader_path = "Hud3dElement.vert",
+             .fragment_shader_path = "Hud3dElement.frag",
+         }},
         // {PIPELINE_POINTCLOUD, {}}
     };
     bool enable_msaa = false;
+    bool enable_shadows = true;
+    bool triangle_has_prepass = false;
     SDL_GPUSampleCount msaa_samples = SDL_GPU_SAMPLECOUNT_1;
+    ShadowPassConfig shadow_config;
   };
 
-  EnvironmentObject &
+private:
+  Config config;
+  const Device &_device;
+  pin::GeometryData const *_geomData;
+  std::vector<OpaqueCastable> _castables;
+
+public:
+  RobotScene(entt::registry &registry, const Renderer &renderer,
+             const pin::GeometryModel &geom_model,
+             const pin::GeometryData &geom_data, Config config);
+
+  void collectOpaqueCastables();
+  std::span<const OpaqueCastable> castables() const { return _castables; }
+
+  entt::entity
   addEnvironmentObject(MeshData &&data, Mat4f placement,
                        PipelineType pipe_type = PIPELINE_TRIANGLEMESH);
 
-  RobotScene(const Renderer &renderer, const pin::GeometryModel &geom_model,
-             const pin::GeometryData &geom_data, Config config);
+  // void addRobot(const pin::GeometryModel &geom_model,
+  //               const pin::GeometryData &geom_data);
 
   [[nodiscard]] static SDL_GPUGraphicsPipeline *
-  createPipeline(const Device &dev, const MeshLayout &layout,
+  createPipeline(const Device &device, const MeshLayout &layout,
                  SDL_GPUTextureFormat render_target_format,
                  SDL_GPUTextureFormat depth_stencil_format, PipelineType type,
-                 const Config::PipelineConfig &config);
+                 const Config &config);
 
+  /// \warning Call updateRobotTransforms() before rendering the objects with
+  /// this function.
   void render(Renderer &renderer, const Camera &camera);
+  /// \brief PBR render pass for triangle meshes.
+  void renderPBRTriangleGeometry(Renderer &renderer, const Camera &camera);
+  /// \brief Render pass for other geometry.
+  void renderOtherGeometry(Renderer &renderer, const Camera &camera);
   void release();
 
-private:
-  const Device &_device;
-  const pin::GeometryModel &_geomModel;
-  const pin::GeometryData &_geomData;
+  inline bool pbrHasPrepass() const { return config.triangle_has_prepass; }
+
+  /// \brief Getter for the referenced pinocchio GeometryData object.
+  const pin::GeometryData &geomData() const { return *_geomData; }
 };
 static_assert(Scene<RobotScene>);
-
-// struct RobotDebugModule : DebugModule {
-//   const pin::Data &data;
-//   Shape triad[3];
-//   RobotDebugModule(const pin::Data &data);
-//   virtual void addDrawCommands(DebugScene &scene,
-//                                const Camera &camera) override;
-// };
 
 } // namespace multibody
 } // namespace candlewick

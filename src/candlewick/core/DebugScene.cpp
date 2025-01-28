@@ -1,4 +1,5 @@
 #include "DebugScene.h"
+#include "Camera.h"
 #include "Shader.h"
 
 #include "../primitives/Arrow.h"
@@ -10,16 +11,14 @@ BasicDebugModule::BasicDebugModule(DebugScene &scene)
     : DebugModule(scene), triad(NoInit), grid(NoInit) {
   const auto &dev = scene.device();
   auto triad_datas = createTriad();
-  std::vector<MeshView> _views;
-  std::tie(triad, _views) = createMeshFromBatch(dev, triad_datas, true);
+  triad = createMeshFromBatch(dev, triad_datas, true);
   for (size_t i = 0; i < 3; i++) {
-    triad_views[i] = std::move(_views[i]);
     triad_colors[i] = triad_datas[i].material.baseColor;
   }
 
   auto grid_data = loadGrid(20);
   grid = createMesh(dev, grid_data);
-  uploadMeshToDevice(dev, grid.toView(), grid_data);
+  uploadMeshToDevice(dev, grid, grid_data);
   grid_color = grid_data.material.baseColor;
 
   scene.setupPipelines(triad.layout);
@@ -31,7 +30,6 @@ void BasicDebugModule::addDrawCommands(DebugScene &scene,
     scene.drawCommands.push_back({
         .pipeline_type = DebugPipelines::TRIANGLE_FILL,
         .mesh = &triad,
-        .mesh_views = {triad_views.begin(), triad_views.end()},
         .mvp = camera.viewProj(),
         .colors = {triad_colors.begin(), triad_colors.end()},
     });
@@ -40,7 +38,6 @@ void BasicDebugModule::addDrawCommands(DebugScene &scene,
     scene.drawCommands.push_back({
         .pipeline_type = DebugPipelines::LINE,
         .mesh = &grid,
-        .mesh_views{grid.toView()},
         .mvp = camera.viewProj(),
         .colors = {grid_color},
     });
@@ -57,8 +54,8 @@ DebugScene::DebugScene(const Renderer &renderer)
 void DebugScene::setupPipelines(const MeshLayout &layout) {
   if (linePipeline && trianglePipeline)
     return;
-  Shader vertexShader{_device, "Hud3dElement.vert", 1};
-  Shader fragmentShader{_device, "Hud3dElement.frag", 1};
+  auto vertexShader = Shader::fromMetadata(_device, "Hud3dElement.vert");
+  auto fragmentShader = Shader::fromMetadata(_device, "Hud3dElement.frag");
   SDL_GPUColorTargetDescription color_desc;
   SDL_zero(color_desc);
   color_desc.format = _swapchainTextureFormat;
@@ -104,16 +101,16 @@ void DebugScene::render(Renderer &renderer, const Camera &camera) {
   color_target_info.store_op = SDL_GPU_STOREOP_STORE;
   SDL_GPUDepthStencilTargetInfo depth_target_info;
   depth_target_info.load_op = SDL_GPU_LOADOP_LOAD;
-  depth_target_info.store_op = SDL_GPU_STOREOP_DONT_CARE;
+  depth_target_info.store_op = SDL_GPU_STOREOP_STORE;
   depth_target_info.stencil_load_op = SDL_GPU_LOADOP_LOAD;
   depth_target_info.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
   depth_target_info.texture = renderer.depth_texture;
+  depth_target_info.cycle = false;
 
   SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
       renderer.command_buffer, &color_target_info, 1, &depth_target_info);
 
   for (const auto &cmd : drawCommands) {
-    SDL_assert(cmd.mesh_views.size() == cmd.colors.size());
     switch (cmd.pipeline_type) {
     case DebugPipelines::TRIANGLE_FILL:
       SDL_BindGPUGraphicsPipeline(render_pass, trianglePipeline);
@@ -124,10 +121,10 @@ void DebugScene::render(Renderer &renderer, const Camera &camera) {
     }
     renderer.pushVertexUniform(TRANSFORM_SLOT, &cmd.mvp, sizeof(cmd.mvp));
     renderer.bindMesh(render_pass, *cmd.mesh);
-    for (size_t i = 0; i < cmd.mesh_views.size(); i++) {
+    for (size_t i = 0; i < cmd.mesh->numViews(); i++) {
       const auto &color = cmd.colors[i];
       renderer.pushFragmentUniform(COLOR_SLOT, &color, sizeof(color));
-      renderer.drawView(render_pass, cmd.mesh_views[i]);
+      renderer.drawView(render_pass, cmd.mesh->view(i));
     }
   }
 

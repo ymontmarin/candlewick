@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "Mesh.h"
 #include "Renderer.h"
+#include "math_types.h"
 
 #include <memory>
 
@@ -16,8 +17,6 @@ enum class DebugPipelines {
 struct DebugDrawCommand {
   DebugPipelines pipeline_type;
   const Mesh *mesh;
-  std::vector<MeshView> mesh_views;
-  // uniform data :: matches our common debug shader
   // vertex
   GpuMat4 mvp;
   // fragment
@@ -33,9 +32,8 @@ struct DebugModule {
 };
 
 /// \brief Just the basic 3D triad, and a line grid.
-struct BasicDebugModule : DebugModule {
+struct BasicDebugModule final : DebugModule {
   Mesh triad;
-  std::array<MeshView, 3> triad_views;
   std::array<GpuVec4, 3> triad_colors;
   Mesh grid;
   GpuVec4 grid_color;

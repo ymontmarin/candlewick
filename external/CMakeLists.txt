@@ -14,5 +14,3 @@ set(
 add_library(imgui SHARED ${IMGUI_SRC})
 target_link_libraries(imgui PRIVATE SDL3::SDL3 SDL3::Headers)
 target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends)
-
-add_subdirectory(pinocchio-visualizers)

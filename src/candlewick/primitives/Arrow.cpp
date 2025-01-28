@@ -44,7 +44,7 @@ static ArrowMeshData gen_arrow_impl(float shaft_length, float shaft_radius,
   }
 
   // Generate head (cone)
-  size_t head_start = mesh.positions.size();
+  auto head_start = Uint32(mesh.positions.size());
 
   // Base circle
   for (Uint32 i = 0; i <= segments; ++i) {
@@ -65,8 +65,8 @@ static ArrowMeshData gen_arrow_impl(float shaft_length, float shaft_radius,
   mesh.normals.push_back({0, 0, 1});
 
   // Head indices (triangles)
-  size_t tip_idx = mesh.positions.size() - 1;
-  for (size_t i = head_start; i < tip_idx - 1; ++i) {
+  auto tip_idx = Uint32(mesh.positions.size() - 1);
+  for (Uint32 i = head_start; i < tip_idx - 1; ++i) {
     mesh.indices.push_back(i);
     mesh.indices.push_back(i + 1);
     mesh.indices.push_back(tip_idx);
@@ -97,9 +97,9 @@ std::vector<char> interleaveAttributes(const ArrowMeshData &arrow,
   return vertex_data;
 }
 
-MeshData generateArrow(bool include_normals, float shaft_length,
-                       float shaft_radius, float head_length, float head_radius,
-                       Uint32 segments) {
+MeshData createArrow(bool include_normals, float shaft_length,
+                     float shaft_radius, float head_length, float head_radius,
+                     Uint32 segments) {
   ArrowMeshData arrow_data = gen_arrow_impl(shaft_length, shaft_radius,
                                             head_length, head_radius, segments);
   std::vector<char> vertexData =
@@ -117,8 +117,8 @@ MeshData generateArrow(bool include_normals, float shaft_length,
 std::array<MeshData, 3> createTriad(float shaft_length, float shaft_radius,
                                     float head_length, float head_radius,
                                     Uint32 segments) {
-  MeshData zAxis = generateArrow(false, shaft_length, shaft_radius, head_length,
-                                 head_radius, segments);
+  MeshData zAxis = createArrow(false, shaft_length, shaft_radius, head_length,
+                               head_radius, segments);
   MeshData xAxis = MeshData::copy(zAxis);
   MeshData yAxis = MeshData::copy(zAxis);
   xAxis.material.baseColor << 1., 0., 0., 1.;

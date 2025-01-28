@@ -1,16 +1,19 @@
 #include "candlewick/core/MeshLayout.h"
 #include "candlewick/core/Shader.h"
+#include "candlewick/core/math_types.h"
+#include "candlewick/primitives/Cube.h"
+#include "candlewick/utils/MeshTransforms.h"
 
 #include "Common.h"
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
-#include <new>
+
+using namespace candlewick;
 
 bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return false;
-  ::new (&ctx.device)
-      Device{candlewick::auto_detect_shader_format_subset(), true};
+  ctx.device = Device{auto_detect_shader_format_subset(), true};
 
   ctx.window =
       SDL_CreateWindow("candlewick: examples", int(wWidth), int(wHeight), 0);
@@ -31,12 +34,11 @@ void teardownExample(Context &ctx) {
 
 SDL_GPUGraphicsPipeline *
 initGridPipeline(const Device &device, SDL_Window *window,
-                 const candlewick::MeshLayout &layout,
+                 const MeshLayout &layout,
                  SDL_GPUTextureFormat depth_stencil_format,
                  SDL_GPUPrimitiveType primitive_type) {
-  using namespace candlewick;
-  Shader vertexShader{device, "Hud3dElement.vert", 1};
-  Shader fragmentShader{device, "Hud3dElement.frag", 1};
+  auto vertexShader = Shader::fromMetadata(device, "Hud3dElement.vert");
+  auto fragmentShader = Shader::fromMetadata(device, "Hud3dElement.frag");
 
   SDL_GPUColorTargetDescription colorTarget{
       .format = SDL_GetGPUSwapchainTextureFormat(device, window),
@@ -88,4 +90,17 @@ SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
       .props = 0,
   };
   return SDL_CreateGPUTexture(device, &texinfo);
+}
+
+MeshData loadCube(float size, const Float2 &loc) {
+  MeshData m = toOwningMeshData(loadCube());
+  m.material.metalness = 0.4f;
+  m.material.baseColor = 0xaab023ff_rgbaf;
+  Eigen::Affine3f tr;
+  tr.setIdentity();
+  tr.translate(Float3{loc[0], loc[1], 0.f});
+  tr.scale(0.5f * size);
+  tr.translate(Float3{0, 0, 1.2});
+  apply3DTransformInPlace(m, tr);
+  return m;
 }

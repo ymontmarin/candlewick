@@ -15,7 +15,6 @@ struct DirectionalLight
 struct LightBlock
 {
     DirectionalLight light;
-    float3 viewPos;
 };
 
 struct PbrMaterial
@@ -38,8 +37,9 @@ struct main0_out
 
 struct main0_in
 {
-    float3 fragWorldPos [[user(locn0)]];
-    float3 fragNormal [[user(locn1)]];
+    float3 fragViewPos [[user(locn0)]];
+    float3 fragViewNormal [[user(locn1)]];
+    float3 fragLightPos [[user(locn2)]];
 };
 
 static inline __attribute__((always_inline))
@@ -85,6 +85,58 @@ float3 fresnelSchlick(thread const float& cosTheta, thread const float3& F0)
 }
 
 static inline __attribute__((always_inline))
+bool isShadowCoordInRange(thread const float3& shadowCoord)
+{
+    bool _121 = shadowCoord.x >= 0.0;
+    bool _128;
+    if (_121)
+    {
+        _128 = shadowCoord.y >= 0.0;
+    }
+    else
+    {
+        _128 = _121;
+    }
+    bool _134;
+    if (_128)
+    {
+        _134 = shadowCoord.x <= 1.0;
+    }
+    else
+    {
+        _134 = _128;
+    }
+    bool _140;
+    if (_134)
+    {
+        _140 = shadowCoord.y <= 1.0;
+    }
+    else
+    {
+        _140 = _134;
+    }
+    bool _147;
+    if (_140)
+    {
+        _147 = shadowCoord.z >= 0.0;
+    }
+    else
+    {
+        _147 = _140;
+    }
+    bool _153;
+    if (_147)
+    {
+        _153 = shadowCoord.z <= 1.0;
+    }
+    else
+    {
+        _153 = _147;
+    }
+    return _153;
+}
+
+static inline __attribute__((always_inline))
 float3 uncharted2ToneMapping_Partial(thread const float3& color)
 {
     float A = 0.1500000059604644775390625;
@@ -108,26 +160,26 @@ float3 uncharted2ToneMapping(thread const float3& color)
     return curr * white_scale;
 }
 
-fragment main0_out main0(main0_in in [[stage_in]], constant Material& _254 [[buffer(0)]], constant LightBlock& _212 [[buffer(1)]], bool gl_FrontFacing [[front_facing]])
+fragment main0_out main0(main0_in in [[stage_in]], constant Material& _294 [[buffer(0)]], constant LightBlock& _256 [[buffer(1)]], depth2d<float> shadowMap [[texture(0)]], sampler shadowMapSmplr [[sampler(0)]], bool gl_FrontFacing [[front_facing]])
 {
     main0_out out = {};
-    float3 lightDir = fast::normalize(-_212.light.direction);
-    float3 normal = fast::normalize(in.fragNormal);
-    float3 V = fast::normalize(_212.viewPos - in.fragWorldPos);
+    float3 lightDir = fast::normalize(-_256.light.direction);
+    float3 normal = fast::normalize(in.fragViewNormal);
+    float3 V = fast::normalize(-in.fragViewPos);
     float3 H = fast::normalize(lightDir + V);
     if (!gl_FrontFacing)
     {
         normal = -normal;
     }
-    float3 specColor = mix(float3(0.039999999105930328369140625), _254.material.baseColor.xyz, float3(_254.material.metalness));
+    float3 specColor = mix(float3(0.039999999105930328369140625), _294.material.baseColor.xyz, float3(_294.material.metalness));
     float3 param = normal;
     float3 param_1 = H;
-    float param_2 = _254.material.roughness;
+    float param_2 = _294.material.roughness;
     float NDF = distributionGGX(param, param_1, param_2);
     float3 param_3 = normal;
     float3 param_4 = V;
     float3 param_5 = lightDir;
-    float param_6 = _254.material.roughness;
+    float param_6 = _294.material.roughness;
     float G = geometrySmith(param_3, param_4, param_5, param_6);
     float param_7 = fast::max(dot(H, V), 0.0);
     float3 param_8 = specColor;
@@ -136,15 +188,27 @@ fragment main0_out main0(main0_in in [[stage_in]], constant Material& _254 [[buf
     float3 specular = (F * (NDF * G)) / float3(denominator);
     float3 kS = F;
     float3 kD = float3(1.0) - kS;
-    kD *= (1.0 - _254.material.metalness);
+    kD *= (1.0 - _294.material.metalness);
     float NdotL = fast::max(dot(normal, lightDir), 0.0);
-    float3 lightCol = float3(_212.light.color) * _212.light.intensity;
-    float3 Lo = ((((kD * _254.material.baseColor.xyz) / float3(3.1415927410125732421875)) + specular) * lightCol) * NdotL;
-    float3 ambient = (float3(0.02999999932944774627685546875) * _254.material.baseColor.xyz) * _254.material.ao;
+    float3 lightCol = float3(_256.light.color) * _256.light.intensity;
+    float3 Lo = ((((kD * _294.material.baseColor.xyz) / float3(3.1415927410125732421875)) + specular) * lightCol) * NdotL;
+    float shadowValue = 1.0;
+    float bias0 = fast::max(0.0500000007450580596923828125 * (1.0 - NdotL), 0.004999999888241291046142578125);
+    float3 texCoords = in.fragLightPos;
+    texCoords.x = 0.5 + (texCoords.x * 0.5);
+    texCoords.y = 0.5 - (texCoords.y * 0.5);
+    texCoords.z -= bias0;
+    float3 param_9 = texCoords;
+    if (isShadowCoordInRange(param_9))
+    {
+        shadowValue = shadowMap.sample_compare(shadowMapSmplr, texCoords.xy, texCoords.z);
+    }
+    Lo *= shadowValue;
+    float3 ambient = (float3(0.02999999932944774627685546875) * _294.material.baseColor.xyz) * _294.material.ao;
     float3 color = ambient + Lo;
-    float3 param_9 = color;
-    color = uncharted2ToneMapping(param_9);
+    float3 param_10 = color;
+    color = uncharted2ToneMapping(param_10);
     color = powr(color, float3(0.4545454680919647216796875));
-    out.fragColor = float4(color, _254.material.baseColor.w);
+    out.fragColor = float4(color, _294.material.baseColor.w);
     return out;
 }

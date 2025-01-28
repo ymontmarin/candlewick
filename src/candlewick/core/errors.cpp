@@ -2,7 +2,7 @@
 #include <format>
 
 namespace candlewick {
-std::string RAIIException::error_string(const char *upstreamMsg) {
-  return std::format("RAIIException: SDL error \'%s\'", upstreamMsg);
-}
+RAIIException::RAIIException(std::string_view upstreamMsg)
+    : std::runtime_error(
+          std::format("RAIIException: SDL error \'%s\'", upstreamMsg.data())) {}
 } // namespace candlewick

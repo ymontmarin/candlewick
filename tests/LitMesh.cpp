@@ -4,8 +4,9 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
-#include "candlewick/utils/CameraControl.h"
+#include "candlewick/core/Camera.h"
 #include "candlewick/core/LightUniforms.h"
+#include "candlewick/core/TransformUniforms.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -36,10 +37,10 @@ const float aspectRatio = float(wWidth) / wHeight;
 
 Context ctx;
 
-struct alignas(16) TransformUniformData {
-  GpuMat4 model;
-  alignas(16) GpuMat4 mvp;
-  alignas(16) GpuMat3 normalMatrix;
+struct light_ubo_t {
+  GpuVec3 viewSpaceDir;
+  alignas(16) GpuVec3 color;
+  float intensity;
 };
 
 int main() {
@@ -70,18 +71,14 @@ int main() {
   std::vector<Mesh> meshes;
   for (std::size_t j = 0; j < meshDatas.size(); j++) {
     Mesh mesh = createMesh(device, meshDatas[j]);
+    uploadMeshToDevice(device, mesh, meshDatas[j]);
     meshes.push_back(std::move(mesh));
   }
   SDL_assert(meshDatas[0].numIndices() == meshes[0].indexCount);
 
-  /** COPY DATA TO GPU **/
-
-  SDL_Log("Uploading mesh...");
-  uploadMeshToDevice(device, meshes[0].toView(), meshDatas[0]);
-
   /** CREATE PIPELINE **/
-  Shader vertexShader{device, "PbrBasic.vert", 1};
-  Shader fragmentShader{device, "PbrBasic.frag", 2};
+  auto vertexShader = Shader::fromMetadata(device, "PbrBasic.vert");
+  auto fragmentShader = Shader::fromMetadata(device, "PbrBasic.frag");
 
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
   SDL_GPUTexture *depthTexture = createDepthTexture(
@@ -158,7 +155,6 @@ int main() {
       if (event.type == SDL_EVENT_MOUSE_WHEEL) {
         float wy = event.wheel.y;
         const float scaleFac = std::exp(kScrollZoom * wy);
-        // orthographicZoom(projectionMat, scaleFac);
         // recreate
         fov = std::min(fov * scaleFac, 170.0_radf);
         SDL_Log("Change fov to %f", rad2deg(fov));
@@ -189,9 +185,9 @@ int main() {
       }
     }
     // MVP matrix
-    const Mat4f viewProj = camera.viewProj();
-    const Mat4f projViewMat = viewProj * modelMat.matrix();
-    const Mat3f normalMatrix = modelMat.inverse().linear().transpose();
+    const Eigen::Affine3f modelView = camera.view * modelMat;
+    const Mat4f mvp = camera.projection * modelView.matrix();
+    const Mat3f normalMatrix = math::computeNormalMatrix(modelView);
 
     // render pass
 
@@ -223,14 +219,15 @@ int main() {
                              SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
       TransformUniformData cameraUniform{
-          modelMat.matrix(),
-          projViewMat,
-          normalMatrix,
+          .modelView = modelView.matrix(),
+          .mvp = mvp,
+          .normalMatrix = normalMatrix,
       };
-      struct {
-        DirectionalLight a;
-        GpuVec3 viewPos;
-      } lightUbo{myLight, camera.position()};
+      light_ubo_t lightUbo{
+          camera.transformVector(myLight.direction),
+          myLight.color,
+          myLight.intensity,
+      };
 
       auto materialUbo = meshDatas[0].material.toUniform();
 

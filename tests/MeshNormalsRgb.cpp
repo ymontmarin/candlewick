@@ -4,7 +4,7 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
-#include "candlewick/utils/CameraControl.h"
+#include "candlewick/core/Camera.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -56,18 +56,14 @@ int main() {
   std::vector<Mesh> meshes;
   for (std::size_t j = 0; j < meshDatas.size(); j++) {
     Mesh mesh = createMesh(device, meshDatas[j]);
+    uploadMeshToDevice(device, mesh, meshDatas[j]);
     meshes.push_back(std::move(mesh));
   }
   SDL_assert(meshDatas[0].numIndices() == meshes[0].indexCount);
 
-  /** COPY DATA TO GPU **/
-
-  SDL_Log("Uploading mesh...");
-  uploadMeshToDevice(device, meshes[0].toView(), meshDatas[0]);
-
   /** CREATE PIPELINE **/
-  Shader vertexShader{device, "VertexNormal.vert", 1};
-  Shader fragmentShader{device, "VertexNormal.frag", 0};
+  Shader vertexShader{device, "VertexNormal.vert", {.uniform_buffers = 1}};
+  Shader fragmentShader{device, "VertexNormal.frag", {}};
 
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
   SDL_GPUTexture *depthTexture = createDepthTexture(
@@ -141,8 +137,9 @@ int main() {
 
       switch (event.type) {
       case SDL_EVENT_MOUSE_WHEEL: {
-        float wy = event.wheel.y;
-        orthographicZoom(projectionMat, std::exp(kScrollZoom * wy));
+        float s = std::exp(kScrollZoom * event.wheel.y);
+        fov *= s;
+        projectionMat = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
         break;
       }
       case SDL_EVENT_KEY_DOWN: {

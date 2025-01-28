@@ -3,7 +3,7 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/MeshLayout.h"
-#include "candlewick/utils/CameraControl.h"
+#include "candlewick/core/Camera.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -150,8 +150,8 @@ int main() {
 
   // Shaders
 
-  Shader vertexShader{device, "VertexColor.vert", 1};
-  Shader fragmentShader{device, "VertexColor.frag", 0};
+  auto vertexShader = Shader::fromMetadata(device, "VertexColor.vert");
+  auto fragmentShader = Shader::fromMetadata(device, "VertexColor.frag");
 
   // Pipeline
 
@@ -202,9 +202,7 @@ int main() {
       device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
 
   const auto fov_rad = 45.0_radf;
-  Mat4f perp =
-      // orthographicMatrix({aspectRatio * fov_rad, fov_rad}, 0.1, 10.);
-      perspectiveFromFov(fov_rad, aspectRatio, 0.1f, 10.f);
+  Mat4f perp = perspectiveFromFov(fov_rad, aspectRatio, 0.1f, 10.f);
   Mat4f modelMat = Mat4f::Identity();
   modelMat.col(3).head<3>() << -0.5f, -0.5f, -0.5f;
   Mat4f view;

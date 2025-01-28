@@ -7,9 +7,6 @@
 [submodule "cmake"]
 	path = cmake
 	url = https://github.com/jrl-umi3218/jrl-cmakemodules.git
-[submodule "external/pinocchio-visualizers"]
-	path = external/pinocchio-visualizers
-	url = https://github.com/Simple-Robotics/pinocchio-visualizers
 [submodule "doc/doxygen-awesome-css"]
 	path = doc/doxygen-awesome-css
 	url = https://github.com/jothepro/doxygen-awesome-css.git

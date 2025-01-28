@@ -1,10 +1,10 @@
 #version 450
-#extension GL_GOOGLE_include_directive : enable
 
 #include "tone_mapping.glsl"
 
-layout(location=0) in vec3 fragWorldPos;
-layout(location=1) in vec3 fragNormal;
+layout(location=0) in vec3 fragViewPos;
+layout(location=1) in vec3 fragViewNormal;
+layout(location=2) in vec3 fragLightPos;
 
 // Light structure
 struct DirectionalLight {
@@ -29,14 +29,24 @@ layout (set=3, binding=0) uniform Material {
 
 layout(set=3, binding=1) uniform LightBlock {
     DirectionalLight light;
-    vec3 viewPos;
 };
+
+layout (set=2, binding=0) uniform sampler2DShadow shadowMap;
 
 layout(location=0) out vec4 fragColor;
 
 // Constants
 const float PI = 3.14159265359;
 const float F0 = 0.04; // Standard base reflectivity
+
+bool isShadowCoordInRange(vec3 shadowCoord) {
+    return shadowCoord.x >= 0.0 &&
+           shadowCoord.y >= 0.0 &&
+           shadowCoord.x <= 1.0 &&
+           shadowCoord.y <= 1.0 &&
+           shadowCoord.z >= 0.0 &&
+           shadowCoord.z <= 1.0;
+}
 
 // Schlick's Fresnel approximation
 vec3 fresnelSchlick(float cosTheta, vec3 F0) {
@@ -78,8 +88,8 @@ float geometrySmith(vec3 normal, vec3 V, vec3 L, float roughness) {
 
 void main() {
     vec3 lightDir = normalize(-light.direction);
-    vec3 normal = normalize(fragNormal);
-    vec3 V = normalize(viewPos - fragWorldPos);
+    vec3 normal = normalize(fragViewNormal);
+    vec3 V = normalize(-fragViewPos);
     vec3 H = normalize(lightDir + V);
 
     if (!gl_FrontFacing) {
@@ -110,6 +120,21 @@ void main() {
     float NdotL = max(dot(normal, lightDir), 0.0);
     const vec3 lightCol = light.intensity * light.color;
     vec3 Lo = (kD * material.baseColor.rgb / PI + specular) * lightCol * NdotL;
+
+    float shadowValue = 1.0;
+    vec3 texCoords;
+    {
+        float bias = max(0.05 * (1.0 - NdotL), 0.005);
+        // float bias = 0.005;
+        texCoords = fragLightPos;
+        texCoords.x = 0.5 + texCoords.x * 0.5;
+        texCoords.y = 0.5 - texCoords.y * 0.5;
+        texCoords.z -= bias;
+        if (isShadowCoordInRange(texCoords)) {
+            shadowValue = texture(shadowMap, texCoords);
+        }
+    }
+    Lo = shadowValue * Lo;
 
     // Ambient term (very simple)
     vec3 ambient = vec3(0.03) * material.baseColor.rgb * material.ao;

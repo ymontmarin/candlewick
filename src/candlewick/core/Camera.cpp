@@ -1,4 +1,4 @@
-#include "CameraControl.h"
+#include "Camera.h"
 
 namespace candlewick {
 
@@ -31,27 +31,34 @@ Mat4f perspectiveFromFov(Radf fovY, float aspectRatio, float nearZ,
   return result;
 }
 
-Mat4f perspectiveMatrix(float left, float right, float top, float bottom,
-                        float near, float far) {
-  float hfov = right - left;
-  float vfov = top - bottom;
-  float aspect = hfov / vfov;
-  return perspectiveFromFov(vfov, aspect, near, far);
-}
-
-Mat4f orthographicMatrix(const Float2 &size, float near, float far) {
-  assert(size.y() < 90._radf);
-  const Float2 xyScale = 2.0f * size.cwiseInverse();
+Mat4f orthographicMatrix(float left, float right, float bottom, float top,
+                         float near, float far) {
+  const float sx = right - left;
+  const float sy = top - bottom;
   const float zScale = 2.0f / (near - far);
-  const float m23 = near * zScale - 1.f;
-  Mat4f out;
+  const float m23 = (near + far) / (near - far);
+  const float px = (left + right) / sx;
+  const float py = (top + bottom) / sy;
+  Mat4f proj;
   // clang-format off
-  out << xyScale.x(), 0.         , 0.     , 0.,
-         0.         , xyScale.y(), 0.     , 0.,
-         0.         , 0.         , zScale , m23,
-         0.         , 0.         , 0.     , 1.;
+  proj << 2.f / sx, 0.      , 0.     , -px,
+         0.       , 2.f / sy, 0.     , -py,
+         0.       , 0.      , zScale , m23,
+         0.       , 0.      , 0.     , 1.;
   // clang-format on
-  return out;
+  return proj;
 }
 
+Mat4f orthographicMatrix(const Float2 &sizes, float near, float far) {
+  const float sx = 2.f / sizes.x();
+  const float sy = 2.f / sizes.y();
+  const float sz = 2.0f / (near - far);
+  const float m23 = (near + far) / (near - far);
+  Mat4f proj;
+  proj << sx, 0., 0., 0., //
+      0., sy, 0., 0.,     //
+      0., 0., sz, m23,    //
+      0., 0., 0., 1.;
+  return proj;
+}
 } // namespace candlewick

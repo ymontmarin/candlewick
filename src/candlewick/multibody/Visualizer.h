@@ -3,6 +3,7 @@
 #include <pinocchio-visualizers/base-visualizer.hpp>
 #include "RobotScene.h"
 #include "../core/Device.h"
+#include "../core/Camera.h"
 #include "../core/GuiSystem.h"
 #include "../core/DebugScene.h"
 #include "../core/Renderer.h"
@@ -28,6 +29,7 @@ struct VisualizerConfig {
 class Visualizer final : public BaseVisualizer {
 public:
   using BaseVisualizer::setCameraPose;
+  entt::registry registry;
   Renderer renderer;
   GuiSystem guiSys;
   RobotScene robotScene;

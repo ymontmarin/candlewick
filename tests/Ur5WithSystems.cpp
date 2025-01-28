@@ -1,16 +1,18 @@
 #include "Common.h"
+#include "GenHeightfield.h"
 
+#include "candlewick/core/debug/DepthViz.h"
+#include "candlewick/core/debug/Frustum.h"
 #include "candlewick/core/Renderer.h"
 #include "candlewick/core/GuiSystem.h"
 #include "candlewick/core/DebugScene.h"
-
-#include "candlewick/core/math_util.h"
+#include "candlewick/core/DepthAndShadowPass.h"
 #include "candlewick/core/LightUniforms.h"
-#include "candlewick/utils/WriteTextureToImage.h"
-#include "candlewick/utils/CameraControl.h"
-#include "candlewick/multibody/RobotScene.h"
 
+#include "candlewick/multibody/RobotScene.h"
 #include "candlewick/primitives/Plane.h"
+#include "candlewick/utils/WriteTextureToImage.h"
+#include "candlewick/core/Camera.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -39,30 +41,41 @@ using multibody::RobotScene;
 
 /// Application constants
 
-constexpr Uint32 wWidth = 1600;
-constexpr Uint32 wHeight = 900;
+constexpr Uint32 wWidth = 1680;
+constexpr Uint32 wHeight = 1050;
 constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 /// Application state
 
-static Camera camera;
 static Radf currentFov = 55.0_radf;
+static float nearZ = 0.01f;
+static float farZ = 10.f;
+static float currentOrthoScale = 1.f;
+static CameraProjection cam_type = CameraProjection::PERSPECTIVE;
+static Camera camera{
+    .projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ),
+    .view{lookAt({2.0, 0, 2.}, Float3::Zero())},
+};
 static bool quitRequested = false;
+enum VizMode {
+  FULL_RENDER,
+  DEPTH_DEBUG,
+  LIGHT_DEBUG,
+};
+static VizMode showDebugViz = FULL_RENDER;
 
 static float pixelDensity;
 static float displayScale;
-static float nearZ = 0.01f;
-static float farZ = 10.0f;
 
-static DirectionalLight myLight{
-    .direction = {0., -1., -1.},
-    .color = {1.0, 1.0, 1.0},
-    .intensity = 8.0,
-};
-
-void updateFov(Radf newFov) {
+static void updateFov(Radf newFov) {
+  camera.projection = perspectiveFromFov(newFov, aspectRatio, nearZ, farZ);
   currentFov = newFov;
-  camera.projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ);
+}
+
+static void updateOrtho(float zoom) {
+  float iz = 1.f / zoom;
+  camera.projection = orthographicMatrix({iz * aspectRatio, iz}, -8., 8.);
+  currentOrthoScale = zoom;
 }
 
 void eventLoop(const Renderer &renderer) {
@@ -88,7 +101,14 @@ void eventLoop(const Renderer &renderer) {
     case SDL_EVENT_MOUSE_WHEEL: {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
-      updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
+      switch (cam_type) {
+      case CameraProjection::ORTHOGRAPHIC:
+        updateOrtho(std::clamp(scaleFac * currentOrthoScale, 0.1f, 2.f));
+        break;
+      case CameraProjection::PERSPECTIVE:
+        updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
+        break;
+      }
       break;
     }
     case SDL_EVENT_KEY_DOWN: {
@@ -140,8 +160,12 @@ Renderer createRenderer(Uint32 width, Uint32 height,
 int main(int argc, char **argv) {
   CLI::App app{"Ur5 example"};
   bool performRecording{false};
+  RobotScene::Config robot_scene_config;
+
   argv = app.ensure_utf8(argv);
   app.add_flag("-r,--record", performRecording, "Record output");
+  app.add_flag("--prepass", robot_scene_config.triangle_has_prepass,
+               "Whether to have a prepass for the PBR'd triangle meshes.");
   CLI11_PARSE(app, argc, argv);
 
   if (!SDL_Init(SDL_INIT_VIDEO))
@@ -150,55 +174,122 @@ int main(int argc, char **argv) {
   Renderer renderer =
       createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D32_FLOAT);
 
+  entt::registry registry{};
+
   // Load robot
   pin::Model model;
   pin::GeometryModel geom_model;
   robot_descriptions::loadModelsFromToml("ur.toml", "ur5_gripper", model,
                                          &geom_model, NULL);
+  // ADD HEIGHTFIELD GEOM
+  // {
+  //   auto hfield = generatePerlinNoiseHeightfield(40, 10u, 6.f);
+  //   pin::GeometryObject gobj{"custom_hfield", 0ul, pin::SE3::Identity(),
+  //                            hfield};
+  //   gobj.meshColor = 0xA03232FF_rgba;
+  //   geom_model.addGeometryObject(gobj);
+  // }
   pin::Data pin_data{model};
   pin::GeometryData geom_data{geom_model};
 
-  RobotScene robot_scene{renderer, geom_model, geom_data, {}};
+  RobotScene robot_scene{registry, renderer, geom_model, geom_data,
+                         robot_scene_config};
+  auto &myLight = robot_scene.directionalLight;
+  myLight = {
+      .direction = {-1.f, 0.f, -1.},
+      .color = {1.0, 1.0, 1.0},
+      .intensity = 8.0,
+  };
 
   // Add plane
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-  auto &plane_obj = robot_scene.addEnvironmentObject(
-      loadPlaneTiled(0.25f, 5, 5), plane_transform.matrix());
-  auto &robotShapes = robot_scene.robotObjects;
-  SDL_assert(robotShapes.size() == geom_model.ngeoms);
-  SDL_Log("Created %zu robot mesh shapes.", robotShapes.size());
+  entt::entity plane_entity = robot_scene.addEnvironmentObject(
+      loadPlaneTiled(0.5f, 20, 20), plane_transform.matrix());
+  auto [plane_obj, plane_vis] =
+      registry.get<RobotScene::MeshMaterialComponent,
+                   multibody::VisibilityComponent>(plane_entity);
+
+  robot_scene.addEnvironmentObject(loadCube(.4f, {-0.45f, -0.4f}),
+                                   Mat4f::Identity());
+
+  const size_t numRobotShapes =
+      registry.view<const multibody::PinGeomObjComponent>().size();
+  SDL_assert(numRobotShapes == geom_model.ngeoms);
+  SDL_Log("Registered %zu robot geometry objects.", numRobotShapes);
 
   /** DEBUG SYSTEM **/
   DebugScene debug_scene{renderer};
   auto &basic_debug_module = debug_scene.addModule<BasicDebugModule>();
   basic_debug_module.grid_color = 0xE0A236ff_rgbaf;
 
+  auto depth_debug = DepthDebugPass::create(renderer, renderer.depth_texture);
+  static DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
+
+  auto depthPassInfo = DepthPassInfo::create(renderer, plane_obj.mesh.layout);
+  auto &shadowPassInfo = robot_scene.shadowPass;
+  auto shadowDebugPass =
+      DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);
+
+  auto frustumBoundsDebug = FrustumAndBoundsDebug::create(renderer);
+
   GuiSystem gui_system{[&](Renderer &r) {
     static bool demo_window_open = true;
-    const float minFov = 15.f;
-    const float maxFov = 90.f;
 
     ImGui::Begin("Renderer info & controls", nullptr,
                  ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("Device driver: %s", r.device.driverName());
     ImGui::SeparatorText("Camera");
-    Degf newFov{currentFov};
-    ImGui::DragFloat("cam_fov", (float *)(newFov), 1.f, minFov, maxFov, "%.3f",
-                     ImGuiSliderFlags_AlwaysClamp);
-    updateFov(Radf(newFov));
+    bool ortho_change, persp_change;
+    ortho_change = ImGui::RadioButton("Orthographic", (int *)&cam_type,
+                                      int(CameraProjection::ORTHOGRAPHIC));
+    ImGui::SameLine();
+    persp_change = ImGui::RadioButton("Perspective", (int *)&cam_type,
+                                      int(CameraProjection::PERSPECTIVE));
+    switch (cam_type) {
+    case CameraProjection::ORTHOGRAPHIC:
+      ortho_change |=
+          ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f, "%.3f",
+                           ImGuiSliderFlags_AlwaysClamp);
+      if (ortho_change)
+        updateOrtho(currentOrthoScale);
+      break;
+    case CameraProjection::PERSPECTIVE:
+      Degf newFov{currentFov};
+      persp_change |= ImGui::DragFloat("fov", newFov, 1.f, 15.f, 90.f, "%.3f",
+                                       ImGuiSliderFlags_AlwaysClamp);
+      persp_change |=
+          ImGui::SliderFloat("Near plane", &nearZ, 0.01f, 0.8f * farZ);
+      persp_change |= ImGui::SliderFloat("Far plane", &farZ, nearZ, 10.f);
+      if (persp_change)
+        updateFov(Radf(newFov));
+      break;
+    }
 
     ImGui::SeparatorText("Env. status");
-    ImGui::Checkbox("Render plane", &plane_obj.status);
+    ImGui::Checkbox("Render plane", &plane_vis.status);
     ImGui::Checkbox("Render grid", &basic_debug_module.enableGrid);
     ImGui::Checkbox("Render triad", &basic_debug_module.enableTriad);
 
+    ImGui::RadioButton("Full render mode", (int *)&showDebugViz, FULL_RENDER);
+    ImGui::SameLine();
+    ImGui::RadioButton("Depth debug", (int *)&showDebugViz, DEPTH_DEBUG);
+    ImGui::SameLine();
+    ImGui::RadioButton("Light mode", (int *)&showDebugViz, LIGHT_DEBUG);
+
+    if (showDebugViz & (DEPTH_DEBUG | LIGHT_DEBUG)) {
+      ImGui::RadioButton("Grayscale", (int *)&depth_mode, 0);
+      ImGui::SameLine();
+      ImGui::RadioButton("Heatmap", (int *)&depth_mode, 1);
+    }
+
     ImGui::SeparatorText("Lights");
-    ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
+    ImGui::SliderFloat("intens.", &myLight.intensity, 0.1f, 10.0f);
+    ImGui::DragFloat3("direction", myLight.direction.data(), 0.0f, -1.f, 1.f);
     ImGui::ColorEdit3("color", myLight.color.data());
     ImGui::Separator();
     ImGui::ColorEdit4("grid color", basic_debug_module.grid_color.data(),
                       ImGuiColorEditFlags_AlphaPreview);
-    ImGui::ColorEdit4("plane color", plane_obj.materials.baseColor.data());
+    ImGui::ColorEdit4("plane color", plane_obj.materials[0].baseColor.data());
     ImGui::End();
     ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
     ImGui::ShowDemoWindow(&demo_window_open);
@@ -212,9 +303,7 @@ int main(int argc, char **argv) {
 
   Uint32 frameNo = 0;
 
-  camera.projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ);
-  camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
-
+  srand(42);
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
 
@@ -223,12 +312,15 @@ int main(int argc, char **argv) {
     recorder = media::VideoRecorder{wWidth, wHeight, "ur5.mp4"};
 
   auto record_callback = [=, &renderer, &recorder]() {
-    auto swapchain_format =
-        SDL_GetGPUSwapchainTextureFormat(renderer.device, renderer.window);
+    auto swapchain_format = renderer.getSwapchainTextureFormat();
     media::videoWriteTextureToFrame(renderer.device, recorder,
                                     renderer.swapchain, swapchain_format,
                                     wWidth, wHeight);
   };
+
+  AABB &worldSpaceBounds = robot_scene.worldSpaceBounds;
+  worldSpaceBounds.grow({-1.f, -1.f, 0.f});
+  worldSpaceBounds.grow({+1.f, +1.f, 1.f});
 
   while (!quitRequested) {
     // logic
@@ -238,13 +330,43 @@ int main(int argc, char **argv) {
     pin::forwardKinematics(model, pin_data, q);
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
 
+    FrustumCornersType main_cam_frustum = frustumFromCamera(camera);
+
     // acquire command buffer and swapchain
-    robot_scene.directionalLight = myLight;
     renderer.beginFrame();
 
-    if (renderer.acquireSwapchain()) {
-      robot_scene.render(renderer, camera);
-      debug_scene.render(renderer, camera);
+    if (renderer.waitAndAcquireSwapchain()) {
+      const GpuMat4 viewProj = camera.viewProj();
+      multibody::updateRobotTransforms(registry, robot_scene.geomData());
+      robot_scene.collectOpaqueCastables();
+      auto castables = robot_scene.castables();
+      renderShadowPassFromAABB(renderer, shadowPassInfo, myLight, castables,
+                               worldSpaceBounds);
+      // renderShadowPassFromFrustum(renderer, shadowPassInfo, myLight,
+      // castables,
+      //                             main_cam_frustum);
+      if (showDebugViz == DEPTH_DEBUG) {
+        renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
+        renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});
+      } else if (showDebugViz == LIGHT_DEBUG) {
+        renderDepthDebug(renderer, shadowDebugPass,
+                         {depth_mode, orthoProjNear(shadowPassInfo.lightProj),
+                          orthoProjFar(shadowPassInfo.lightProj),
+                          CameraProjection::ORTHOGRAPHIC});
+      } else {
+        if (robot_scene.pbrHasPrepass())
+          renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
+        robot_scene.render(renderer, camera);
+        debug_scene.render(renderer, camera);
+
+        // debug frustum for directional light
+        frustumBoundsDebug.renderLightFrustum(
+            renderer, camera,
+            {shadowPassInfo.lightProj,
+             Eigen::Isometry3f{shadowPassInfo.lightView}});
+        frustumBoundsDebug.renderBounds(renderer, camera, worldSpaceBounds,
+                                        0x00BFFFff_rgbaf);
+      }
       gui_system.render(renderer);
     } else {
       SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
@@ -259,6 +381,11 @@ int main(int argc, char **argv) {
     frameNo++;
   }
 
+  frustumBoundsDebug.release(renderer.device);
+  shadowPassInfo.release(renderer.device);
+  depthPassInfo.release(renderer.device);
+  shadowDebugPass.release(renderer.device);
+  depth_debug.release(renderer.device);
   robot_scene.release();
   debug_scene.release();
   gui_system.release();
