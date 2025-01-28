@@ -24,16 +24,16 @@ struct main0_in
 };
 
 static inline __attribute__((always_inline))
-float linearizeDepthOrtho(thread const float& depth, thread const float& near, thread const float& far)
+float linearizeDepthOrtho(thread const float& depth, thread const float& zNear, thread const float& zFar)
 {
-    return near + (depth * (far - near));
+    return zNear + (depth * (zFar - zNear));
 }
 
 static inline __attribute__((always_inline))
-float linearizeDepth(thread const float& depth, thread const float& near, thread const float& far)
+float linearizeDepth(thread const float& depth, thread const float& zNear, thread const float& zFar)
 {
     float z_ndc = (2.0 * depth) - 1.0;
-    return ((2.0 * near) * far) / ((far + near) - (z_ndc * (far - near)));
+    return ((2.0 * zNear) * zFar) / ((zFar + zNear) - (z_ndc * (zFar - zNear)));
 }
 
 static inline __attribute__((always_inline))
