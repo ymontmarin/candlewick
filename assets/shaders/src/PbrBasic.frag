@@ -1,6 +1,7 @@
 #version 450
 
 #include "tone_mapping.glsl"
+#include "pbr_material.glsl"
 
 layout(location=0) in vec3 fragViewPos;
 layout(location=1) in vec3 fragViewNormal;
@@ -11,13 +12,6 @@ struct DirectionalLight {
     vec3 direction;
     vec3 color;
     float intensity;
-};
-
-struct PbrMaterial {
-    vec4 baseColor;
-    float metalness;
-    float roughness;
-    float ao;
 };
 
 // set=3 is required, see SDL3's documentation for SDL_CreateGPUShader
