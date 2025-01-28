@@ -11,4 +11,11 @@ struct alignas(16) PbrMaterialUniform {
   float ao;
 };
 
+struct alignas(16) PhongMaterialUniform {
+  GpuVec4 diffuse;
+  GpuVec4 ambient;
+  GpuVec4 specular;
+  float shininess;
+};
+
 } // namespace candlewick
