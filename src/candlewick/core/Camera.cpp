@@ -1,5 +1,4 @@
 #include "Camera.h"
-#include "AABB.h"
 
 namespace candlewick {
 
@@ -51,17 +50,15 @@ Mat4f orthographicMatrix(float left, float right, float bottom, float top,
 }
 
 Mat4f orthographicMatrix(const Float2 &sizes, float near, float far) {
-  const float sx = sizes.x();
-  const float sy = sizes.y();
-  const float zScale = 2.0f / (near - far);
+  const float sx = 2.f / sizes.x();
+  const float sy = 2.f / sizes.y();
+  const float sz = 2.0f / (near - far);
   const float m23 = (near + far) / (near - far);
   Mat4f proj;
-  // clang-format off
-  proj << 2.f / sx, 0.      , 0.     , 0.,
-         0.       , 2.f / sy, 0.     , 0.,
-         0.       , 0.      , zScale , m23,
-         0.       , 0.      , 0.     , 1.;
-  // clang-format on
+  proj << sx, 0., 0., 0., //
+      0., sy, 0., 0.,     //
+      0., 0., sz, m23,    //
+      0., 0., 0., 1.;
   return proj;
 }
 } // namespace candlewick
