@@ -52,7 +52,7 @@ struct DebugTransform
     float3 eyePos;
 };
 
-constant spvUnsafeArray<uint, 24> _28 = spvUnsafeArray<uint, 24>({ 0u, 1u, 0u, 2u, 2u, 3u, 1u, 3u, 4u, 5u, 4u, 6u, 6u, 7u, 5u, 7u, 0u, 4u, 1u, 5u, 2u, 6u, 3u, 7u });
+constant spvUnsafeArray<uint, 24> _58 = spvUnsafeArray<uint, 24>({ 0u, 1u, 0u, 2u, 2u, 3u, 1u, 3u, 4u, 5u, 4u, 6u, 6u, 7u, 5u, 7u, 0u, 4u, 1u, 5u, 2u, 6u, 3u, 7u });
 
 struct main0_out
 {
@@ -60,41 +60,59 @@ struct main0_out
     float4 gl_Position [[position]];
 };
 
-vertex main0_out main0(constant DebugTransform& _71 [[buffer(0)]], uint gl_VertexIndex [[vertex_id]])
+static inline __attribute__((always_inline))
+float4 getNDCCorner(thread const uint& idx)
+{
+    return float4((2.0 * float(idx & 1u)) - 1.0, (2.0 * float((idx >> uint(1)) & 1u)) - 1.0, (2.0 * float((idx >> uint(2)) & 1u)) - 1.0, 1.0);
+}
+
+vertex main0_out main0(constant DebugTransform& _74 [[buffer(0)]], uint gl_VertexIndex [[vertex_id]])
 {
     main0_out out = {};
     if (int(gl_VertexIndex) < 24)
     {
-        uint cornerIdx = _28[int(gl_VertexIndex)];
-        uint x = cornerIdx & 1u;
-        uint y = (cornerIdx >> uint(1)) & 1u;
-        uint z = (cornerIdx >> uint(2)) & 1u;
-        float4 ndc = float4((2.0 * float(x)) - 1.0, (2.0 * float(y)) - 1.0, (2.0 * float(z)) - 1.0, 1.0);
-        float4 viewPos = _71.invProj * ndc;
+        uint cornerIdx = _58[int(gl_VertexIndex)];
+        uint param = cornerIdx;
+        float4 ndc = getNDCCorner(param);
+        float4 viewPos = _74.invProj * ndc;
         viewPos /= float4(viewPos.w);
-        out.gl_Position = _71.mvp * viewPos;
+        out.gl_Position = _74.mvp * viewPos;
     }
     else
     {
-        if (int(gl_VertexIndex) >= 24)
+        if (int(gl_VertexIndex) < 30)
         {
             uint axisIdx = uint((int(gl_VertexIndex) - 24) / 2);
             uint pointIdx = uint(int(gl_VertexIndex) & 1);
             float size = 0.100000001490116119384765625;
             float3 offset = float3(0.0);
-            float _117;
+            float _121;
             if (pointIdx == 0u)
             {
-                _117 = -size;
+                _121 = -size;
             }
             else
             {
-                _117 = size;
+                _121 = size;
             }
-            offset[axisIdx] = _117;
-            out.gl_Position = _71.mvp * float4(_71.eyePos + offset, 1.0);
+            offset[axisIdx] = _121;
+            out.gl_Position = _74.mvp * float4(_74.eyePos + offset, 1.0);
+        }
+        else
+        {
+            uint lineIdx = uint((int(gl_VertexIndex) - 30) / 2);
+            uint pointIdx_1 = uint(int(gl_VertexIndex) & 1);
+            uint edgeNum = (lineIdx + pointIdx_1) % 4u;
+            uint near = edgeNum;
+            uint far = near + 4u;
+            uint param_1 = near;
+            uint param_2 = far;
+            float4 center = mix(getNDCCorner(param_1), getNDCCorner(param_2), float4(0.5));
+            float4 viewPos_1 = _74.invProj * center;
+            viewPos_1 /= float4(viewPos_1.w);
+            out.gl_Position = _74.mvp * viewPos_1;
         }
     }
-    out.outColor = _71.color;
+    out.outColor = _74.color;
     return out;
 }

@@ -38,6 +38,8 @@ struct alignas(16) ubo_t {
   GpuVec3 eyePos;
 };
 
+static constexpr Uint32 NUM_VERTICES = 36u;
+
 void render_impl(Renderer &renderer, const FrustumAndBoundsDebug &passInfo,
                  const Mat4f &invProj, const Mat4f &mvp, const Float3 eyePos,
                  const Float4 &color) {
@@ -68,7 +70,7 @@ void render_impl(Renderer &renderer, const FrustumAndBoundsDebug &passInfo,
   };
   renderer.pushVertexUniform(0, &ubo, sizeof(ubo));
 
-  SDL_DrawGPUPrimitives(render_pass, 30, 1, 0, 0);
+  SDL_DrawGPUPrimitives(render_pass, NUM_VERTICES, 1, 0, 0);
 
   SDL_EndGPURenderPass(render_pass);
 }
