@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
                          robot_scene_config};
   auto &myLight = robot_scene.directionalLight;
   myLight = {
-      .direction = {0., -1., -1.},
+      .direction = {-1.f, 0.f, -1.},
       .color = {1.0, 1.0, 1.0},
       .intensity = 8.0,
   };
@@ -283,7 +283,7 @@ int main(int argc, char **argv) {
     }
 
     ImGui::SeparatorText("Lights");
-    ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
+    ImGui::SliderFloat("intens.", &myLight.intensity, 0.1f, 10.0f);
     ImGui::DragFloat3("direction", myLight.direction.data(), 0.0f, -1.f, 1.f);
     ImGui::ColorEdit3("color", myLight.color.data());
     ImGui::Separator();
@@ -303,6 +303,7 @@ int main(int argc, char **argv) {
 
   Uint32 frameNo = 0;
 
+  srand(42);
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
 
@@ -316,6 +317,10 @@ int main(int argc, char **argv) {
                                     renderer.swapchain, swapchain_format,
                                     wWidth, wHeight);
   };
+
+  AABB &worldSpaceBounds = robot_scene.worldSpaceBounds;
+  worldSpaceBounds.grow({-1.f, -1.f, 0.f});
+  worldSpaceBounds.grow({+1.f, +1.f, 1.f});
 
   while (!quitRequested) {
     // logic
@@ -335,8 +340,8 @@ int main(int argc, char **argv) {
       multibody::updateRobotTransforms(registry, robot_scene.geomData());
       robot_scene.collectOpaqueCastables();
       auto castables = robot_scene.castables();
-      renderShadowPass(renderer, shadowPassInfo, myLight, castables,
-                       worldSpaceBounds);
+      renderShadowPassFromAABB(renderer, shadowPassInfo, myLight, castables,
+                               worldSpaceBounds);
       // renderShadowPassFromFrustum(renderer, shadowPassInfo, myLight,
       // castables,
       //                             main_cam_frustum);

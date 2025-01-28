@@ -1,11 +1,12 @@
 #include "DepthAndShadowPass.h"
 #include "Renderer.h"
 #include "Shader.h"
-#include "OBB.h"
+#include "AABB.h"
 #include "Camera.h"
 
 #include <stdexcept>
 #include <format>
+#include <SDL3/SDL_log.h>
 
 namespace candlewick {
 
@@ -173,16 +174,23 @@ void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }
 
-void renderShadowPass(Renderer &renderer, ShadowPassInfo &passInfo,
-                      const DirectionalLight &dirLight,
-                      std::span<const OpaqueCastable> castables,
-                      const AABB &worldSceneBounds) {
-  Float3 eye = -dirLight.direction;
-  passInfo.lightView = lookAt(eye, Float3::Zero());
-  OBB viewSpaceBounds =
-      OBB::fromAABB(worldSceneBounds).transform(passInfo.lightView);
-  passInfo.lightProj = orthoFromAABB(viewSpaceBounds.toAabb());
-  Mat4f viewProj = passInfo.lightProj * passInfo.lightView;
+void renderShadowPassFromAABB(Renderer &renderer, ShadowPassInfo &passInfo,
+                              const DirectionalLight &dirLight,
+                              std::span<const OpaqueCastable> castables,
+                              const AABB &worldSceneBounds) {
+  Float3 center = worldSceneBounds.center();
+  float radius = worldSceneBounds.radius();
+  radius = std::ceil(radius * 16.f) / 16.f;
+  Float3 eye = center - radius * dirLight.direction.normalized();
+  Mat4f &lightView = passInfo.lightView;
+  Mat4f &lightProj = passInfo.lightProj;
+  lightView = lookAt(eye, center, Float3::UnitZ());
+
+  AABB bounds{Float3::Constant(-radius), Float3::Constant(+radius)};
+  lightProj = shadowOrthographicMatrix({bounds.width(), bounds.height()},
+                                       bounds.min.z(), bounds.max.z());
+
+  Mat4f viewProj = lightProj * lightView;
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }
 } // namespace candlewick

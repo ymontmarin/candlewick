@@ -1,7 +1,8 @@
-/// \defgroup depth_pass Depth Pre-Pass System
-/// \{
+/// \defgroup depth_pass Depth Pre-Pass and Shadow Mapping Systems
 ///
-/// \brief Requirements for consistent depth testing between passes.
+/// \{
+/// \section requirements Requirements for consistent depth testing between
+/// passes.
 ///
 /// When using a depth pre-pass with `EQUAL` depth comparison in the main pass,
 /// ensure identical vertex transformations between passes by:
@@ -102,21 +103,70 @@ void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
 
 struct AABB;
 
+/// \addtogroup depth_pass
+/// \section depth_testing Depth testing in modern APIs
+///
+/// SDL GPU is based on modern graphics APIs like Vulkan, which tests depths for
+/// objects located in the \f$z \in [-1,0]\f$ half-volume of the NDC cube.
+/// This means that to get your geometry rendered to a shadow map, the light
+/// space projection matrix needs to map everything to this half-volume.
+///
+/// \see shadowOrthographicMatrix()
+
+/// \ingroup depth_pass
+/// \{
 /// \brief Render shadow pass, using provided scene bounds.
 ///
 /// The scene bounds are in world-space.
-void renderShadowPass(Renderer &renderer, ShadowPassInfo &passInfo,
-                      const DirectionalLight &dirLight,
-                      std::span<const OpaqueCastable> castables,
-                      const AABB &worldSceneBounds);
+void renderShadowPassFromAABB(Renderer &renderer, ShadowPassInfo &passInfo,
+                              const DirectionalLight &dirLight,
+                              std::span<const OpaqueCastable> castables,
+                              const AABB &worldSceneBounds);
 
 /// \brief Render shadow pass, using a provided world-space frustum.
 ///
-/// The frustum can be obtained from the world-space camera.
+/// This routine creates a bounding sphere around the frustum, and compute
+/// light-space view and projection matrices which will enclose this bounding
+/// sphere within the light volume. The frustum can be obtained from the
+/// world-space camera.
 /// \sa frustumFromCameraProjection()
 void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
                                  const DirectionalLight &dirLight,
                                  std::span<const OpaqueCastable> castables,
                                  const FrustumCornersType &worldSpaceCorners);
+
+/// \brief Orthographic matrix which maps to the negative-Z half-volume of the
+/// NDC cube, for depth-testing/shadow mapping purposes.
+///
+/// This matrix maps a rectangular cuboid centered on the xy-plane and spanning
+/// from \p zMin to \p zMax in Z-direction, to the negative-Z half-volume of the
+/// NDC cube. This is useful for mapping an axis-aligned bounding-box (\ref
+/// AABB) to an orthographic projection where the entire box is in front of the
+/// camera.
+///
+/// <https://en.wikipedia.org/wiki/Rectangular_cuboid>
+///
+/// \param sizes xy-plane dimensions of the cuboid/bounding box.
+/// \param zMin view-space Z-coordinate the box starts at, equivalent to the \c
+/// near argument in other routines.
+/// \param zMax view-space Z-coordinate the box ends at, equivalent to \c far in
+/// other routines.
+inline Mat4f shadowOrthographicMatrix(const Float2 &sizes, float zMin,
+                                      float zMax) {
+  const float sx = 2.f / sizes.x();
+  const float sy = 2.f / sizes.y();
+  const float sz = 1.f / (zMin - zMax);
+  const float pz = 0.5f * (zMin + zMax) * sz;
+
+  Mat4f proj = Mat4f::Zero();
+  proj(0, 0) = sx;
+  proj(1, 1) = sy;
+  proj(2, 2) = sz;
+  proj(2, 3) = -pz;
+  proj(3, 3) = 1.f;
+  return proj;
+}
+
+/// \}
 
 } // namespace candlewick
