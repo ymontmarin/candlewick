@@ -171,9 +171,8 @@ void uploadMeshToDevice(const Device &device, const Mesh &mesh,
   uploadMeshToDevice(device, view, meshData);
 }
 
-std::vector<PbrMaterialData>
-extractMaterials(std::span<const MeshData> meshDatas) {
-  std::vector<PbrMaterialData> out;
+std::vector<PbrMaterial> extractMaterials(std::span<const MeshData> meshDatas) {
+  std::vector<PbrMaterial> out;
   out.reserve(meshDatas.size());
   for (size_t i = 0; i < meshDatas.size(); i++) {
     out.push_back(meshDatas[i].material);

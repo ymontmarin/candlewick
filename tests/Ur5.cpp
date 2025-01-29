@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
   struct RobotObject {
     pin::GeomIndex geom_index;
     Mesh mesh;
-    std::vector<PbrMaterialData> materials;
+    std::vector<PbrMaterial> materials;
   };
   std::vector<RobotObject> robotShapes;
   for (size_t i = 0; i < geom_model.ngeoms; i++) {
@@ -406,7 +406,7 @@ int main(int argc, char **argv) {
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
         renderer.bindMesh(render_pass, mesh);
         for (size_t j = 0; j < mesh.numViews(); j++) {
-          const auto material = obj.materials[j].toUniform();
+          const auto material = obj.materials[j];
           renderer.pushFragmentUniform(0, &material, sizeof(material));
           renderer.drawView(render_pass, mesh.view(j));
         }
@@ -422,9 +422,9 @@ int main(int argc, char **argv) {
             mvp,
             math::computeNormalMatrix(modelView),
         };
-        const auto material = plane_data.material.toUniform();
+        const auto material = plane_data.material;
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
-        renderer.pushFragmentUniform(0, &material, sizeof(PbrMaterialUniform));
+        renderer.pushFragmentUniform(0, &material, sizeof(material));
         renderer.bindMesh(render_pass, plane);
         renderer.draw(render_pass, plane);
       }

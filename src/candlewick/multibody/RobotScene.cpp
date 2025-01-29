@@ -254,7 +254,7 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
     renderer.pushVertexUniform(1, &lightMvp, sizeof(lightMvp));
     renderer.bindMesh(render_pass, mesh);
     for (size_t j = 0; j < mesh.numViews(); j++) {
-      auto material = obj.materials[j].toUniform();
+      const auto material = obj.materials[j];
       renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
                                    sizeof(material));
       renderer.drawView(render_pass, mesh.view(j));

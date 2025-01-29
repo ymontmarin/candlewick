@@ -42,8 +42,8 @@ int main() {
   SDL_snprintf(meshPath, 256, "%s../../../%s", basePath, meshFilename);
 
   std::vector<MeshData> meshDatas;
-  LoadMeshReturn ret = loadSceneMeshes(meshPath, meshDatas);
-  if (ret < LoadMeshReturn::OK) {
+  auto ret = loadSceneMeshes(meshPath, meshDatas);
+  if (ret < mesh_load_retc::OK) {
     SDL_Log("Failed to load mesh.");
     return 1;
   }

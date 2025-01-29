@@ -57,8 +57,8 @@ int main() {
   auto modelMat = test_mesh.transform;
 
   std::vector<MeshData> meshDatas;
-  LoadMeshReturn ret = loadSceneMeshes(meshPath, meshDatas);
-  if (ret < LoadMeshReturn::OK) {
+  mesh_load_retc ret = loadSceneMeshes(meshPath, meshDatas);
+  if (ret < mesh_load_retc::OK) {
     SDL_Log("Failed to load mesh.");
     return 1;
   }
@@ -229,7 +229,7 @@ int main() {
           myLight.intensity,
       };
 
-      auto materialUbo = meshDatas[0].material.toUniform();
+      auto materialUbo = meshDatas[0].material;
 
       SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                    sizeof(cameraUniform));

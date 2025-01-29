@@ -2,7 +2,7 @@
 
 #include "Utils.h"
 #include "VertexDataBlob.h"
-#include "MaterialData.h"
+#include "../core/MaterialUniform.h"
 #include "../core/Tags.h"
 #include <SDL3/SDL_gpu.h>
 
@@ -26,7 +26,7 @@ struct MeshData : MeshDataBase<MeshData> {
   SDL_GPUPrimitiveType primitiveType; //< Geometry primitive for the mesh
   VertexDataBlob vertexData;          //< Vertices
   std::vector<IndexType> indexData;   //< Indices for indexed mesh. Optional.
-  PbrMaterialData material;
+  PbrMaterial material;               //< PBR material
 
   const MeshLayout &layout() const { return vertexData.layout(); }
 
@@ -89,7 +89,6 @@ void uploadMeshToDevice(const Device &device, const MeshView &meshView,
 void uploadMeshToDevice(const Device &device, const Mesh &mesh,
                         const MeshData &meshData);
 
-std::vector<PbrMaterialData>
-extractMaterials(std::span<const MeshData> meshDatas);
+std::vector<PbrMaterial> extractMaterials(std::span<const MeshData> meshDatas);
 
 } // namespace candlewick

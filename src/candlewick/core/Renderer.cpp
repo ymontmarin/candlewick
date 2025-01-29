@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include "errors.h"
 #include <utility>
-#include "../third-party/magic_enum.hpp"
+#include <cassert>
 
 namespace candlewick {
 Renderer::Renderer(Device &&device, SDL_Window *window)
@@ -46,8 +46,6 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
     try_idx++;
   }
   this->depth_format = texInfo.format;
-  SDL_Log("[Renderer] depth texture format will be %s",
-          magic_enum::enum_name(this->depth_format).data());
   depth_texture = SDL_CreateGPUTexture(this->device, &texInfo);
 }
 
