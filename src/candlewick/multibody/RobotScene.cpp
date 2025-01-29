@@ -5,6 +5,7 @@
 #include "../core/TransformUniforms.h"
 #include "../core/Camera.h"
 
+#include <entt/entity/registry.hpp>
 #include <coal/BVH/BVH_model.h>
 #include <pinocchio/multibody/data.hpp>
 #include <pinocchio/multibody/geometry.hpp>

@@ -9,7 +9,7 @@
 #include "../utils/MeshData.h"
 #include "../third-party/magic_enum.hpp"
 
-#include <entt/entity/registry.hpp>
+#include <entt/entity/fwd.hpp>
 #include <coal/fwd.hh>
 #include <pinocchio/multibody/fwd.hpp>
 
