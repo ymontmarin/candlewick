@@ -68,9 +68,9 @@ public:
 
   struct MeshMaterialComponent {
     Mesh mesh;
-    std::vector<PbrMaterialData> materials;
+    std::vector<PbrMaterial> materials;
     PipelineType pipeline_type;
-    MeshMaterialComponent(Mesh &&mesh, std::vector<PbrMaterialData> &&materials,
+    MeshMaterialComponent(Mesh &&mesh, std::vector<PbrMaterial> &&materials,
                           PipelineType pipelineType)
         : mesh(std::move(mesh)), materials(std::move(materials)),
           pipeline_type(pipelineType) {

@@ -1,4 +1,4 @@
-#include "MaterialData.h"
+#include "LoadMaterial.h"
 
 #include "../third-party/magic_enum.hpp"
 
@@ -24,8 +24,7 @@ enum class material_load_retc {
   OK,
 };
 
-material_load_retc loadPhongMaterial(aiMaterial *material,
-                                     PhongMaterialData &out) {
+material_load_retc loadPhongMaterial(aiMaterial *material, PhongMaterial &out) {
   if (!material)
     return material_load_retc::INVALID;
 
@@ -43,7 +42,7 @@ material_load_retc loadPhongMaterial(aiMaterial *material,
   return material_load_retc::OK;
 }
 
-material_load_retc loadPbrMaterial(aiMaterial *material, PbrMaterialData &out) {
+material_load_retc loadPbrMaterial(aiMaterial *material, PbrMaterial &out) {
   if (!material)
     return material_load_retc::INVALID;
 
@@ -58,8 +57,8 @@ material_load_retc loadPbrMaterial(aiMaterial *material, PbrMaterialData &out) {
 
 #undef _col
 
-PbrMaterialData pbrFromPhong(const PhongMaterialData &phong) {
-  PbrMaterialData out;
+PbrMaterial pbrFromPhong(const PhongMaterial &phong) {
+  PbrMaterial out;
   out.baseColor = phong.diffuse;
   auto specularRgb = phong.specular.head<3>();
   float specAvg = specularRgb.mean();
@@ -81,13 +80,13 @@ PbrMaterialData pbrFromPhong(const PhongMaterialData &phong) {
   return out;
 }
 
-PbrMaterialData loadFromAssimpMaterial(aiMaterial *material) {
-  PbrMaterialData out;
+PbrMaterial loadFromAssimpMaterial(aiMaterial *material) {
+  PbrMaterial out;
   auto retc = loadPbrMaterial(material, out);
   if (retc == material_load_retc::OK)
     return out;
 
-  PhongMaterialData phong;
+  PhongMaterial phong;
   retc = loadPhongMaterial(material, phong);
 
   if (retc == material_load_retc::OK)

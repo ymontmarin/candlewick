@@ -1,5 +1,7 @@
 #include "LoadMesh.h"
+
 #include "MeshData.h"
+#include "LoadMaterial.h"
 #include "../core/DefaultVertex.h"
 
 #include <SDL3/SDL_log.h>

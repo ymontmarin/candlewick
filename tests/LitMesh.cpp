@@ -229,7 +229,7 @@ int main() {
           myLight.intensity,
       };
 
-      auto materialUbo = meshDatas[0].material.toUniform();
+      auto materialUbo = meshDatas[0].material;
 
       SDL_PushGPUVertexUniformData(command_buffer, 0, &cameraUniform,
                                    sizeof(cameraUniform));
