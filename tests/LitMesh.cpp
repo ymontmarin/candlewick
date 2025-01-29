@@ -57,8 +57,8 @@ int main() {
   auto modelMat = test_mesh.transform;
 
   std::vector<MeshData> meshDatas;
-  LoadMeshReturn ret = loadSceneMeshes(meshPath, meshDatas);
-  if (ret < LoadMeshReturn::OK) {
+  mesh_load_retc ret = loadSceneMeshes(meshPath, meshDatas);
+  if (ret < mesh_load_retc::OK) {
     SDL_Log("Failed to load mesh.");
     return 1;
   }

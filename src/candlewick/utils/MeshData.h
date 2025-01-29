@@ -26,7 +26,7 @@ struct MeshData : MeshDataBase<MeshData> {
   SDL_GPUPrimitiveType primitiveType; //< Geometry primitive for the mesh
   VertexDataBlob vertexData;          //< Vertices
   std::vector<IndexType> indexData;   //< Indices for indexed mesh. Optional.
-  PbrMaterialData material;
+  PbrMaterialData material;           //< PBR material
 
   const MeshLayout &layout() const { return vertexData.layout(); }
 

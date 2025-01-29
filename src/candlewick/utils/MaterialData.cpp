@@ -1,7 +1,6 @@
 #include "MaterialData.h"
 
 #include "../third-party/magic_enum.hpp"
-#include "assimp_convert.h"
 
 namespace candlewick {
 
@@ -9,29 +8,62 @@ std::string_view assimpPropertyTypeName(aiPropertyTypeInfo type) {
   return magic_enum::enum_name(type);
 }
 
+std::string_view assimpShadingModeName(aiShadingMode shading_mode) {
+  return magic_enum::enum_name(shading_mode);
+}
+
 #define _col(name) (aiColor4D &)*name.data()
 
-using namespace magic_enum::bitwise_operators;
+enum class material_load_retc {
+  INVALID,
+  PHONG_MISSING_DIFFUSE,
+  PHONG_MISSING_SHININESS,
+  PBR_MISSING_BASE_COLOR,
+  PBR_MISSING_METALNESS,
+  PBR_MISSING_ROUGHNESS,
+  OK,
+};
 
-PhongMaterialData loadPhongMaterial(aiMaterial *material) {
-  PhongMaterialData res;
-  aiReturn flag;
-  flag &= material->Get(AI_MATKEY_COLOR_DIFFUSE, _col(res.diffuse));
-  material->Get(AI_MATKEY_COLOR_AMBIENT, _col(res.ambient));
-  material->Get(AI_MATKEY_COLOR_SPECULAR, _col(res.specular));
-  material->Get(AI_MATKEY_COLOR_EMISSIVE, _col(res.emissive));
-  flag &= material->Get(AI_MATKEY_SHININESS, res.shininess);
-  material->Get(AI_MATKEY_REFLECTIVITY, res.reflectivity);
+material_load_retc loadPhongMaterial(aiMaterial *material,
+                                     PhongMaterialData &out) {
+  if (!material)
+    return material_load_retc::INVALID;
 
-  return res;
+  if (material->Get(AI_MATKEY_COLOR_DIFFUSE, _col(out.diffuse)) !=
+      aiReturn_SUCCESS) {
+    return material_load_retc::PHONG_MISSING_DIFFUSE;
+  }
+  material->Get(AI_MATKEY_COLOR_AMBIENT, _col(out.ambient));
+  material->Get(AI_MATKEY_COLOR_SPECULAR, _col(out.specular));
+  material->Get(AI_MATKEY_COLOR_EMISSIVE, _col(out.emissive));
+  if (material->Get(AI_MATKEY_SHININESS, out.shininess) != aiReturn_SUCCESS) {
+    return material_load_retc::PHONG_MISSING_SHININESS;
+  }
+  material->Get(AI_MATKEY_REFLECTIVITY, out.reflectivity);
+  return material_load_retc::OK;
 }
+
+material_load_retc loadPbrMaterial(aiMaterial *material, PbrMaterialData &out) {
+  if (!material)
+    return material_load_retc::INVALID;
+
+  if (material->Get(AI_MATKEY_BASE_COLOR, _col(out.baseColor)) !=
+      aiReturn_SUCCESS)
+    return material_load_retc::PBR_MISSING_BASE_COLOR;
+
+  material->Get(AI_MATKEY_METALLIC_FACTOR, out.metalness);
+  material->Get(AI_MATKEY_ROUGHNESS_FACTOR, out.roughness);
+  return material_load_retc::OK;
+}
+
+#undef _col
 
 PbrMaterialData pbrFromPhong(const PhongMaterialData &phong) {
   PbrMaterialData out;
   out.baseColor = phong.diffuse;
-  float specAvg = phong.specular.head<3>().mean();
-  float specVar =
-      (phong.specular.head<3>() - Float3::Constant(specAvg)).squaredNorm();
+  auto specularRgb = phong.specular.head<3>();
+  float specAvg = specularRgb.mean();
+  float specVar = (specularRgb - Float3::Constant(specAvg)).squaredNorm();
 
   const float METALLIC_THRESHOLD = 0.2f;
   if (specVar > METALLIC_THRESHOLD) {
@@ -44,21 +76,25 @@ PbrMaterialData pbrFromPhong(const PhongMaterialData &phong) {
 
   float shininess = std::clamp(phong.shininess, 1.0f, 1e3f);
   out.roughness = sqrtf(2.f / (shininess + 2.f));
+  out.ao = phong.ambient.head<3>().mean();
+  out.ao = fmaxf(0.1f, out.ao);
   return out;
 }
 
 PbrMaterialData loadFromAssimpMaterial(aiMaterial *material) {
   PbrMaterialData out;
-  aiReturn flag;
-  flag &= material->Get(AI_MATKEY_BASE_COLOR, _col(out.baseColor));
-  flag &= material->Get(AI_MATKEY_METALLIC_FACTOR, out.metalness);
-  material->Get(AI_MATKEY_ROUGHNESS_FACTOR, out.roughness);
-  out.ao = 1.0f;
+  auto retc = loadPbrMaterial(material, out);
+  if (retc == material_load_retc::OK)
+    return out;
 
-  PhongMaterialData phong = loadPhongMaterial(material);
-  out = pbrFromPhong(phong);
-  return out;
+  PhongMaterialData phong;
+  retc = loadPhongMaterial(material, phong);
+
+  if (retc == material_load_retc::OK)
+    return pbrFromPhong(phong);
+
+  std::string msg = "Failed to load material: return code ";
+  msg += magic_enum::enum_name(retc);
+  throw std::runtime_error(msg);
 }
-
-#undef _col
 } // namespace candlewick

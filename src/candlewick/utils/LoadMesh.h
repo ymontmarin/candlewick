@@ -7,16 +7,15 @@
 namespace candlewick {
 
 /// Return codes for \ref loadSceneMeshes().
-enum LoadMeshReturn : Uint16 {
-  FailedToLoad = 1 << 0,
-  NoMeshes = 1 << 1,
+enum class mesh_load_retc : Uint16 {
+  FAILED_TO_LOAD = 1 << 0,
+  NO_MESHES = 1 << 1,
 
   OK = 1 << 4,
-  HasMaterials = 1 << 5,
 };
 
 /// \brief Load the meshes from the given path.
 /// This is implemented using the assimp library.
-LoadMeshReturn loadSceneMeshes(const char *path,
+mesh_load_retc loadSceneMeshes(const char *path,
                                std::vector<MeshData> &meshData);
 } // namespace candlewick

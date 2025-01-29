@@ -42,7 +42,7 @@ MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
                   std::move(indexData)};
 }
 
-LoadMeshReturn loadSceneMeshes(const char *path,
+mesh_load_retc loadSceneMeshes(const char *path,
                                std::vector<MeshData> &meshData) {
 
   ::Assimp::Importer import;
@@ -60,13 +60,12 @@ LoadMeshReturn loadSceneMeshes(const char *path,
   if (!scene) {
     SDL_Log("%s: Warning: Failed to load resource. %s", __FUNCTION__,
             import.GetErrorString());
-    return LoadMeshReturn::FailedToLoad;
+    return mesh_load_retc::FAILED_TO_LOAD;
   }
 
   if (!scene->HasMeshes())
-    return LoadMeshReturn::NoMeshes;
+    return mesh_load_retc::NO_MESHES;
 
-  LoadMeshReturn ret = LoadMeshReturn::OK;
   aiMatrix4x4 transform = scene->mRootNode->mTransformation;
   for (std::size_t i = 0; i < scene->mNumMeshes; i++) {
     aiMesh *inMesh = scene->mMeshes[i];
@@ -75,11 +74,10 @@ LoadMeshReturn loadSceneMeshes(const char *path,
     if (scene->HasMaterials()) {
       aiMaterial *material = scene->mMaterials[materialId];
       md.material = loadFromAssimpMaterial(material);
-      ret = LoadMeshReturn::HasMaterials;
     }
   }
 
-  return ret;
+  return mesh_load_retc::OK;
 }
 
 } // namespace candlewick
