@@ -4,6 +4,6 @@
 
 namespace candlewick {
 
-MeshData loadGrid(Uint32 xyHalfSize, float = 0.5f);
+MeshData loadGrid(Uint32 xyHalfSize, float scale = 0.5f);
 
 } // namespace candlewick
