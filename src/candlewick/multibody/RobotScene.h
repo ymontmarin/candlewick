@@ -16,20 +16,12 @@
 namespace candlewick {
 namespace multibody {
 
-struct PinGeomObjComponent {
-  pin::GeomIndex geom_index;
-  operator pin::GeomIndex() const { return geom_index; }
-};
-
 /// \brief A visibility component for ECS.
 struct VisibilityComponent {
   bool status;
   operator bool() const { return status; }
 };
 
-/// \brief Tag struct for denoting an entity as opaque, for render pass
-/// organization.
-struct Opaque {};
 struct TransformComponent {
   Mat4f transform;
 };
