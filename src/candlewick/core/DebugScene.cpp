@@ -7,8 +7,8 @@
 
 namespace candlewick {
 
-void DebugScene::on_destroy_mesh_component(entt::registry &registry,
-                                           entt::entity entity) {
+void DebugScene::onDestroyMeshComponent(entt::registry &registry,
+                                        entt::entity entity) {
   // release the Mesh object
   registry.get<DebugMeshComponent>(entity).mesh.release(_device);
 }
@@ -21,7 +21,7 @@ DebugScene::DebugScene(const Renderer &renderer)
 
   _connections.emplace_back(
       _registry.on_destroy<DebugMeshComponent>()
-          .connect<&DebugScene::on_destroy_mesh_component>(*this));
+          .connect<&DebugScene::onDestroyMeshComponent>(*this));
 }
 
 std::tuple<entt::entity, DebugMeshComponent &> DebugScene::addTriad() {
@@ -51,6 +51,36 @@ DebugScene::addLineGrid(std::optional<Float4> color) {
       entity, DebugPipelines::LINE, std::move(grid), std::vector{grid_color},
       Mat4f::Identity());
   return {entity, item};
+}
+
+void DebugScene::renderMeshComponents(Renderer &renderer,
+                                      SDL_GPURenderPass *render_pass,
+                                      const Camera &camera) const {
+  const Mat4f viewProj = camera.viewProj();
+
+  auto mesh_view = _registry.view<const DebugMeshComponent>();
+  for (auto [ent, cmd] : mesh_view.each()) {
+    if (!cmd.enable)
+      continue;
+
+    switch (cmd.pipeline_type) {
+    case DebugPipelines::TRIANGLE_FILL:
+      SDL_BindGPUGraphicsPipeline(render_pass, _trianglePipeline);
+      break;
+    case DebugPipelines::LINE:
+      SDL_BindGPUGraphicsPipeline(render_pass, _linePipeline);
+      break;
+    }
+
+    const GpuMat4 mvp = viewProj * cmd.transform;
+    renderer.pushVertexUniform(TRANSFORM_SLOT, &mvp, sizeof(mvp));
+    renderer.bindMesh(render_pass, cmd.mesh);
+    for (size_t i = 0; i < cmd.mesh.numViews(); i++) {
+      const auto &color = cmd.colors[i];
+      renderer.pushFragmentUniform(COLOR_SLOT, &color, sizeof(color));
+      renderer.drawView(render_pass, cmd.mesh.view(i));
+    }
+  }
 }
 
 void DebugScene::setupPipelines(const MeshLayout &layout) {
@@ -107,30 +137,12 @@ void DebugScene::render(Renderer &renderer, const Camera &camera) const {
   SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
       renderer.command_buffer, &color_target_info, 1, &depth_target_info);
 
-  const Mat4f viewProj = camera.viewProj();
+  // step 1: render using common pipelines
+  renderMeshComponents(renderer, render_pass, camera);
 
-  auto mesh_view = _registry.view<const DebugMeshComponent>();
-  for (auto [ent, cmd] : mesh_view.each()) {
-    if (!cmd.enable)
-      continue;
-
-    switch (cmd.pipeline_type) {
-    case DebugPipelines::TRIANGLE_FILL:
-      SDL_BindGPUGraphicsPipeline(render_pass, _trianglePipeline);
-      break;
-    case DebugPipelines::LINE:
-      SDL_BindGPUGraphicsPipeline(render_pass, _linePipeline);
-      break;
-    }
-
-    const GpuMat4 mvp = viewProj * cmd.transform;
-    renderer.pushVertexUniform(TRANSFORM_SLOT, &mvp, sizeof(mvp));
-    renderer.bindMesh(render_pass, cmd.mesh);
-    for (size_t i = 0; i < cmd.mesh.numViews(); i++) {
-      const auto &color = cmd.colors[i];
-      renderer.pushFragmentUniform(COLOR_SLOT, &color, sizeof(color));
-      renderer.drawView(render_pass, cmd.mesh.view(i));
-    }
+  // step 2: call custom rendering logic of registered subsystems
+  for (auto &system : _systems) {
+    system->render(renderer, render_pass, camera);
   }
 
   SDL_EndGPURenderPass(render_pass);

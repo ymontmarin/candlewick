@@ -24,6 +24,9 @@ class DebugScene;
 /// \sa DebugScene
 struct IDebugSubSystem {
   virtual void update(DebugScene &scene) = 0;
+  virtual void render(Renderer & /*renderer*/,
+                      SDL_GPURenderPass * /*render_pass*/,
+                      const Camera & /*camera*/) {}
   virtual ~IDebugSubSystem() = default;
 };
 
@@ -52,7 +55,10 @@ class DebugScene final {
   std::vector<std::unique_ptr<IDebugSubSystem>> _systems;
   entt::registry _registry;
 
-  void on_destroy_mesh_component(entt::registry &registry, entt::entity);
+  void onDestroyMeshComponent(entt::registry &registry, entt::entity);
+
+  void renderMeshComponents(Renderer &renderer, SDL_GPURenderPass *render_pass,
+                            const Camera &camera) const;
 
 public:
   enum { TRANSFORM_SLOT = 0 };
