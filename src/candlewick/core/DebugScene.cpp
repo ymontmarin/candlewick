@@ -137,13 +137,7 @@ void DebugScene::render(Renderer &renderer, const Camera &camera) const {
   SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
       renderer.command_buffer, &color_target_info, 1, &depth_target_info);
 
-  // step 1: render using common pipelines
   renderMeshComponents(renderer, render_pass, camera);
-
-  // step 2: call custom rendering logic of registered subsystems
-  for (auto &system : _systems) {
-    system->render(*this, renderer, render_pass, camera);
-  }
 
   SDL_EndGPURenderPass(render_pass);
 }

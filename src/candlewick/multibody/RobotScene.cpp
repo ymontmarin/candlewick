@@ -72,6 +72,11 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
                        const pin::GeometryData &geom_data, Config config)
     : _registry(registry), _config(config), _device(renderer.device),
       _geomData(&geom_data) {
+
+  for (size_t i = 0; i < kNumPipelineTypes; i++) {
+    renderPipelines[i] = NULL;
+  }
+
   for (const auto type : {
            PIPELINE_TRIANGLEMESH, PIPELINE_HEIGHTFIELD,
            //  PIPELINE_POINTCLOUD
@@ -213,6 +218,7 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
       directionalLight.intensity,
   };
 
+  bool enable_shadows = _config.enable_shadows;
   const Mat4f lightViewProj = shadowPass.cam.viewProj();
   const Mat4f viewProj = camera.viewProj();
 
@@ -223,7 +229,7 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
   SDL_GPURenderPass *render_pass =
       getRenderPass(renderer, SDL_GPU_LOADOP_CLEAR, depth_load_op);
 
-  if (_config.enable_shadows) {
+  if (enable_shadows) {
     renderer.bindFragmentSampler(render_pass, 0,
                                  {
                                      .texture = shadowPass.depthTexture,
@@ -253,8 +259,10 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
     };
     renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
                                sizeof(data));
-    Mat4f lightMvp = lightViewProj * tr.transform;
-    renderer.pushVertexUniform(1, &lightMvp, sizeof(lightMvp));
+    if (enable_shadows) {
+      Mat4f lightMvp = lightViewProj * tr.transform;
+      renderer.pushVertexUniform(1, &lightMvp, sizeof(lightMvp));
+    }
     renderer.bindMesh(render_pass, mesh);
     for (size_t j = 0; j < mesh.numViews(); j++) {
       const auto material = obj.materials[j];

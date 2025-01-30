@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
   auto shadowDebugPass =
       DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);
 
-  FrustumAndBoundsDebug frustumBoundsDebug{renderer};
+  FrustumBoundsDebugSystem frustumBoundsDebug{registry, renderer};
 
   GuiSystem gui_system{[&](Renderer &r) {
     static bool demo_window_open = true;
@@ -332,6 +332,9 @@ int main(int argc, char **argv) {
   worldSpaceBounds.grow({-1.f, -1.f, 0.f});
   worldSpaceBounds.grow({+1.f, +1.f, 1.f});
 
+  frustumBoundsDebug.addBounds(worldSpaceBounds);
+  frustumBoundsDebug.addFrustum(shadowPassInfo.cam);
+
   Eigen::VectorXd q = q0;
   const double dt = 1e-2;
 
@@ -378,14 +381,7 @@ int main(int argc, char **argv) {
           renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
         robot_scene.render(renderer, camera);
         debug_scene.render(renderer, camera);
-
-        // debug frustum for directional light
-        frustumBoundsDebug.renderFrustum(
-            renderer, camera,
-            {shadowPassInfo.lightProj,
-             Eigen::Isometry3f{shadowPassInfo.lightView}});
-        frustumBoundsDebug.renderAABB(renderer, camera, worldSpaceBounds,
-                                      0x00BFFFff_rgbaf);
+        frustumBoundsDebug.render(renderer, camera);
       }
       gui_system.render(renderer);
     } else {
@@ -402,7 +398,6 @@ int main(int argc, char **argv) {
   }
 
   frustumBoundsDebug.release();
-  shadowPassInfo.release(renderer.device);
   depthPassInfo.release(renderer.device);
   shadowDebugPass.release(renderer.device);
   depth_debug.release(renderer.device);

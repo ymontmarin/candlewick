@@ -7,9 +7,10 @@
 #include "../OBB.h"
 
 namespace candlewick {
+namespace frustum_debug {
 
-FrustumAndBoundsDebug::FrustumAndBoundsDebug(const Renderer &renderer)
-    : device(renderer.device), pipeline(nullptr) {
+SDL_GPUGraphicsPipeline *createFrustumDebugPipeline(const Renderer &renderer) {
+  const auto &device = renderer.device;
   auto vertexShader = Shader::fromMetadata(device, "FrustumDebug.vert");
   auto fragmentShader = Shader::fromMetadata(device, "VertexColor.frag");
 
@@ -29,7 +30,7 @@ FrustumAndBoundsDebug::FrustumAndBoundsDebug(const Renderer &renderer)
                    .depth_stencil_format = renderer.depth_format,
                    .has_depth_stencil_target = true},
   };
-  pipeline = SDL_CreateGPUGraphicsPipeline(device, &info);
+  return SDL_CreateGPUGraphicsPipeline(device, &info);
 }
 
 struct alignas(16) ubo_t {
@@ -60,11 +61,9 @@ SDL_GPURenderPass *getDefaultRenderPass(Renderer &renderer) {
                                 &depth_target);
 }
 
-void renderImpl(Renderer &renderer, SDL_GPURenderPass *render_pass,
-                SDL_GPUGraphicsPipeline *pipeline, const Mat4f &invProj,
-                const Mat4f &mvp, const Float3 eyePos, const Float4 &color) {
-
-  SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
+void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
+                   const Mat4f &invProj, const Mat4f &mvp, const Float3 eyePos,
+                   const Float4 &color) {
 
   ubo_t ubo{
       invProj,
@@ -77,41 +76,67 @@ void renderImpl(Renderer &renderer, SDL_GPURenderPass *render_pass,
   SDL_DrawGPUPrimitives(render_pass, NUM_VERTICES, 1, 0, 0);
 }
 
-void FrustumAndBoundsDebug::renderFrustum(Renderer &renderer,
-                                          const Camera &camera,
-                                          const Camera &otherCam,
-                                          const Float4 &color) {
+void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
+                   const Camera &camera, const Camera &otherCam,
+                   const Float4 &color) {
   Mat4f invProj = otherCam.projection.inverse();
   GpuMat4 mvp = camera.viewProj() * otherCam.pose().matrix();
-  SDL_GPURenderPass *render_pass = getDefaultRenderPass(renderer);
-  renderImpl(renderer, render_pass, pipeline, invProj, mvp, otherCam.position(),
-             color);
-  SDL_EndGPURenderPass(render_pass);
+  renderFrustum(renderer, render_pass, invProj, mvp, otherCam.position(),
+                color);
 }
 
-void FrustumAndBoundsDebug::renderOBB(Renderer &renderer, const Camera &camera,
-                                      const OBB &obb, const Float4 &color) {
+void renderOBB(Renderer &renderer, SDL_GPURenderPass *render_pass,
+               const Camera &camera, const OBB &obb, const Float4 &color) {
   Mat4f transform = obb.toTransformationMatrix();
   Mat4f mvp = camera.viewProj() * transform;
-  SDL_GPURenderPass *render_pass = getDefaultRenderPass(renderer);
-  renderImpl(renderer, render_pass, pipeline, Mat4f::Identity(), mvp,
-             obb.center, color);
-  SDL_EndGPURenderPass(render_pass);
+  renderFrustum(renderer, render_pass, Mat4f::Identity(), mvp, obb.center,
+                color);
 }
 
-void FrustumAndBoundsDebug::renderAABB(Renderer &renderer, const Camera &camera,
-                                       const AABB &aabb, const Float4 &color) {
+void renderAABB(Renderer &renderer, SDL_GPURenderPass *render_pass,
+                const Camera &camera, const AABB &aabb, const Float4 &color) {
   Mat4f transform = aabb.toTransformationMatrix();
   Mat4f mvp = camera.viewProj() * transform;
-  SDL_GPURenderPass *render_pass = getDefaultRenderPass(renderer);
-  renderImpl(renderer, render_pass, pipeline, Mat4f::Identity(), mvp,
-             aabb.center(), color);
-  SDL_EndGPURenderPass(render_pass);
+  renderFrustum(renderer, render_pass, Mat4f::Identity(), mvp, aabb.center(),
+                color);
 }
 
-void FrustumAndBoundsDebug::release() {
-  if (pipeline)
-    SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
+} // namespace frustum_debug
+
+FrustumBoundsDebugSystem::FrustumBoundsDebugSystem(entt::registry &registry,
+                                                   const Renderer &renderer)
+    : device(renderer.device), pipeline(nullptr), _registry(registry) {
+  pipeline = frustum_debug::createFrustumDebugPipeline(renderer);
+}
+
+void FrustumBoundsDebugSystem::render(Renderer &renderer,
+                                      const Camera &camera) {
+  auto &reg = registry();
+  SDL_GPURenderPass *render_pass =
+      frustum_debug::getDefaultRenderPass(renderer);
+
+  SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
+
+  for (auto [ent, item] : reg.view<const DebugFrustumComponent>().each()) {
+    frustum_debug::renderFrustum(renderer, render_pass, camera, *item.otherCam,
+                                 item.color);
+  }
+
+  for (auto [ent, item] : reg.view<const DebugBoundsComponent>().each()) {
+    std::visit(entt::overloaded{
+                   [&](const AABB &bounds) {
+                     frustum_debug::renderAABB(renderer, render_pass, camera,
+                                               bounds, item.color);
+                   },
+                   [&](const OBB &obb) {
+                     frustum_debug::renderOBB(renderer, render_pass, camera,
+                                              obb, item.color);
+                   },
+               },
+               item.bounds);
+  }
+
+  SDL_EndGPURenderPass(render_pass);
 }
 
 } // namespace candlewick
