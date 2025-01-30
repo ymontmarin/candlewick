@@ -78,12 +78,6 @@ public:
     }
   };
 
-  entt::registry &registry;
-  SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
-  DirectionalLight directionalLight;
-  ShadowPassInfo shadowPass;
-  AABB worldSpaceBounds;
-
   struct PipelineConfig {
     // shader set
     const char *vertex_shader_path;
@@ -112,13 +106,6 @@ public:
     ShadowPassConfig shadow_config;
   };
 
-private:
-  Config config;
-  const Device &_device;
-  pin::GeometryData const *_geomData;
-  std::vector<OpaqueCastable> _castables;
-
-public:
   RobotScene(entt::registry &registry, const Renderer &renderer,
              const pin::GeometryModel &geom_model,
              const pin::GeometryData &geom_data, Config config);
@@ -148,10 +135,22 @@ public:
   void renderOtherGeometry(Renderer &renderer, const Camera &camera);
   void release();
 
-  inline bool pbrHasPrepass() const { return config.triangle_has_prepass; }
+  inline bool pbrHasPrepass() const { return _config.triangle_has_prepass; }
 
   /// \brief Getter for the referenced pinocchio GeometryData object.
   const pin::GeometryData &geomData() const { return *_geomData; }
+
+  SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
+  DirectionalLight directionalLight;
+  ShadowPassInfo shadowPass;
+  AABB worldSpaceBounds;
+
+private:
+  entt::registry &_registry;
+  Config _config;
+  const Device &_device;
+  pin::GeometryData const *_geomData;
+  std::vector<OpaqueCastable> _castables;
 };
 static_assert(Scene<RobotScene>);
 

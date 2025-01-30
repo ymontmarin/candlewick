@@ -54,21 +54,21 @@ entt::entity RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
                                               PipelineType pipe_type) {
   Mesh mesh = createMesh(_device, data);
   uploadMeshToDevice(_device, mesh, data);
-  auto entity = registry.create();
-  registry.emplace<TransformComponent>(entity, placement);
+  auto entity = _registry.create();
+  _registry.emplace<TransformComponent>(entity, placement);
   if (pipe_type != PIPELINE_POINTCLOUD)
-    registry.emplace<Opaque>(entity);
-  registry.emplace<VisibilityComponent>(entity, true);
-  registry.emplace<MeshMaterialComponent>(entity, std::move(mesh),
-                                          std::vector{std::move(data.material)},
-                                          pipe_type);
+    _registry.emplace<Opaque>(entity);
+  _registry.emplace<VisibilityComponent>(entity, true);
+  _registry.emplace<MeshMaterialComponent>(
+      entity, std::move(mesh), std::vector{std::move(data.material)},
+      pipe_type);
   return entity;
 }
 
 RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
                        const pin::GeometryModel &geom_model,
                        const pin::GeometryData &geom_data, Config config)
-    : registry(registry), config(config), _device(renderer.device),
+    : _registry(registry), _config(config), _device(renderer.device),
       _geomData(&geom_data) {
   for (const auto type : {
            PIPELINE_TRIANGLEMESH, PIPELINE_HEIGHTFIELD,
@@ -138,8 +138,8 @@ void updateRobotTransforms(entt::registry &registry,
 void RobotScene::collectOpaqueCastables() {
   const PipelineType pipeline_type = PIPELINE_TRIANGLEMESH;
   auto all_view =
-      registry.view<const Opaque, const TransformComponent,
-                    const VisibilityComponent, const MeshMaterialComponent>();
+      _registry.view<const Opaque, const TransformComponent,
+                     const VisibilityComponent, const MeshMaterialComponent>();
 
   _castables.clear();
   _castables.reserve(all_view.size_hint());
@@ -217,11 +217,11 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
   // this is the first render pass, hence:
   // clear the color texture (swapchain), either load or clear the depth texture
   SDL_GPULoadOp depth_load_op =
-      config.triangle_has_prepass ? SDL_GPU_LOADOP_LOAD : SDL_GPU_LOADOP_CLEAR;
+      _config.triangle_has_prepass ? SDL_GPU_LOADOP_LOAD : SDL_GPU_LOADOP_CLEAR;
   SDL_GPURenderPass *render_pass =
       getRenderPass(renderer, SDL_GPU_LOADOP_CLEAR, depth_load_op);
 
-  if (config.enable_shadows) {
+  if (_config.enable_shadows) {
     renderer.bindFragmentSampler(render_pass, 0,
                                  {
                                      .texture = shadowPass.depthTexture,
@@ -236,8 +236,8 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
   SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
   auto all_view =
-      registry.view<const VisibilityComponent, const TransformComponent,
-                    const MeshMaterialComponent>();
+      _registry.view<const VisibilityComponent, const TransformComponent,
+                     const MeshMaterialComponent>();
   for (auto [entity, visible, tr, obj] : all_view.each()) {
     if (!visible || (obj.pipeline_type != PIPELINE_TRIANGLEMESH))
       continue;
@@ -281,8 +281,8 @@ void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
     auto env_view =
-        registry.view<const VisibilityComponent, const TransformComponent,
-                      const MeshMaterialComponent>();
+        _registry.view<const VisibilityComponent, const TransformComponent,
+                       const MeshMaterialComponent>();
     for (auto [entity, visible, tr, obj] : env_view.each()) {
       if (!visible || (obj.pipeline_type != current_pipeline_type))
         continue;
@@ -306,7 +306,7 @@ void RobotScene::release() {
   if (!_device)
     return;
 
-  for (auto [entity, obj] : registry.view<MeshMaterialComponent>()->each()) {
+  for (auto [entity, obj] : _registry.view<MeshMaterialComponent>()->each()) {
     obj.mesh.release(_device);
   }
 
