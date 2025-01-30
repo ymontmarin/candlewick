@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Core.h"
 #include "Tags.h"
 #include <SDL3/SDL_gpu.h>
-#include <initializer_list>
 
 namespace candlewick {
 
@@ -13,8 +13,9 @@ namespace candlewick {
 inline SDL_GPUShaderFormat
 auto_detect_shader_format_subset(const char *name = nullptr) {
   SDL_GPUShaderFormat available_formats = SDL_GPU_SHADERFORMAT_INVALID;
-  for (SDL_GPUShaderFormat test_format :
-       {SDL_GPU_SHADERFORMAT_SPIRV, SDL_GPU_SHADERFORMAT_MSL}) {
+  SDL_GPUShaderFormat formats[]{SDL_GPU_SHADERFORMAT_SPIRV,
+                                SDL_GPU_SHADERFORMAT_MSL};
+  for (SDL_GPUShaderFormat test_format : formats) {
     if (SDL_GPUSupportsShaderFormats(test_format, name))
       available_formats |= test_format;
   }
