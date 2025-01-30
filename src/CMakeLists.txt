@@ -23,6 +23,7 @@ add_library(
   candlewick/core/DepthAndShadowPass.cpp
   candlewick/core/debug/DepthViz.cpp
   candlewick/core/debug/Frustum.cpp
+  candlewick/core/debug/FrustumDebugSystem.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/LoadMaterial.cpp
   candlewick/utils/MeshData.cpp

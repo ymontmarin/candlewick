@@ -7,17 +7,22 @@
 namespace candlewick {
 
 struct FrustumAndBoundsDebug {
+  const Device &device;
   SDL_GPUGraphicsPipeline *pipeline;
 
-  static FrustumAndBoundsDebug create(const Renderer &renderer);
-  void renderLightFrustum(Renderer &renderer, const Camera &camera,
-                          const Camera &otherCam,
-                          const Float4 &color = 0x40FF00CC_rgbaf);
-  void renderBounds(Renderer &renderer, const Camera &camera, const AABB &aabb,
-                    const Float4 &color = 0x00BFFFff_rgbaf);
+  FrustumAndBoundsDebug(const Renderer &renderer);
+
+  void renderFrustum(Renderer &renderer, const Camera &mainCamera,
+                     const Camera &otherCam,
+                     const Float4 &color = 0x40FF00CC_rgbaf);
+
+  void renderAABB(Renderer &renderer, const Camera &camera, const AABB &aabb,
+                  const Float4 &color = 0x00BFFFff_rgbaf);
   void renderOBB(Renderer &renderer, const Camera &camera, const OBB &obb,
                  const Float4 &color = 0x00BFFFff_rgbaf);
-  void release(const Device &device);
+
+  void release();
+  ~FrustumAndBoundsDebug() { release(); }
 };
 
 } // namespace candlewick

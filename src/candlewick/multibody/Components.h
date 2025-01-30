@@ -7,7 +7,7 @@ namespace pin = pinocchio;
 
 struct PinGeomObjComponent {
   pin::GeomIndex geom_index;
-  operator pin::GeomIndex() const { return geom_index; }
+  operator auto() const { return geom_index; }
 };
 
 struct PinFrameComponent {
@@ -19,6 +19,7 @@ struct PinFrameComponent {
 /// velocity - not its placement as e.g. a triad.
 struct PinFrameVelocityComponent {
   pin::FrameIndex frame_id;
+  operator auto() const { return frame_id; }
 };
 
 } // namespace candlewick::multibody

@@ -38,12 +38,10 @@ void RobotDebugSystem::updateFrameVelocities(entt::registry &reg) {
 
   auto view = reg.view<const PinFrameVelocityComponent, DebugMeshComponent>();
   for (auto &&[ent, fvc, dmc] : view.each()) {
-    auto frame_id = fvc.frame_id;
     Motionf vel =
-        pin::getFrameVelocity(pinModel, pinData, fvc.frame_id, pin::LOCAL)
-            .cast<float>();
+        pin::getFrameVelocity(pinModel, pinData, fvc, pin::LOCAL).cast<float>();
 
-    const SE3f pose = pinData.oMf[frame_id].cast<float>();
+    const SE3f pose = pinData.oMf[fvc].cast<float>();
     Eigen::Quaternionf quatf;
     Eigen::DiagonalMatrix<float, 3> scaleMatrix;
     dmc.transform = pose.toHomogeneousMatrix();

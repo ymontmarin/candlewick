@@ -239,7 +239,7 @@ int main(int argc, char **argv) {
   auto shadowDebugPass =
       DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);
 
-  auto frustumBoundsDebug = FrustumAndBoundsDebug::create(renderer);
+  FrustumAndBoundsDebug frustumBoundsDebug{renderer};
 
   GuiSystem gui_system{[&](Renderer &r) {
     static bool demo_window_open = true;
@@ -376,12 +376,12 @@ int main(int argc, char **argv) {
         debug_scene.render(renderer, camera);
 
         // debug frustum for directional light
-        frustumBoundsDebug.renderLightFrustum(
+        frustumBoundsDebug.renderFrustum(
             renderer, camera,
             {shadowPassInfo.lightProj,
              Eigen::Isometry3f{shadowPassInfo.lightView}});
-        frustumBoundsDebug.renderBounds(renderer, camera, worldSpaceBounds,
-                                        0x00BFFFff_rgbaf);
+        frustumBoundsDebug.renderAABB(renderer, camera, worldSpaceBounds,
+                                      0x00BFFFff_rgbaf);
       }
       gui_system.render(renderer);
     } else {
@@ -397,7 +397,7 @@ int main(int argc, char **argv) {
     frameNo++;
   }
 
-  frustumBoundsDebug.release(renderer.device);
+  frustumBoundsDebug.release();
   shadowPassInfo.release(renderer.device);
   depthPassInfo.release(renderer.device);
   shadowDebugPass.release(renderer.device);

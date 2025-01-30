@@ -23,8 +23,8 @@ class DebugScene;
 /// Provides methods for updating debug entities.
 /// \sa DebugScene
 struct IDebugSubSystem {
-  virtual void update(DebugScene &scene) = 0;
-  virtual void render(Renderer & /*renderer*/,
+  virtual void update(DebugScene & /*scene*/) {};
+  virtual void render(const DebugScene & /*scene*/, Renderer & /*renderer*/,
                       SDL_GPURenderPass * /*render_pass*/,
                       const Camera & /*camera*/) {}
   virtual ~IDebugSubSystem() = default;

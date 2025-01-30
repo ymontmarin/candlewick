@@ -142,7 +142,7 @@ void DebugScene::render(Renderer &renderer, const Camera &camera) const {
 
   // step 2: call custom rendering logic of registered subsystems
   for (auto &system : _systems) {
-    system->render(renderer, render_pass, camera);
+    system->render(*this, renderer, render_pass, camera);
   }
 
   SDL_EndGPURenderPass(render_pass);

@@ -3,12 +3,13 @@
 #include "../Renderer.h"
 #include "../Shader.h"
 #include "../Camera.h"
+#include "../AABB.h"
 #include "../OBB.h"
 
 namespace candlewick {
 
-FrustumAndBoundsDebug FrustumAndBoundsDebug::create(const Renderer &renderer) {
-  const auto &device = renderer.device;
+FrustumAndBoundsDebug::FrustumAndBoundsDebug(const Renderer &renderer)
+    : device(renderer.device), pipeline(nullptr) {
   auto vertexShader = Shader::fromMetadata(device, "FrustumDebug.vert");
   auto fragmentShader = Shader::fromMetadata(device, "VertexColor.frag");
 
@@ -28,7 +29,7 @@ FrustumAndBoundsDebug FrustumAndBoundsDebug::create(const Renderer &renderer) {
                    .depth_stencil_format = renderer.depth_format,
                    .has_depth_stencil_target = true},
   };
-  return {SDL_CreateGPUGraphicsPipeline(device, &info)};
+  pipeline = SDL_CreateGPUGraphicsPipeline(device, &info);
 }
 
 struct alignas(16) ubo_t {
@@ -40,9 +41,7 @@ struct alignas(16) ubo_t {
 
 static constexpr Uint32 NUM_VERTICES = 36u;
 
-void render_impl(Renderer &renderer, const FrustumAndBoundsDebug &passInfo,
-                 const Mat4f &invProj, const Mat4f &mvp, const Float3 eyePos,
-                 const Float4 &color) {
+SDL_GPURenderPass *getDefaultRenderPass(Renderer &renderer) {
   SDL_GPUColorTargetInfo color_target;
   SDL_zero(color_target);
   color_target.texture = renderer.swapchain;
@@ -57,10 +56,15 @@ void render_impl(Renderer &renderer, const FrustumAndBoundsDebug &passInfo,
   depth_target.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
   depth_target.cycle = false;
 
-  SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
-      renderer.command_buffer, &color_target, 1, &depth_target);
+  return SDL_BeginGPURenderPass(renderer.command_buffer, &color_target, 1,
+                                &depth_target);
+}
 
-  SDL_BindGPUGraphicsPipeline(render_pass, passInfo.pipeline);
+void renderImpl(Renderer &renderer, SDL_GPURenderPass *render_pass,
+                SDL_GPUGraphicsPipeline *pipeline, const Mat4f &invProj,
+                const Mat4f &mvp, const Float3 eyePos, const Float4 &color) {
+
+  SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
   ubo_t ubo{
       invProj,
@@ -71,35 +75,41 @@ void render_impl(Renderer &renderer, const FrustumAndBoundsDebug &passInfo,
   renderer.pushVertexUniform(0, &ubo, sizeof(ubo));
 
   SDL_DrawGPUPrimitives(render_pass, NUM_VERTICES, 1, 0, 0);
-
-  SDL_EndGPURenderPass(render_pass);
 }
 
-void FrustumAndBoundsDebug::renderLightFrustum(Renderer &renderer,
-                                               const Camera &camera,
-                                               const Camera &otherCam,
-                                               const Float4 &color) {
+void FrustumAndBoundsDebug::renderFrustum(Renderer &renderer,
+                                          const Camera &camera,
+                                          const Camera &otherCam,
+                                          const Float4 &color) {
   Mat4f invProj = otherCam.projection.inverse();
   GpuMat4 mvp = camera.viewProj() * otherCam.pose().matrix();
-  render_impl(renderer, *this, invProj, mvp, otherCam.position(), color);
+  SDL_GPURenderPass *render_pass = getDefaultRenderPass(renderer);
+  renderImpl(renderer, render_pass, pipeline, invProj, mvp, otherCam.position(),
+             color);
+  SDL_EndGPURenderPass(render_pass);
 }
 
 void FrustumAndBoundsDebug::renderOBB(Renderer &renderer, const Camera &camera,
                                       const OBB &obb, const Float4 &color) {
   Mat4f transform = obb.toTransformationMatrix();
   Mat4f mvp = camera.viewProj() * transform;
-  render_impl(renderer, *this, Mat4f::Identity(), mvp, obb.center, color);
+  SDL_GPURenderPass *render_pass = getDefaultRenderPass(renderer);
+  renderImpl(renderer, render_pass, pipeline, Mat4f::Identity(), mvp,
+             obb.center, color);
+  SDL_EndGPURenderPass(render_pass);
 }
 
-void FrustumAndBoundsDebug::renderBounds(Renderer &renderer,
-                                         const Camera &camera, const AABB &aabb,
-                                         const Float4 &color) {
+void FrustumAndBoundsDebug::renderAABB(Renderer &renderer, const Camera &camera,
+                                       const AABB &aabb, const Float4 &color) {
   Mat4f transform = aabb.toTransformationMatrix();
   Mat4f mvp = camera.viewProj() * transform;
-  render_impl(renderer, *this, Mat4f::Identity(), mvp, aabb.center(), color);
+  SDL_GPURenderPass *render_pass = getDefaultRenderPass(renderer);
+  renderImpl(renderer, render_pass, pipeline, Mat4f::Identity(), mvp,
+             aabb.center(), color);
+  SDL_EndGPURenderPass(render_pass);
 }
 
-void FrustumAndBoundsDebug::release(const Device &device) {
+void FrustumAndBoundsDebug::release() {
   if (pipeline)
     SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 }
