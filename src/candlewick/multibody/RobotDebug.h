@@ -16,15 +16,17 @@ struct RobotDebugSystem final : IDebugSubSystem {
   RobotDebugSystem(const pin::Model &model, const pin::Data &data)
       : IDebugSubSystem(), pinModel(model), pinData(data) {}
 
-  void addFrameTriad(DebugScene &scene, pin::FrameIndex frame_id,
-                     const Float3 &scale = DEFAULT_TRIAD_SCALE) {
+  entt::entity addFrameTriad(DebugScene &scene, pin::FrameIndex frame_id,
+                             const Float3 &scale = DEFAULT_TRIAD_SCALE) {
     entt::registry &reg = scene.registry();
     auto [ent, triad] = scene.addTriad();
     reg.emplace<DebugScaleComponent>(ent, scale);
     reg.emplace<PinFrameComponent>(ent, frame_id);
+    return ent;
   }
 
-  void addFrameVelocityArrow(DebugScene &scene, pin::FrameIndex frame_id);
+  entt::entity addFrameVelocityArrow(DebugScene &scene,
+                                     pin::FrameIndex frame_id);
 
   /// \brief Update the visualization of the frame placements and their
   /// velocities.

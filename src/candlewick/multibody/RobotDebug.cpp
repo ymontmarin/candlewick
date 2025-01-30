@@ -6,8 +6,8 @@
 
 namespace candlewick::multibody {
 
-void RobotDebugSystem::addFrameVelocityArrow(DebugScene &scene,
-                                             pin::FrameIndex frame_id) {
+entt::entity RobotDebugSystem::addFrameVelocityArrow(DebugScene &scene,
+                                                     pin::FrameIndex frame_id) {
   entt::registry &reg = scene.registry();
   MeshData arrow_data = createArrow(false);
   Mesh mesh = createMesh(scene.device(), arrow_data, true);
@@ -18,6 +18,7 @@ void RobotDebugSystem::addFrameVelocityArrow(DebugScene &scene,
                                   std::move(mesh), std::vector{color},
                                   Mat4f::Identity());
   reg.emplace<PinFrameVelocityComponent>(entity, frame_id);
+  return entity;
 }
 
 void RobotDebugSystem::updateFrames(entt::registry &reg) {
