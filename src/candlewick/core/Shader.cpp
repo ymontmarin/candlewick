@@ -5,7 +5,6 @@
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_filesystem.h>
 
-#include <memory>
 #include <format>
 #define JSON_NO_IO
 #define JSON_USE_IMPLICIT_CONVERSIONS 0
@@ -26,8 +25,14 @@ SDL_GPUShaderStage detect_shader_stage(const char *filename) {
 }
 
 struct ShaderCode {
-  std::unique_ptr<Uint8[], decltype(&SDL_free)> data;
+  Uint8 *data;
   size_t size;
+  ShaderCode(Uint8 *d, size_t s) : data(d), size(s) {}
+  ShaderCode(const ShaderCode &) = delete;
+  ShaderCode(ShaderCode &&) = delete;
+  ShaderCode &operator=(const ShaderCode &) = delete;
+  ShaderCode &operator=(ShaderCode &&) = delete;
+  ~ShaderCode() { SDL_free(data); }
 };
 
 ShaderCode loadShaderFile(const char *filename, const char *shader_ext) {
@@ -41,8 +46,7 @@ ShaderCode loadShaderFile(const char *filename, const char *shader_ext) {
     throw RAIIException(
         std::format("Failed to load shader file: %s", SDL_GetError()));
   }
-  return ShaderCode{.data{reinterpret_cast<Uint8 *>(code), SDL_free},
-                    .size = code_size};
+  return ShaderCode{reinterpret_cast<Uint8 *>(code), code_size};
 }
 
 Shader::Shader(const Device &device, const char *filename, const Config &config)
@@ -72,7 +76,7 @@ Shader::Shader(const Device &device, const char *filename, const Config &config)
 
   SDL_GPUShaderCreateInfo info{
       .code_size = shader_code.size,
-      .code = shader_code.data.get(),
+      .code = shader_code.data,
       .entrypoint = entry_point,
       .format = target_format,
       .stage = stage,
@@ -104,8 +108,7 @@ Shader::Config loadShaderMetadata(const char *filename) {
                CANDLEWICK_SHADER_BIN_DIR, filename);
 
   auto data = loadShaderFile(filename, "json");
-  auto meta =
-      nlohmann::json::parse(data.data.get(), data.data.get() + data.size);
+  auto meta = nlohmann::json::parse(data.data, data.data + data.size);
   return meta.get<Shader::Config>();
 }
 
