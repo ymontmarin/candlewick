@@ -15,7 +15,10 @@ Candlewick is a WIP library for a renderer based on SDL3's new [GPU API](https:/
 
 ### Dependencies
 
-Candlewick depends mainly on [SDL3](https://github.com/libsdl-org/SDL/) for windowing, processing input events, and of course SDL GPU.
+Candlewick depends mainly on:
+
+* [SDL3](https://github.com/libsdl-org/SDL/) for windowing, processing input events, and of course SDL GPU.
+* [EnTT](https://github.com/skypjack/entt/) for the entity-component system (ECS)
 
 #### Optional dependencies
 
@@ -24,4 +27,3 @@ Candlewick depends mainly on [SDL3](https://github.com/libsdl-org/SDL/) for wind
 * For loading and visualizing robots:
   * the Pinocchio rigid-body dynamics library (required for the `candlewick::multibody` classes and functions).
   * [example-robot-data](https://github.com/ManifoldFR/robot_descriptions_cpp) [robot_descriptions_cpp](https://github.com/ManifoldFR/robot_descriptions_cpp), a suite of loaders for robots (required for some examples)
-  * [EnTT](https://github.com/skypjack/entt/) for the entity-component system (ECS)
