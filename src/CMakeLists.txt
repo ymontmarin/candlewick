@@ -17,6 +17,7 @@ add_library(
   candlewick/core/GuiSystem.cpp
   candlewick/core/Mesh.cpp
   candlewick/core/MeshLayout.cpp
+  candlewick/core/OBB.cpp
   candlewick/core/Renderer.cpp
   candlewick/core/Shader.cpp
   candlewick/core/DepthAndShadowPass.cpp

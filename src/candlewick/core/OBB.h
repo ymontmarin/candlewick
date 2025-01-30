@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Core.h"
 #include "math_types.h"
-#include "AABB.h"
 
 namespace candlewick {
 
@@ -12,13 +12,7 @@ struct OBB {
   /// Half-sizes along the axes. This is consistent with COAL.
   Float3 halfExtents;
 
-  static OBB fromAABB(const AABB &aabb) {
-    OBB obb;
-    obb.axes = Mat3f::Identity();
-    obb.center = aabb.center();
-    obb.halfExtents = 0.5f * aabb.extents();
-    return obb;
-  }
+  static OBB fromAABB(const AABB &aabb);
 
   void transformInPlace(const Mat4f &transform) {
     auto R = transform.topLeftCorner<3, 3>();
@@ -39,15 +33,7 @@ struct OBB {
     return res;
   }
 
-  AABB toAabb() const {
-    Float3 min = center, max = center;
-    for (long i = 0; i < 3; i++) {
-      Float3 axis = halfExtents[i] * axes.col(i);
-      min -= axis.cwiseAbs();
-      max += axis.cwiseAbs();
-    }
-    return AABB{min, max};
-  }
+  AABB toAabb() const;
 
   float radius() const { return halfExtents.norm(); }
 
