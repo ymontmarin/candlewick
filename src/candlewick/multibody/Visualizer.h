@@ -9,6 +9,7 @@
 #include "../core/Renderer.h"
 
 #include <SDL3/SDL_init.h>
+#include <entt/entity/registry.hpp>
 
 namespace candlewick::multibody {
 
