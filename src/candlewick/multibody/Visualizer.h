@@ -21,10 +21,6 @@ using pinocchio_visualizers::Vector3s;
 using pinocchio_visualizers::VectorXs;
 } // namespace
 
-struct VisualizerConfig {
-  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
-};
-
 /// \brief A synchronous renderer. The display() function will perform the draw
 /// calls.
 class Visualizer final : public BaseVisualizer {
@@ -36,9 +32,6 @@ public:
   RobotScene robotScene;
   DebugScene debugScene;
   Camera camera;
-
-private:
-  BasicDebugModule *basic_debug_module;
 
 public:
   struct Config {
@@ -54,6 +47,8 @@ public:
     return Renderer{std::move(dev), window, SDL_GPU_TEXTUREFORMAT_D24_UNORM};
   }
 
+  /// \brief Default GUI callback for the Visualizer; provide your own callback
+  /// to the Visualizer constructor to change this behaviour.
   void default_gui_exec(Renderer &render);
 
   void loadViewerModel() override;

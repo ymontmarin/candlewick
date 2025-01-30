@@ -13,8 +13,6 @@ void Visualizer::default_gui_exec(Renderer &render) {
   ImGui::SliderFloat("Intensity", &light.intensity, 0.1f, 10.f);
   ImGui::ColorEdit3("color", light.color.data());
   ImGui::SeparatorText("Debug elements");
-  ImGui::Checkbox("Show grid", &basic_debug_module->enableGrid);
-  ImGui::Checkbox("Show triad", &basic_debug_module->enableTriad);
   ImGui::End();
 }
 
@@ -31,7 +29,6 @@ Visualizer::Visualizer(Config config, const pin::Model &model,
       .intensity = 8.0,
   };
   guiSys.init(renderer);
-  this->basic_debug_module = &debugScene.addModule<BasicDebugModule>();
 
   {
     const float radius = 2.5f;
