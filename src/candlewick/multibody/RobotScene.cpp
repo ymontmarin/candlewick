@@ -212,8 +212,8 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
       directionalLight.color,
       directionalLight.intensity,
   };
-  Mat4f lightViewProj = shadowPass.lightProj * shadowPass.lightView;
 
+  const Mat4f lightViewProj = shadowPass.cam.viewProj();
   const Mat4f viewProj = camera.viewProj();
 
   // this is the first render pass, hence:

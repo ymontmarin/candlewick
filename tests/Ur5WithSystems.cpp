@@ -221,7 +221,8 @@ int main(int argc, char **argv) {
   SDL_assert(numRobotShapes == geom_model.ngeoms);
   SDL_Log("Registered %zu robot geometry objects.", numRobotShapes);
 
-  /** DEBUG SYSTEM **/
+  // DEBUG SYSTEM
+
   DebugScene debug_scene{renderer};
   auto &robot_debug =
       debug_scene.addSystem<multibody::RobotDebugSystem>(model, pin_data);
@@ -366,9 +367,12 @@ int main(int argc, char **argv) {
         renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});
       } else if (showDebugViz == LIGHT_DEBUG) {
         renderDepthDebug(renderer, shadowDebugPass,
-                         {depth_mode, orthoProjNear(shadowPassInfo.lightProj),
-                          orthoProjFar(shadowPassInfo.lightProj),
-                          CameraProjection::ORTHOGRAPHIC});
+                         {
+                             depth_mode,
+                             orthoProjNear(shadowPassInfo.cam.projection),
+                             orthoProjFar(shadowPassInfo.cam.projection),
+                             CameraProjection::ORTHOGRAPHIC,
+                         });
       } else {
         if (robot_scene.pbrHasPrepass())
           renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
