@@ -16,7 +16,7 @@ MeshData::MeshData(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
       vertexData(std::move(vertexData), std::move(layout)),
       indexData(std::move(indexData)) {}
 
-Mesh createMesh(const Device &device, const MeshData &meshData) {
+Mesh createMesh(const Device &device, const MeshData &meshData, bool upload) {
   auto &layout = meshData.layout();
   SDL_GPUBufferCreateInfo vtxInfo{.usage = SDL_GPU_BUFFERUSAGE_VERTEX,
                                   .size = meshData.numVertices() *
@@ -32,7 +32,10 @@ Mesh createMesh(const Device &device, const MeshData &meshData) {
                                       .props = 0};
     indexBuffer = SDL_CreateGPUBuffer(device, &indexInfo);
   }
-  return createMesh(meshData, vertexBuffer, indexBuffer);
+  Mesh mesh = createMesh(meshData, vertexBuffer, indexBuffer);
+  if (upload)
+    uploadMeshToDevice(device, mesh, meshData);
+  return mesh;
 }
 
 Mesh createMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
@@ -167,17 +170,7 @@ void uploadMeshToDevice(const Device &device, const Mesh &mesh,
                         const MeshData &meshData) {
   assert(validateMesh(mesh));
   assert(mesh.numViews() == 1);
-  auto &view = mesh.views()[0];
-  uploadMeshToDevice(device, view, meshData);
-}
-
-std::vector<PbrMaterial> extractMaterials(std::span<const MeshData> meshDatas) {
-  std::vector<PbrMaterial> out;
-  out.reserve(meshDatas.size());
-  for (size_t i = 0; i < meshDatas.size(); i++) {
-    out.push_back(meshDatas[i].material);
-  }
-  return out;
+  uploadMeshToDevice(device, mesh.view(0), meshData);
 }
 
 } // namespace candlewick
