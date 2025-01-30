@@ -223,7 +223,8 @@ int main(int argc, char **argv) {
 
   /** DEBUG SYSTEM **/
   DebugScene debug_scene{renderer};
-  multibody::RobotDebugSystem robot_debug{model, pin_data};
+  auto &robot_debug =
+      debug_scene.addSystem<multibody::RobotDebugSystem>(model, pin_data);
   auto [triad_id, triad] = debug_scene.addTriad();
   auto [grid_id, grid] = debug_scene.addLineGrid(0xE0A236ff_rgbaf);
   pin::FrameIndex ee_frame_id = model.getFrameId("ee_link");
@@ -343,7 +344,7 @@ int main(int argc, char **argv) {
     pin::forwardKinematics(model, pin_data, q, v);
     pin::updateFramePlacements(model, pin_data);
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
-    robot_debug.update(debug_scene);
+    debug_scene.update();
 
     FrustumCornersType main_cam_frustum = frustumFromCamera(camera);
 

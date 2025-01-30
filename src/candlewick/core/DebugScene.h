@@ -18,6 +18,10 @@ enum class DebugPipelines {
 
 class DebugScene;
 
+/// \brief A subsystem for the DebugScene.
+///
+/// Provides methods for updating debug entities.
+/// \sa DebugScene
 struct IDebugSubSystem {
   virtual void update(DebugScene &scene) = 0;
   virtual ~IDebugSubSystem() = default;
@@ -45,6 +49,7 @@ class DebugScene final {
   SDL_GPUGraphicsPipeline *_linePipeline;
   SDL_GPUTextureFormat _swapchainTextureFormat, _depthFormat;
   std::vector<entt::scoped_connection> _connections;
+  std::vector<std::unique_ptr<IDebugSubSystem>> _systems;
   entt::registry _registry;
 
   void on_destroy_mesh_component(entt::registry &registry, entt::entity);
@@ -61,6 +66,14 @@ public:
   entt::registry &registry() { return _registry; }
   const entt::registry &registry() const { return _registry; }
 
+  /// \brief Add a subsystem (IDebugSubSystem) to the scene.
+  template <std::derived_from<IDebugSubSystem> System, typename... Args>
+  System &addSystem(Args &&...args) {
+    auto sys = std::make_unique<System>(std::forward<Args>(args)...);
+    _systems.push_back(std::move(sys));
+    return static_cast<System &>(*_systems.back());
+  }
+
   /// \brief Setup pipelines; this will only have an effect **ONCE**.
   void setupPipelines(const MeshLayout &layout);
 
@@ -69,6 +82,12 @@ public:
   /// \brief Add a basic line grid.
   std::tuple<entt::entity, DebugMeshComponent &>
   addLineGrid(std::optional<Float4> color = std::nullopt);
+
+  void update() {
+    for (auto &system : _systems) {
+      system->update(*this);
+    }
+  }
 
   void render(Renderer &renderer, const Camera &camera) const;
 
