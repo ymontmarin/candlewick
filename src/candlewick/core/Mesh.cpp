@@ -30,19 +30,35 @@ Mesh::Mesh(const Device &device, const MeshLayout &layout)
   vertexBuffers.resize(count, nullptr);
 }
 
-Mesh &Mesh::operator=(Mesh &&other) noexcept {
-  _device = other._device;
-  _views = std::move(other._views);
-  layout = std::move(other.layout);
-  vertexCount = std::move(other.vertexCount);
-  indexCount = std::move(other.indexCount);
-  vertexBuffers = std::move(other.vertexBuffers);
-  indexBuffer = std::move(other.indexBuffer);
-
+Mesh::Mesh(Mesh &&other) noexcept
+    : _device(other._device), _views(std::move(other._views)),
+      layout(other.layout), vertexCount(other.vertexCount),
+      indexCount(other.indexCount),
+      vertexBuffers(std::move(other.vertexBuffers)),
+      indexBuffer(other.indexBuffer) {
   other._device = nullptr;
-  other.vertexCount = 0u;
-  other.indexCount = 0u;
   other.indexBuffer = nullptr;
+}
+
+Mesh &Mesh::operator=(Mesh &&other) noexcept {
+  if (this != &other) {
+    if (_device) {
+      release();
+    }
+
+    _device = other._device;
+    _views = std::move(other._views);
+    layout = std::move(other.layout);
+    vertexCount = std::move(other.vertexCount);
+    indexCount = std::move(other.indexCount);
+    vertexBuffers = std::move(other.vertexBuffers);
+    indexBuffer = std::move(other.indexBuffer);
+
+    other._device = nullptr;
+    other.vertexCount = 0u;
+    other.indexCount = 0u;
+    other.indexBuffer = nullptr;
+  }
   return *this;
 }
 

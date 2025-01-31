@@ -79,7 +79,7 @@ public:
 
   Mesh(NoInitT);
   Mesh(const Mesh &) = delete;
-  Mesh(Mesh &&other) noexcept { *this = std::move(other); }
+  Mesh(Mesh &&other) noexcept;
 
   Mesh &operator=(const Mesh &) = delete;
   Mesh &operator=(Mesh &&other) noexcept;
