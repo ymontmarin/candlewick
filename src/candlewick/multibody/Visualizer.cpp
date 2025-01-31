@@ -1,5 +1,6 @@
 #include "Visualizer.h"
 #include "../core/DepthAndShadowPass.h"
+#include "../primitives/Plane.h"
 
 #include <imgui.h>
 
@@ -17,7 +18,7 @@ void Visualizer::default_gui_exec(Renderer &render) {
   ImGui::End();
 }
 
-Visualizer::Visualizer(Config config, const pin::Model &model,
+Visualizer::Visualizer(const Config &config, const pin::Model &model,
                        const pin::GeometryModel &visualModel,
                        GuiSystem::GuiBehavior gui_callback)
     : BaseVisualizer(model, visualModel), registry{},
@@ -48,6 +49,10 @@ Visualizer::Visualizer(Config config, const pin::Model &model,
 
   robotScene.worldSpaceBounds.grow({-1.f, -1.f, 0.f});
   robotScene.worldSpaceBounds.grow({+1.f, +1.f, 1.f});
+
+  Uint32 prepeat = 25;
+  auto plane_obj = robotScene.addEnvironmentObject(
+      loadPlaneTiled(0.5f, prepeat, prepeat), Mat4f::Identity());
 }
 
 void Visualizer::loadViewerModel() {}
@@ -56,18 +61,19 @@ void Visualizer::displayImpl() {
   debugScene.update();
 
   renderer.beginFrame();
-  renderer.waitAndAcquireSwapchain();
+  if (renderer.waitAndAcquireSwapchain()) {
+    updateRobotTransforms(registry, visualData);
+    robotScene.collectOpaqueCastables();
+    std::span castables = robotScene.castables();
+    renderShadowPassFromAABB(renderer, robotScene.shadowPass,
+                             robotScene.directionalLight, castables,
+                             robotScene.worldSpaceBounds);
 
-  updateRobotTransforms(registry, visualData);
-  robotScene.collectOpaqueCastables();
-  std::span castables = robotScene.castables();
-  // renderShadowPassFromAABB(renderer, robotScene.shadowPass,
-  //                          robotScene.directionalLight, castables,
-  //                          robotScene.worldSpaceBounds);
-
-  robotScene.render(renderer, camera);
-  debugScene.render(renderer, camera);
-  guiSys.render(renderer);
+    robotScene.render(renderer, camera);
+    debugScene.render(renderer, camera);
+    guiSys.render(renderer);
+  } else {
+  }
 
   renderer.endFrame();
 }

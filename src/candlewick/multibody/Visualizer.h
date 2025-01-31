@@ -37,15 +37,10 @@ public:
   struct Config {
     Uint32 width;
     Uint32 height;
+    SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
   };
 
-  static Renderer createRenderer(const Config &config) {
-    SDL_Init(SDL_INIT_VIDEO);
-    Device dev{auto_detect_shader_format_subset()};
-    auto window = SDL_CreateWindow("Candlewick Pinocchio visualizer",
-                                   int(config.width), int(config.height), 0);
-    return Renderer{std::move(dev), window, SDL_GPU_TEXTUREFORMAT_D32_FLOAT};
-  }
+  static Renderer createRenderer(const Config &config);
 
   /// \brief Default GUI callback for the Visualizer; provide your own callback
   /// to the Visualizer constructor to change this behaviour.
@@ -53,11 +48,11 @@ public:
 
   void loadViewerModel() override;
 
-  Visualizer(Config config, const pin::Model &model,
+  Visualizer(const Config &config, const pin::Model &model,
              const pin::GeometryModel &visualModel,
              GuiSystem::GuiBehavior gui_callback);
 
-  Visualizer(Config config, const pin::Model &model,
+  Visualizer(const Config &config, const pin::Model &model,
              const pin::GeometryModel &visualModel)
       : Visualizer(config, model, visualModel,
                    [this](auto &r) { default_gui_exec(r); }) {}
@@ -79,5 +74,15 @@ public:
     SDL_Quit();
   }
 };
+
+inline Renderer Visualizer::createRenderer(const Config &config) {
+  bool ret = SDL_Init(SDL_INIT_VIDEO);
+  assert(ret);
+  Device dev{auto_detect_shader_format_subset()};
+  SDL_Window *window =
+      SDL_CreateWindow("Candlewick Pinocchio visualizer", int(config.width),
+                       int(config.height), 0);
+  return Renderer{std::move(dev), window, config.depth_stencil_format};
+}
 
 } // namespace candlewick::multibody
