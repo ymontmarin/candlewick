@@ -61,7 +61,8 @@ MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
 /// \warning This does *not* upload the mesh data to the vertex and index
 /// buffers.
 /// \sa uploadMeshToDevice()
-[[nodiscard]] Mesh createMesh(const Device &device, const MeshData &meshData);
+[[nodiscard]] Mesh createMesh(const Device &device, const MeshData &meshData,
+                              bool upload = false);
 
 /// \brief Create a Mesh object from given mesh data, as a view into existing
 /// vertex and index buffers.
@@ -89,6 +90,14 @@ void uploadMeshToDevice(const Device &device, const MeshView &meshView,
 void uploadMeshToDevice(const Device &device, const Mesh &mesh,
                         const MeshData &meshData);
 
-std::vector<PbrMaterial> extractMaterials(std::span<const MeshData> meshDatas);
+inline std::vector<PbrMaterial>
+extractMaterials(std::span<const MeshData> meshDatas) {
+  std::vector<PbrMaterial> out;
+  out.reserve(meshDatas.size());
+  for (size_t i = 0; i < meshDatas.size(); i++) {
+    out.push_back(meshDatas[i].material);
+  }
+  return out;
+}
 
 } // namespace candlewick

@@ -1,5 +1,5 @@
 #include "Common.h"
-#include "GenHeightfield.h"
+// #include "GenHeightfield.h"
 
 #include "candlewick/core/debug/DepthViz.h"
 #include "candlewick/core/debug/Frustum.h"
@@ -10,6 +10,7 @@
 #include "candlewick/core/LightUniforms.h"
 
 #include "candlewick/multibody/RobotScene.h"
+#include "candlewick/multibody/RobotDebug.h"
 #include "candlewick/primitives/Plane.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 #include "candlewick/core/Camera.h"
@@ -21,6 +22,7 @@
 
 #include <pinocchio/multibody/data.hpp>
 #include <pinocchio/multibody/geometry.hpp>
+#include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/geometry.hpp>
@@ -34,6 +36,8 @@
 #include <CLI/App.hpp>
 #include <CLI/Formatter.hpp>
 #include <CLI/Config.hpp>
+
+#include <entt/entity/registry.hpp>
 
 namespace pin = pinocchio;
 using namespace candlewick;
@@ -209,7 +213,7 @@ int main(int argc, char **argv) {
       registry.get<RobotScene::MeshMaterialComponent,
                    multibody::VisibilityComponent>(plane_entity);
 
-  robot_scene.addEnvironmentObject(loadCube(.4f, {-0.45f, -0.4f}),
+  robot_scene.addEnvironmentObject(loadCube(.33f, {-0.55f, -0.7f}),
                                    Mat4f::Identity());
 
   const size_t numRobotShapes =
@@ -217,10 +221,16 @@ int main(int argc, char **argv) {
   SDL_assert(numRobotShapes == geom_model.ngeoms);
   SDL_Log("Registered %zu robot geometry objects.", numRobotShapes);
 
-  /** DEBUG SYSTEM **/
+  // DEBUG SYSTEM
+
   DebugScene debug_scene{renderer};
-  auto &basic_debug_module = debug_scene.addModule<BasicDebugModule>();
-  basic_debug_module.grid_color = 0xE0A236ff_rgbaf;
+  auto &robot_debug =
+      debug_scene.addSystem<multibody::RobotDebugSystem>(model, pin_data);
+  auto [triad_id, triad] = debug_scene.addTriad();
+  auto [grid_id, grid] = debug_scene.addLineGrid(0xE0A236ff_rgbaf);
+  pin::FrameIndex ee_frame_id = model.getFrameId("ee_link");
+  robot_debug.addFrameTriad(debug_scene, ee_frame_id);
+  robot_debug.addFrameVelocityArrow(debug_scene, ee_frame_id);
 
   auto depth_debug = DepthDebugPass::create(renderer, renderer.depth_texture);
   static DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
@@ -230,7 +240,7 @@ int main(int argc, char **argv) {
   auto shadowDebugPass =
       DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);
 
-  auto frustumBoundsDebug = FrustumAndBoundsDebug::create(renderer);
+  FrustumBoundsDebugSystem frustumBoundsDebug{registry, renderer};
 
   GuiSystem gui_system{[&](Renderer &r) {
     static bool demo_window_open = true;
@@ -267,8 +277,8 @@ int main(int argc, char **argv) {
 
     ImGui::SeparatorText("Env. status");
     ImGui::Checkbox("Render plane", &plane_vis.status);
-    ImGui::Checkbox("Render grid", &basic_debug_module.enableGrid);
-    ImGui::Checkbox("Render triad", &basic_debug_module.enableTriad);
+    ImGui::Checkbox("Render grid", &grid.enable);
+    ImGui::Checkbox("Render triad", &triad.enable);
 
     ImGui::RadioButton("Full render mode", (int *)&showDebugViz, FULL_RENDER);
     ImGui::SameLine();
@@ -287,7 +297,7 @@ int main(int argc, char **argv) {
     ImGui::DragFloat3("direction", myLight.direction.data(), 0.0f, -1.f, 1.f);
     ImGui::ColorEdit3("color", myLight.color.data());
     ImGui::Separator();
-    ImGui::ColorEdit4("grid color", basic_debug_module.grid_color.data(),
+    ImGui::ColorEdit4("grid color", grid.colors[0].data(),
                       ImGuiColorEditFlags_AlphaPreview);
     ImGui::ColorEdit4("plane color", plane_obj.materials[0].baseColor.data());
     ImGui::End();
@@ -322,13 +332,23 @@ int main(int argc, char **argv) {
   worldSpaceBounds.grow({-1.f, -1.f, 0.f});
   worldSpaceBounds.grow({+1.f, +1.f, 1.f});
 
+  frustumBoundsDebug.addBounds(worldSpaceBounds);
+  frustumBoundsDebug.addFrustum(shadowPassInfo.cam);
+
+  Eigen::VectorXd q = q0;
+  const double dt = 1e-2;
+
   while (!quitRequested) {
     // logic
     eventLoop(renderer);
-    double phi = 0.5 * (1. + std::sin(frameNo * 1e-2));
-    Eigen::VectorXd q = pin::interpolate(model, q0, q1, phi);
-    pin::forwardKinematics(model, pin_data, q);
+    double alpha = 0.5 * (1. + std::sin(frameNo * dt));
+    Eigen::VectorXd qn = q;
+    q = pin::interpolate(model, q0, q1, alpha);
+    Eigen::VectorXd v = pin::difference(model, q, qn) / dt;
+    pin::forwardKinematics(model, pin_data, q, v);
+    pin::updateFramePlacements(model, pin_data);
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
+    debug_scene.update();
 
     FrustumCornersType main_cam_frustum = frustumFromCamera(camera);
 
@@ -350,22 +370,18 @@ int main(int argc, char **argv) {
         renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});
       } else if (showDebugViz == LIGHT_DEBUG) {
         renderDepthDebug(renderer, shadowDebugPass,
-                         {depth_mode, orthoProjNear(shadowPassInfo.lightProj),
-                          orthoProjFar(shadowPassInfo.lightProj),
-                          CameraProjection::ORTHOGRAPHIC});
+                         {
+                             depth_mode,
+                             orthoProjNear(shadowPassInfo.cam.projection),
+                             orthoProjFar(shadowPassInfo.cam.projection),
+                             CameraProjection::ORTHOGRAPHIC,
+                         });
       } else {
         if (robot_scene.pbrHasPrepass())
           renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
         robot_scene.render(renderer, camera);
         debug_scene.render(renderer, camera);
-
-        // debug frustum for directional light
-        frustumBoundsDebug.renderLightFrustum(
-            renderer, camera,
-            {shadowPassInfo.lightProj,
-             Eigen::Isometry3f{shadowPassInfo.lightView}});
-        frustumBoundsDebug.renderBounds(renderer, camera, worldSpaceBounds,
-                                        0x00BFFFff_rgbaf);
+        frustumBoundsDebug.render(renderer, camera);
       }
       gui_system.render(renderer);
     } else {
@@ -381,8 +397,7 @@ int main(int argc, char **argv) {
     frameNo++;
   }
 
-  frustumBoundsDebug.release(renderer.device);
-  shadowPassInfo.release(renderer.device);
+  frustumBoundsDebug.release();
   depthPassInfo.release(renderer.device);
   shadowDebugPass.release(renderer.device);
   depth_debug.release(renderer.device);

@@ -9,6 +9,7 @@
 #include "../core/Renderer.h"
 
 #include <SDL3/SDL_init.h>
+#include <entt/entity/registry.hpp>
 
 namespace candlewick::multibody {
 
@@ -19,10 +20,6 @@ using pinocchio_visualizers::Matrix4s;
 using pinocchio_visualizers::Vector3s;
 using pinocchio_visualizers::VectorXs;
 } // namespace
-
-struct VisualizerConfig {
-  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
-};
 
 /// \brief A synchronous renderer. The display() function will perform the draw
 /// calls.
@@ -36,9 +33,6 @@ public:
   DebugScene debugScene;
   Camera camera;
 
-private:
-  BasicDebugModule *basic_debug_module;
-
 public:
   struct Config {
     Uint32 width;
@@ -47,12 +41,14 @@ public:
 
   static Renderer createRenderer(const Config &config) {
     SDL_Init(SDL_INIT_VIDEO);
-    Device dev{SDL_GPU_SHADERFORMAT_SPIRV};
+    Device dev{auto_detect_shader_format_subset()};
     auto window = SDL_CreateWindow("Candlewick Pinocchio visualizer",
                                    int(config.width), int(config.height), 0);
-    return Renderer{std::move(dev), window, SDL_GPU_TEXTUREFORMAT_D24_UNORM};
+    return Renderer{std::move(dev), window, SDL_GPU_TEXTUREFORMAT_D32_FLOAT};
   }
 
+  /// \brief Default GUI callback for the Visualizer; provide your own callback
+  /// to the Visualizer constructor to change this behaviour.
   void default_gui_exec(Renderer &render);
 
   void loadViewerModel() override;

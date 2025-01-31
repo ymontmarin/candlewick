@@ -21,6 +21,7 @@
 #pragma once
 
 #include "Core.h"
+#include "Camera.h"
 #include "Mesh.h"
 #include "math_types.h"
 #include "LightUniforms.h"
@@ -73,8 +74,7 @@ struct ShadowPassConfig {
 struct ShadowPassInfo : DepthPassInfo {
   /// Sampler to use for main render passes.
   SDL_GPUSampler *sampler;
-  Mat4f lightView;
-  Mat4f lightProj;
+  Camera cam;
 
   /// \sa DepthPassInfo::create()
   [[nodiscard]] static ShadowPassInfo create(const Renderer &renderer,

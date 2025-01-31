@@ -161,8 +161,8 @@ void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
       frustumBoundingSphereCenterRadius(worldSpaceCorners);
   radius = std::ceil(radius * 16.f) / 16.f;
 
-  auto &lightView = passInfo.lightView;
-  auto &lightProj = passInfo.lightProj;
+  auto &lightView = passInfo.cam.view;
+  auto &lightProj = passInfo.cam.projection;
 
   const Float3 eye = frustumCenter - radius * dirLight.direction.normalized();
   AABB bounds{Float3::Constant(-radius), Float3::Constant(+radius)};
@@ -170,7 +170,7 @@ void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
   lightProj = orthographicMatrix({bounds.width(), bounds.height()}, 0.f,
                                  bounds.depth());
 
-  Mat4f viewProj = lightProj * lightView;
+  Mat4f viewProj = passInfo.cam.viewProj();
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }
 
@@ -182,15 +182,15 @@ void renderShadowPassFromAABB(Renderer &renderer, ShadowPassInfo &passInfo,
   float radius = worldSceneBounds.radius();
   radius = std::ceil(radius * 16.f) / 16.f;
   Float3 eye = center - radius * dirLight.direction.normalized();
-  Mat4f &lightView = passInfo.lightView;
-  Mat4f &lightProj = passInfo.lightProj;
+  auto &lightView = passInfo.cam.view;
+  auto &lightProj = passInfo.cam.projection;
   lightView = lookAt(eye, center, Float3::UnitZ());
 
   AABB bounds{Float3::Constant(-radius), Float3::Constant(+radius)};
   lightProj = shadowOrthographicMatrix({bounds.width(), bounds.height()},
                                        bounds.min.z(), bounds.max.z());
 
-  Mat4f viewProj = lightProj * lightView;
+  Mat4f viewProj = lightProj * lightView.matrix();
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
 }
 } // namespace candlewick

@@ -1,4 +1,5 @@
 #include "Visualizer.h"
+#include "../core/DepthAndShadowPass.h"
 
 #include <imgui.h>
 
@@ -13,8 +14,6 @@ void Visualizer::default_gui_exec(Renderer &render) {
   ImGui::SliderFloat("Intensity", &light.intensity, 0.1f, 10.f);
   ImGui::ColorEdit3("color", light.color.data());
   ImGui::SeparatorText("Debug elements");
-  ImGui::Checkbox("Show grid", &basic_debug_module->enableGrid);
-  ImGui::Checkbox("Show triad", &basic_debug_module->enableTriad);
   ImGui::End();
 }
 
@@ -23,7 +22,8 @@ Visualizer::Visualizer(Config config, const pin::Model &model,
                        GuiSystem::GuiBehavior gui_callback)
     : BaseVisualizer(model, visualModel), registry{},
       renderer(createRenderer(config)), guiSys(std::move(gui_callback)),
-      robotScene(registry, renderer, visualModel, visualData, {}),
+      robotScene(registry, renderer, visualModel, visualData,
+                 {.enable_shadows = true}),
       debugScene(renderer) {
   robotScene.directionalLight = {
       .direction = {0., -1., -1.},
@@ -31,7 +31,6 @@ Visualizer::Visualizer(Config config, const pin::Model &model,
       .intensity = 8.0,
   };
   guiSys.init(renderer);
-  this->basic_debug_module = &debugScene.addModule<BasicDebugModule>();
 
   {
     const float radius = 2.5f;
@@ -46,13 +45,25 @@ Visualizer::Visualizer(Config config, const pin::Model &model,
     camera.projection =
         perspectiveFromFov(defaultFov, aspectRatio, 0.01f, 100.f);
   }
+
+  robotScene.worldSpaceBounds.grow({-1.f, -1.f, 0.f});
+  robotScene.worldSpaceBounds.grow({+1.f, +1.f, 1.f});
 }
 
 void Visualizer::loadViewerModel() {}
 
 void Visualizer::displayImpl() {
+  debugScene.update();
+
   renderer.beginFrame();
-  assert(renderer.waitAndAcquireSwapchain());
+  renderer.waitAndAcquireSwapchain();
+
+  updateRobotTransforms(registry, visualData);
+  robotScene.collectOpaqueCastables();
+  std::span castables = robotScene.castables();
+  // renderShadowPassFromAABB(renderer, robotScene.shadowPass,
+  //                          robotScene.directionalLight, castables,
+  //                          robotScene.worldSpaceBounds);
 
   robotScene.render(renderer, camera);
   debugScene.render(renderer, camera);
