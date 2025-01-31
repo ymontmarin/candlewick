@@ -27,5 +27,6 @@ create_test(LitMesh.cpp Common)
 
 create_test(Ur5.cpp Common CLI11::CLI11)
 create_test(Ur5WithSystems.cpp Common CLI11::CLI11)
+create_test(Visualizer.cpp Common)
 
 create_test(TestVertexBlob.cpp candlewick_core GTest::gtest_main)
