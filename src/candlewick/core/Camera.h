@@ -8,9 +8,9 @@
 namespace candlewick {
 
 namespace math {
-inline Mat3f computeNormalMatrix(const Eigen::Affine3f &M) {
-  return M.inverse().linear().transpose();
-}
+  inline Mat3f computeNormalMatrix(const Eigen::Affine3f &M) {
+    return M.inverse().linear().transpose();
+  }
 } // namespace math
 
 enum class CameraProjection { PERSPECTIVE, ORTHOGRAPHIC };

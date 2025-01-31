@@ -50,25 +50,25 @@ MeshData generateIndices(const MeshData &meshData) {
 }
 
 namespace detail {
-std::pair<Uint32, Uint32>
-mergeCalcIndexVertexCount(std::span<const MeshData> meshes) {
-  Uint32 indexCount = 0, vertexCount = 0;
-  for (const MeshData &m : meshes) {
-    // if no indices, use vertex count.
-    // if the mesh is indexed, use the index count.
-    // if moreover this is the first indexed mesh,
-    // then use the vertex count from all previous meshes.
-    if (m.isIndexed()) {
-      if (!indexCount)
-        indexCount = vertexCount;
-      indexCount += m.numIndices();
-    } else if (indexCount) {
-      indexCount += m.numVertices();
+  std::pair<Uint32, Uint32>
+  mergeCalcIndexVertexCount(std::span<const MeshData> meshes) {
+    Uint32 indexCount = 0, vertexCount = 0;
+    for (const MeshData &m : meshes) {
+      // if no indices, use vertex count.
+      // if the mesh is indexed, use the index count.
+      // if moreover this is the first indexed mesh,
+      // then use the vertex count from all previous meshes.
+      if (m.isIndexed()) {
+        if (!indexCount)
+          indexCount = vertexCount;
+        indexCount += m.numIndices();
+      } else if (indexCount) {
+        indexCount += m.numVertices();
+      }
+      vertexCount += m.numVertices();
     }
-    vertexCount += m.numVertices();
+    return {indexCount, vertexCount};
   }
-  return {indexCount, vertexCount};
-}
 } // namespace detail
 
 MeshData mergeMeshes(std::span<const MeshData> meshes) {

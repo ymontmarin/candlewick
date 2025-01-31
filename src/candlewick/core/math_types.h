@@ -33,10 +33,10 @@ private:
 using GpuMat4 = Eigen::Matrix<float, 4, 4, Eigen::ColMajor | Eigen::DontAlign>;
 
 namespace constants {
-inline constexpr double Pi = 3.1415926535897932;
-inline constexpr float Pif = 3.141592654f;
-inline constexpr double Pi_2 = 1.5707963267948966;
-inline constexpr double Pi_2f = 1.5707963267f;
+  inline constexpr double Pi = 3.1415926535897932;
+  inline constexpr float Pif = 3.141592654f;
+  inline constexpr double Pi_2 = 1.5707963267948966;
+  inline constexpr double Pi_2f = 1.5707963267f;
 } // namespace constants
 
 inline constexpr double deg2rad(double t) { return t * constants::Pi / 180.0; }
@@ -153,16 +153,16 @@ inline Eigen::Vector4d operator""_rgba(unsigned long long hex) {
 }
 
 namespace math {
-constexpr Uint32 roundUpTo16(Uint32 value) {
-  Uint32 q = value / 16;
-  Uint32 r = value % 16;
-  if (r == 0)
-    return value;
-  return (q + 1) * 16u;
-}
+  constexpr Uint32 roundUpTo16(Uint32 value) {
+    Uint32 q = value / 16;
+    Uint32 r = value % 16;
+    if (r == 0)
+      return value;
+    return (q + 1) * 16u;
+  }
 
-inline Mat3f computeNormalMatrix(const Mat4f &M) {
-  return M.topLeftCorner<3, 3>().inverse().transpose();
-}
+  inline Mat3f computeNormalMatrix(const Mat4f &M) {
+    return M.topLeftCorner<3, 3>().inverse().transpose();
+  }
 } // namespace math
 } // namespace candlewick
