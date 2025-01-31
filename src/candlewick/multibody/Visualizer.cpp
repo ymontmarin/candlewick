@@ -1,4 +1,5 @@
 #include "Visualizer.h"
+#include "../core/DepthAndShadowPass.h"
 
 #include <imgui.h>
 
@@ -21,7 +22,8 @@ Visualizer::Visualizer(Config config, const pin::Model &model,
                        GuiSystem::GuiBehavior gui_callback)
     : BaseVisualizer(model, visualModel), registry{},
       renderer(createRenderer(config)), guiSys(std::move(gui_callback)),
-      robotScene(registry, renderer, visualModel, visualData, {}),
+      robotScene(registry, renderer, visualModel, visualData,
+                 {.enable_shadows = true}),
       debugScene(renderer) {
   robotScene.directionalLight = {
       .direction = {0., -1., -1.},
@@ -43,13 +45,25 @@ Visualizer::Visualizer(Config config, const pin::Model &model,
     camera.projection =
         perspectiveFromFov(defaultFov, aspectRatio, 0.01f, 100.f);
   }
+
+  robotScene.worldSpaceBounds.grow({-1.f, -1.f, 0.f});
+  robotScene.worldSpaceBounds.grow({+1.f, +1.f, 1.f});
 }
 
 void Visualizer::loadViewerModel() {}
 
 void Visualizer::displayImpl() {
+  debugScene.update();
+
   renderer.beginFrame();
-  assert(renderer.waitAndAcquireSwapchain());
+  renderer.waitAndAcquireSwapchain();
+
+  updateRobotTransforms(registry, visualData);
+  robotScene.collectOpaqueCastables();
+  std::span castables = robotScene.castables();
+  // renderShadowPassFromAABB(renderer, robotScene.shadowPass,
+  //                          robotScene.directionalLight, castables,
+  //                          robotScene.worldSpaceBounds);
 
   robotScene.render(renderer, camera);
   debugScene.render(renderer, camera);

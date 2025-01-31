@@ -41,10 +41,10 @@ public:
 
   static Renderer createRenderer(const Config &config) {
     SDL_Init(SDL_INIT_VIDEO);
-    Device dev{SDL_GPU_SHADERFORMAT_SPIRV};
+    Device dev{auto_detect_shader_format_subset()};
     auto window = SDL_CreateWindow("Candlewick Pinocchio visualizer",
                                    int(config.width), int(config.height), 0);
-    return Renderer{std::move(dev), window, SDL_GPU_TEXTUREFORMAT_D24_UNORM};
+    return Renderer{std::move(dev), window, SDL_GPU_TEXTUREFORMAT_D32_FLOAT};
   }
 
   /// \brief Default GUI callback for the Visualizer; provide your own callback
