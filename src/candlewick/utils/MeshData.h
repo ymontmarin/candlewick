@@ -67,7 +67,7 @@ MeshData::MeshData(SDL_GPUPrimitiveType primitiveType,
 /// \brief Create a Mesh object from given mesh data, as a view into existing
 /// vertex and index buffers.
 /// \warning The constructed Mesh will **take ownership** of the buffers.
-[[nodiscard]] Mesh createMesh(const MeshData &meshData,
+[[nodiscard]] Mesh createMesh(const Device &device, const MeshData &meshData,
                               SDL_GPUBuffer *vertexBuffer,
                               SDL_GPUBuffer *indexBuffer);
 

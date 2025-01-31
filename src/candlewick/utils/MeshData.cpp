@@ -32,15 +32,15 @@ Mesh createMesh(const Device &device, const MeshData &meshData, bool upload) {
                                       .props = 0};
     indexBuffer = SDL_CreateGPUBuffer(device, &indexInfo);
   }
-  Mesh mesh = createMesh(meshData, vertexBuffer, indexBuffer);
+  Mesh mesh = createMesh(device, meshData, vertexBuffer, indexBuffer);
   if (upload)
     uploadMeshToDevice(device, mesh, meshData);
   return mesh;
 }
 
-Mesh createMesh(const MeshData &meshData, SDL_GPUBuffer *vertexBuffer,
-                SDL_GPUBuffer *indexBuffer) {
-  Mesh mesh{meshData.layout()};
+Mesh createMesh(const Device &device, const MeshData &meshData,
+                SDL_GPUBuffer *vertexBuffer, SDL_GPUBuffer *indexBuffer) {
+  Mesh mesh{device, meshData.layout()};
 
   mesh.bindVertexBuffer(0, vertexBuffer);
   mesh.vertexCount = meshData.numVertices();
@@ -81,7 +81,7 @@ Mesh createMeshFromBatch(const Device &device,
   auto masterVertexBuffer = SDL_CreateGPUBuffer(device, &vtxInfo);
   auto masterIndexBuffer =
       (numIndices > 0) ? SDL_CreateGPUBuffer(device, &idxInfo) : NULL;
-  Mesh mesh{layout};
+  Mesh mesh{device, layout};
   SDL_assert(layout == mesh.layout);
   mesh.vertexCount = numVertices;
   mesh.indexCount = numIndices;

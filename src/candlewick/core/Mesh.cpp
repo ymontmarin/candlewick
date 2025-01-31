@@ -1,5 +1,6 @@
 #include "Mesh.h"
 
+#include "Device.h"
 #include "MeshLayout.h"
 #include "./errors.h"
 
@@ -23,9 +24,26 @@ MeshView::MeshView(const MeshView &parent, Uint32 subVertexOffset,
 
 Mesh::Mesh(NoInitT) : layout() {}
 
-Mesh::Mesh(const MeshLayout &layout) : layout(layout) {
+Mesh::Mesh(const Device &device, const MeshLayout &layout)
+    : _device(device), layout(layout) {
   const Uint32 count = layout.numBuffers();
   vertexBuffers.resize(count, nullptr);
+}
+
+Mesh &Mesh::operator=(Mesh &&other) noexcept {
+  _device = other._device;
+  _views = std::move(other._views);
+  layout = std::move(other.layout);
+  vertexCount = std::move(other.vertexCount);
+  indexCount = std::move(other.indexCount);
+  vertexBuffers = std::move(other.vertexBuffers);
+  indexBuffer = std::move(other.indexBuffer);
+
+  other._device = nullptr;
+  other.vertexCount = 0u;
+  other.indexCount = 0u;
+  other.indexBuffer = nullptr;
+  return *this;
 }
 
 Mesh &Mesh::bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer) {
@@ -49,15 +67,18 @@ Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer) {
   return *this;
 }
 
-void Mesh::release(SDL_GPUDevice *device) {
+void Mesh::release() noexcept {
+  if (!_device)
+    return;
+
   for (std::size_t i = 0; i < vertexBuffers.size(); i++) {
     if (vertexBuffers[i])
-      SDL_ReleaseGPUBuffer(device, vertexBuffers[i]);
-    vertexBuffers[i] = nullptr;
+      SDL_ReleaseGPUBuffer(_device, vertexBuffers[i]);
   }
+  vertexBuffers.clear();
 
   if (isIndexed()) {
-    SDL_ReleaseGPUBuffer(device, indexBuffer);
+    SDL_ReleaseGPUBuffer(_device, indexBuffer);
     indexBuffer = nullptr;
   }
 }
@@ -72,7 +93,7 @@ MeshView &Mesh::addView(Uint32 vertexOffset, Uint32 vertexSubCount,
   v.indexOffset = indexOffset;
   v.indexCount = indexSubCount;
 
-  return views_.emplace_back(v);
+  return _views.emplace_back(std::move(v));
 }
 
 } // namespace candlewick

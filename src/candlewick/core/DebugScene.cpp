@@ -7,21 +7,11 @@
 
 namespace candlewick {
 
-void DebugScene::onDestroyMeshComponent(entt::registry &registry,
-                                        entt::entity entity) {
-  // release the Mesh object
-  registry.get<DebugMeshComponent>(entity).mesh.release(_device);
-}
-
 DebugScene::DebugScene(const Renderer &renderer)
     : _device(renderer.device), _trianglePipeline(nullptr),
       _linePipeline(nullptr), _registry() {
   _swapchainTextureFormat = renderer.getSwapchainTextureFormat();
   _depthFormat = renderer.depth_format;
-
-  _connections.emplace_back(
-      _registry.on_destroy<DebugMeshComponent>()
-          .connect<&DebugScene::onDestroyMeshComponent>(*this));
 }
 
 std::tuple<entt::entity, DebugMeshComponent &> DebugScene::addTriad() {

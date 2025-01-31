@@ -106,7 +106,7 @@ int main() {
                                       .size = sizeof(vertexData),
                                       .props = 0};
 
-  Mesh mesh{mesh_layout};
+  Mesh mesh{device, mesh_layout};
   auto buf_vertex = SDL_CreateGPUBuffer(device, &buffer_desc);
   if (!buf_vertex) {
     SDL_Log("Failed to create vertex buffer: %s", SDL_GetError());
@@ -219,7 +219,7 @@ int main() {
     const Float3 center{0., 0., 0.};
     Float3 eye{0., 0., 0.};
     // start at phi -> eye.x = 2.5, eye.y = 0.5
-    const float phi = 0.05f * frame;
+    const float phi = 0.05f * static_cast<float>(frame);
     eye.x() += 2.0f * std::cos(phi);
     eye.y() += 2.0f * std::sin(phi);
     view = lookAt(eye, center, {0., 0., 1.});
@@ -261,7 +261,7 @@ int main() {
 
   SDL_ReleaseGPUTexture(device, depthTexture);
 
-  mesh.release(device);
+  mesh.release();
 
   SDL_ReleaseWindowFromGPUDevice(device, window);
   SDL_DestroyWindow(window);

@@ -227,7 +227,7 @@ int main() {
   }
 
   for (auto &mesh : meshes) {
-    mesh.release(device);
+    mesh.release();
   }
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 

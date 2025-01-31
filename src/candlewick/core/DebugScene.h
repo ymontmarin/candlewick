@@ -52,8 +52,6 @@ class DebugScene final {
   std::vector<std::unique_ptr<IDebugSubSystem>> _systems;
   entt::registry _registry;
 
-  void onDestroyMeshComponent(entt::registry &registry, entt::entity);
-
   void renderMeshComponents(Renderer &renderer, SDL_GPURenderPass *render_pass,
                             const Camera &camera) const;
 

@@ -18,6 +18,9 @@ namespace candlewick {
 /// index count (if initial Mesh is indexed).
 /// \sa Mesh
 class MeshView {
+  friend class Mesh;
+  MeshView() noexcept = default;
+
 public:
   /// Vertex buffers.
   std::vector<SDL_GPUBuffer *> vertexBuffers;
@@ -34,14 +37,10 @@ public:
   /// Number of indices in the mesh view.
   Uint32 indexCount;
 
-  bool isIndexed() const { return indexBuffer != NULL; }
+  bool isIndexed() const { return indexBuffer != nullptr; }
 
   MeshView(const MeshView &parent, Uint32 subVertexOffset,
            Uint32 vertexSubCount, Uint32 subIndexOffset, Uint32 indexSubCount);
-
-private:
-  friend class Mesh;
-  MeshView() noexcept = default;
 };
 
 /// \brief Handle class for meshes (vertex buffers and an optional index buffer)
@@ -54,7 +53,8 @@ private:
 ///
 /// \sa MeshView
 class Mesh {
-  std::vector<MeshView> views_;
+  SDL_GPUDevice *_device{nullptr};
+  std::vector<MeshView> _views;
 
 public:
   MeshLayout layout;
@@ -70,23 +70,23 @@ public:
   /// `[pos0, norm0, col0, pos1, ...]`.
   std::vector<SDL_GPUBuffer *> vertexBuffers;
 
-  /// Index buffer for the mesh's index data. If this is NULL, then the
+  /// Index buffer for the mesh's index data. If this is null, then the
   /// Mesh is considered to be *non*-indexed when it is bound or when draw
   /// commands are issued.
-  SDL_GPUBuffer *indexBuffer{NULL};
+  SDL_GPUBuffer *indexBuffer{nullptr};
 
-  explicit Mesh(const MeshLayout &layout);
+  explicit Mesh(const Device &device, const MeshLayout &layout);
 
   Mesh(NoInitT);
   Mesh(const Mesh &) = delete;
-  Mesh(Mesh &&) noexcept = default;
+  Mesh(Mesh &&other) noexcept { *this = std::move(other); }
 
   Mesh &operator=(const Mesh &) = delete;
-  Mesh &operator=(Mesh &&) noexcept = default;
+  Mesh &operator=(Mesh &&other) noexcept;
 
-  const MeshView &view(size_t i) const { return views_[i]; }
-  std::span<const MeshView> views() const { return views_; }
-  size_t numViews() const { return views_.size(); }
+  const MeshView &view(size_t i) const { return _views[i]; }
+  std::span<const MeshView> views() const { return _views; }
+  size_t numViews() const { return _views.size(); }
 
   /// \brief Add a stored MeshView object. The added view will be drawn when
   /// calling Renderer::draw() with a Mesh argument.
@@ -117,10 +117,11 @@ public:
   /// \brief Number of vertex buffers.
   Uint32 numVertexBuffers() const { return layout.numBuffers(); }
 
-  bool isIndexed() const { return indexBuffer != NULL; }
+  bool isIndexed() const { return indexBuffer != nullptr; }
 
   /// \brief Release all owned vertex and index buffers in the Mesh object.
-  void release(SDL_GPUDevice *device);
+  void release() noexcept;
+  ~Mesh() noexcept { release(); }
 
   SDL_GPUBufferBinding getVertexBinding(Uint32 slot) const {
     return {.buffer = vertexBuffers[slot], .offset = 0u};
@@ -151,7 +152,7 @@ public:
 ///
 /// Check that all vertex buffer handles are non-null, check that vertex count
 /// is nonzero, check consistency of indexing status (that index buffer is
-/// non-NULL iff the index count of this view is nonzero).
+/// non-null iff the index count of this view is nonzero).
 /// \param view Input view to validate.
 /// \sa validateMesh()
 [[nodiscard]] inline bool validateMeshView(const MeshView &view) {

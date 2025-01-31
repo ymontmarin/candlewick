@@ -319,9 +319,7 @@ void RobotScene::release() {
   if (!_device)
     return;
 
-  for (auto [entity, obj] : _registry.view<MeshMaterialComponent>()->each()) {
-    obj.mesh.release(_device);
-  }
+  _registry.clear<MeshMaterialComponent>();
 
   for (auto &pipeline : renderPipelines) {
     SDL_ReleaseGPUGraphicsPipeline(_device, pipeline);
