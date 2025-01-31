@@ -43,7 +43,7 @@ public:
 
   /// \brief Default GUI callback for the Visualizer; provide your own callback
   /// to the Visualizer constructor to change this behaviour.
-  void default_gui_exec(Renderer &render);
+  static void default_gui_exec(Visualizer &viz);
 
   void loadViewerModel() override;
 
@@ -54,7 +54,7 @@ public:
   Visualizer(const Config &config, const pin::Model &model,
              const pin::GeometryModel &visualModel)
       : Visualizer(config, model, visualModel,
-                   [this](auto &r) { default_gui_exec(r); }) {}
+                   [this](auto &) { default_gui_exec(*this); }) {}
 
   ~Visualizer() noexcept;
 
@@ -70,8 +70,16 @@ public:
 
   bool shouldExit() const noexcept { return m_shouldExit; }
 
+  /// \brief Clear objects (for now, only environment entities).
+  /// \todo Allow cleaning up the robot.
+  void clearEnvironment() {
+    registry.destroy(m_environmentEntities.begin(),
+                     m_environmentEntities.end());
+  }
+
 private:
   bool m_shouldExit = false;
+  std::vector<entt::entity> m_environmentEntities;
 };
 
 inline Renderer Visualizer::createRenderer(const Config &config) {

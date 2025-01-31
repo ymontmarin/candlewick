@@ -6,16 +6,28 @@
 
 namespace candlewick::multibody {
 
-void Visualizer::default_gui_exec(Renderer &render) {
-  auto &light = this->robotScene.directionalLight;
+void add_light_gui_entry(DirectionalLight &light) {
+  ImGui::SliderFloat("intensity", &light.intensity, 0.1f, 10.f);
+  ImGui::DragFloat3("direction", light.direction.data(), 0.0f, -1.f, 1.f);
+  light.direction.stableNormalize();
+  ImGui::ColorEdit3("color", light.color.data());
+}
+
+void Visualizer::default_gui_exec(Visualizer &viz) {
+  auto &render = viz.renderer;
+  static bool show_demo_window = false;
+  auto &light = viz.robotScene.directionalLight;
   ImGui::Begin("Renderer info & controls", nullptr,
                ImGuiWindowFlags_AlwaysAutoResize);
   ImGui::Text("Device driver: %s", render.device.driverName());
-  ImGui::SeparatorText("Dir. light");
-  ImGui::SliderFloat("Intensity", &light.intensity, 0.1f, 10.f);
-  ImGui::ColorEdit3("color", light.color.data());
-  ImGui::SeparatorText("Debug elements");
+
+  ImGui::SeparatorText("Lights");
+  ImGui::SetItemTooltip("Configuration for lights");
+  add_light_gui_entry(light);
+
   ImGui::End();
+
+  ImGui::ShowDemoWindow(&show_demo_window);
 }
 
 void Visualizer::eventLoop() {
