@@ -68,18 +68,17 @@ public:
 
   void eventLoop();
 
-  bool shouldExit() const noexcept { return m_shouldExit; }
+  bool shouldExit() const noexcept { return _shouldExit; }
 
   /// \brief Clear objects (for now, only environment entities).
   /// \todo Allow cleaning up the robot.
   void clearEnvironment() {
-    registry.destroy(m_environmentEntities.begin(),
-                     m_environmentEntities.end());
+    registry.destroy(_environmentEntities.begin(), _environmentEntities.end());
   }
 
 private:
-  bool m_shouldExit = false;
-  std::vector<entt::entity> m_environmentEntities;
+  bool _shouldExit = false;
+  std::vector<entt::entity> _environmentEntities;
 };
 
 inline Renderer Visualizer::createRenderer(const Config &config) {

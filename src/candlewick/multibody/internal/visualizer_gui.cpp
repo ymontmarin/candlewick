@@ -38,7 +38,7 @@ void Visualizer::eventLoop() {
     ImGui_ImplSDL3_ProcessEvent(&event);
 
     if (event.type == SDL_EVENT_QUIT) {
-      m_shouldExit = true;
+      _shouldExit = true;
     }
 
     if (io.WantCaptureMouse | io.WantCaptureKeyboard)
