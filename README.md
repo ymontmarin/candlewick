@@ -26,4 +26,4 @@ Candlewick depends mainly on:
 * [FFmpeg](https://ffmpeg.org/) for support for recording videos from the rendered graphics.
 * For loading and visualizing robots:
   * the Pinocchio rigid-body dynamics library (required for the `candlewick::multibody` classes and functions).
-  * [example-robot-data](https://github.com/ManifoldFR/robot_descriptions_cpp) [robot_descriptions_cpp](https://github.com/ManifoldFR/robot_descriptions_cpp), a suite of loaders for robots (required for some examples)
+  * [robot_descriptions_cpp](https://github.com/ManifoldFR/robot_descriptions_cpp), a suite of loaders for robots (required for some examples)
