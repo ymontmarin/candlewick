@@ -33,34 +33,30 @@ public:
   DebugScene debugScene;
   Camera camera;
 
-public:
   struct Config {
     Uint32 width;
     Uint32 height;
+    SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
   };
 
-  static Renderer createRenderer(const Config &config) {
-    SDL_Init(SDL_INIT_VIDEO);
-    Device dev{auto_detect_shader_format_subset()};
-    auto window = SDL_CreateWindow("Candlewick Pinocchio visualizer",
-                                   int(config.width), int(config.height), 0);
-    return Renderer{std::move(dev), window, SDL_GPU_TEXTUREFORMAT_D32_FLOAT};
-  }
+  static Renderer createRenderer(const Config &config);
 
   /// \brief Default GUI callback for the Visualizer; provide your own callback
   /// to the Visualizer constructor to change this behaviour.
-  void default_gui_exec(Renderer &render);
+  static void default_gui_exec(Visualizer &viz);
 
   void loadViewerModel() override;
 
-  Visualizer(Config config, const pin::Model &model,
+  Visualizer(const Config &config, const pin::Model &model,
              const pin::GeometryModel &visualModel,
              GuiSystem::GuiBehavior gui_callback);
 
-  Visualizer(Config config, const pin::Model &model,
+  Visualizer(const Config &config, const pin::Model &model,
              const pin::GeometryModel &visualModel)
       : Visualizer(config, model, visualModel,
-                   [this](auto &r) { default_gui_exec(r); }) {}
+                   [this](auto &) { default_gui_exec(*this); }) {}
+
+  ~Visualizer() noexcept;
 
   void displayImpl() override;
 
@@ -70,14 +66,30 @@ public:
 
   void setCameraPose(const Eigen::Ref<const Matrix4s> &pose) override;
 
-  ~Visualizer() {
-    robotScene.release();
-    debugScene.release();
-    guiSys.release();
-    renderer.destroy();
-    SDL_DestroyWindow(renderer.window);
-    SDL_Quit();
+  void eventLoop();
+
+  bool shouldExit() const noexcept { return m_shouldExit; }
+
+  /// \brief Clear objects (for now, only environment entities).
+  /// \todo Allow cleaning up the robot.
+  void clearEnvironment() {
+    registry.destroy(m_environmentEntities.begin(),
+                     m_environmentEntities.end());
   }
+
+private:
+  bool m_shouldExit = false;
+  std::vector<entt::entity> m_environmentEntities;
 };
+
+inline Renderer Visualizer::createRenderer(const Config &config) {
+  bool ret = SDL_Init(SDL_INIT_VIDEO);
+  assert(ret);
+  Device dev{auto_detect_shader_format_subset()};
+  SDL_Window *window =
+      SDL_CreateWindow("Candlewick Pinocchio visualizer", int(config.width),
+                       int(config.height), 0);
+  return Renderer{std::move(dev), window, config.depth_stencil_format};
+}
 
 } // namespace candlewick::multibody

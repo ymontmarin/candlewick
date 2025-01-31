@@ -1,23 +1,10 @@
 #include "Visualizer.h"
 #include "../core/DepthAndShadowPass.h"
-
-#include <imgui.h>
+#include "../primitives/Plane.h"
 
 namespace candlewick::multibody {
 
-void Visualizer::default_gui_exec(Renderer &render) {
-  auto &light = this->robotScene.directionalLight;
-  ImGui::Begin("Renderer info & controls", nullptr,
-               ImGuiWindowFlags_AlwaysAutoResize);
-  ImGui::Text("Device driver: %s", render.device.driverName());
-  ImGui::SeparatorText("Dir. light");
-  ImGui::SliderFloat("Intensity", &light.intensity, 0.1f, 10.f);
-  ImGui::ColorEdit3("color", light.color.data());
-  ImGui::SeparatorText("Debug elements");
-  ImGui::End();
-}
-
-Visualizer::Visualizer(Config config, const pin::Model &model,
+Visualizer::Visualizer(const Config &config, const pin::Model &model,
                        const pin::GeometryModel &visualModel,
                        GuiSystem::GuiBehavior gui_callback)
     : BaseVisualizer(model, visualModel), registry{},
@@ -48,26 +35,35 @@ Visualizer::Visualizer(Config config, const pin::Model &model,
 
   robotScene.worldSpaceBounds.grow({-1.f, -1.f, 0.f});
   robotScene.worldSpaceBounds.grow({+1.f, +1.f, 1.f});
+
+  Uint32 prepeat = 25;
+  auto plane_obj = robotScene.addEnvironmentObject(
+      loadPlaneTiled(0.5f, prepeat, prepeat), Mat4f::Identity());
+  m_environmentEntities.push_back(plane_obj);
 }
 
 void Visualizer::loadViewerModel() {}
 
 void Visualizer::displayImpl() {
+
+  this->eventLoop();
+
   debugScene.update();
 
   renderer.beginFrame();
-  renderer.waitAndAcquireSwapchain();
+  if (renderer.waitAndAcquireSwapchain()) {
+    updateRobotTransforms(registry, visualData);
+    robotScene.collectOpaqueCastables();
+    std::span castables = robotScene.castables();
+    renderShadowPassFromAABB(renderer, robotScene.shadowPass,
+                             robotScene.directionalLight, castables,
+                             robotScene.worldSpaceBounds);
 
-  updateRobotTransforms(registry, visualData);
-  robotScene.collectOpaqueCastables();
-  std::span castables = robotScene.castables();
-  // renderShadowPassFromAABB(renderer, robotScene.shadowPass,
-  //                          robotScene.directionalLight, castables,
-  //                          robotScene.worldSpaceBounds);
-
-  robotScene.render(renderer, camera);
-  debugScene.render(renderer, camera);
-  guiSys.render(renderer);
+    robotScene.render(renderer, camera);
+    debugScene.render(renderer, camera);
+    guiSys.render(renderer);
+  } else {
+  }
 
   renderer.endFrame();
 }
@@ -83,5 +79,14 @@ void Visualizer::setCameraPosition(const Eigen::Ref<const Vector3s> &position) {
 
 void Visualizer::setCameraPose(const Eigen::Ref<const Matrix4s> &pose) {
   camera.view = pose.cast<float>().inverse();
+}
+
+Visualizer::~Visualizer() noexcept {
+  robotScene.release();
+  debugScene.release();
+  guiSys.release();
+  renderer.destroy();
+  SDL_DestroyWindow(renderer.window);
+  SDL_Quit();
 }
 } // namespace candlewick::multibody

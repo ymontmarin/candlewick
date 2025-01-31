@@ -91,6 +91,8 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     }
   }
 
+  const bool enable_shadows = _config.enable_shadows;
+
   for (pin::GeomIndex geom_id = 0; geom_id < geom_model.ngeoms; geom_id++) {
 
     const auto &geom_obj = geom_model.geometryObjects[geom_id];
@@ -113,7 +115,8 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
         entity, std::move(mesh), extractMaterials(meshDatas), pipeline_type);
 
     // configure shadow pass
-    if (pipeline_type == PIPELINE_TRIANGLEMESH && !shadowPass.pipeline)
+    if (enable_shadows && pipeline_type == PIPELINE_TRIANGLEMESH &&
+        !shadowPass.pipeline)
       shadowPass =
           ShadowPassInfo::create(renderer, layout, config.shadow_config);
 
@@ -121,8 +124,8 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
               magic_enum::enum_name(pipeline_type).data());
       SDL_GPUGraphicsPipeline *pipeline =
-          createPipeline(_device, layout, renderer.getSwapchainTextureFormat(),
-                         renderer.depth_format, pipeline_type, config);
+          createPipeline(layout, renderer.getSwapchainTextureFormat(),
+                         renderer.depth_format, pipeline_type);
       assert(pipeline);
       renderPipelines[pipeline_type] = pipeline;
     }
@@ -218,7 +221,7 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
       directionalLight.intensity,
   };
 
-  bool enable_shadows = _config.enable_shadows;
+  const bool enable_shadows = _config.enable_shadows;
   const Mat4f lightViewProj = shadowPass.cam.viewProj();
   const Mat4f viewProj = camera.viewProj();
 
@@ -328,22 +331,20 @@ void RobotScene::release() {
   shadowPass.release(_device);
 }
 
-SDL_GPUGraphicsPipeline *
-RobotScene::createPipeline(const Device &device, const MeshLayout &layout,
-                           SDL_GPUTextureFormat render_target_format,
-                           SDL_GPUTextureFormat depth_stencil_format,
-                           PipelineType type, const Config &config) {
-  const PipelineConfig &pipe_config = config.pipeline_configs.at(type);
+SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
+    const MeshLayout &layout, SDL_GPUTextureFormat render_target_format,
+    SDL_GPUTextureFormat depth_stencil_format, PipelineType type) {
+  const PipelineConfig &pipe_config = _config.pipeline_configs.at(type);
   auto vertexShader =
-      Shader::fromMetadata(device, pipe_config.vertex_shader_path);
+      Shader::fromMetadata(_device, pipe_config.vertex_shader_path);
   auto fragmentShader =
-      Shader::fromMetadata(device, pipe_config.fragment_shader_path);
+      Shader::fromMetadata(_device, pipe_config.fragment_shader_path);
 
   SDL_GPUColorTargetDescription color_target;
   SDL_zero(color_target);
   color_target.format = render_target_format;
   bool had_prepass =
-      (type == PIPELINE_TRIANGLEMESH) && config.triangle_has_prepass;
+      (type == PIPELINE_TRIANGLEMESH) && _config.triangle_has_prepass;
   SDL_GPUCompareOp depth_compare_op =
       had_prepass ? SDL_GPU_COMPAREOP_EQUAL : SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
   SDL_Log("Pipeline type %s uses depth compare op %s",
@@ -370,7 +371,7 @@ RobotScene::createPipeline(const Device &device, const MeshLayout &layout,
   };
   desc.rasterizer_state.cull_mode = pipe_config.cull_mode;
   desc.rasterizer_state.fill_mode = pipe_config.fill_mode;
-  return SDL_CreateGPUGraphicsPipeline(device, &desc);
+  return SDL_CreateGPUGraphicsPipeline(_device, &desc);
 }
 
 } // namespace candlewick::multibody

@@ -46,8 +46,8 @@ struct DepthPassInfo {
     bool enable_depth_bias;
     bool enable_depth_clip;
   };
-  SDL_GPUTexture *depthTexture;
-  SDL_GPUGraphicsPipeline *pipeline;
+  SDL_GPUTexture *depthTexture = nullptr;
+  SDL_GPUGraphicsPipeline *pipeline = nullptr;
 
   /// \brief Create DepthPass (e.g. for a depth pre-pass) from a Renderer
   /// and specified MeshLayout.

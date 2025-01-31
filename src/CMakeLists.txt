@@ -72,16 +72,13 @@ if(BUILD_PINOCCHIO_VISUALIZER)
   find_package(pinocchio-visualizers REQUIRED)
   find_package(robot_descriptions_cpp REQUIRED)
 
-  add_library(
-    candlewick_multibody
-    SHARED
-    candlewick/multibody/InstantiatePinViz.cpp
-    candlewick/multibody/LoadCoalPrimitives.cpp
-    candlewick/multibody/LoadPinocchioGeometry.cpp
-    candlewick/multibody/RobotDebug.cpp
-    candlewick/multibody/RobotScene.cpp
-    candlewick/multibody/Visualizer.cpp
+  file(
+    GLOB multibody_sources
+    candlewick/multibody/*.cpp
+    candlewick/multibody/internal/*.cpp
   )
+
+  add_library(candlewick_multibody SHARED ${multibody_sources})
   target_link_libraries(
     candlewick_multibody
     PUBLIC

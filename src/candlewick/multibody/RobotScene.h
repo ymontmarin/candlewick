@@ -109,14 +109,9 @@ namespace multibody {
     addEnvironmentObject(MeshData &&data, Mat4f placement,
                          PipelineType pipe_type = PIPELINE_TRIANGLEMESH);
 
-    // void addRobot(const pin::GeometryModel &geom_model,
-    //               const pin::GeometryData &geom_data);
-
-    [[nodiscard]] static SDL_GPUGraphicsPipeline *
-    createPipeline(const Device &device, const MeshLayout &layout,
-                   SDL_GPUTextureFormat render_target_format,
-                   SDL_GPUTextureFormat depth_stencil_format, PipelineType type,
-                   const Config &config);
+    [[nodiscard]] SDL_GPUGraphicsPipeline *createPipeline(
+        const MeshLayout &layout, SDL_GPUTextureFormat render_target_format,
+        SDL_GPUTextureFormat depth_stencil_format, PipelineType type);
 
     /// \warning Call updateRobotTransforms() before rendering the objects with
     /// this function.
