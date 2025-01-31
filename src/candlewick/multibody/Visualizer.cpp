@@ -44,6 +44,9 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
 void Visualizer::loadViewerModel() {}
 
 void Visualizer::displayImpl() {
+
+  this->eventLoop();
+
   debugScene.update();
 
   renderer.beginFrame();
@@ -75,5 +78,14 @@ void Visualizer::setCameraPosition(const Eigen::Ref<const Vector3s> &position) {
 
 void Visualizer::setCameraPose(const Eigen::Ref<const Matrix4s> &pose) {
   camera.view = pose.cast<float>().inverse();
+}
+
+Visualizer::~Visualizer() noexcept {
+  robotScene.release();
+  debugScene.release();
+  guiSys.release();
+  renderer.destroy();
+  SDL_DestroyWindow(renderer.window);
+  SDL_Quit();
 }
 } // namespace candlewick::multibody

@@ -9,7 +9,7 @@
 
 using namespace candlewick::multibody;
 
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
 
   pin::Model model;
   pin::GeometryModel geom_model;
@@ -17,7 +17,6 @@ int main(int argc, char **argv) {
                                          &geom_model, NULL);
 
   Visualizer visualizer{{1920, 1280}, model, geom_model};
-  pin::Data &data = visualizer.data;
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
@@ -25,7 +24,7 @@ int main(int argc, char **argv) {
 
   double t = 0.;
 
-  while (t <= 10.) {
+  while (!visualizer.shouldExit()) {
 
     double alpha = std::sin(t);
     Eigen::VectorXd q = pin::interpolate(model, q0, q1, alpha);

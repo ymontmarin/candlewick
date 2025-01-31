@@ -33,7 +33,6 @@ public:
   DebugScene debugScene;
   Camera camera;
 
-public:
   struct Config {
     Uint32 width;
     Uint32 height;
@@ -57,6 +56,8 @@ public:
       : Visualizer(config, model, visualModel,
                    [this](auto &r) { default_gui_exec(r); }) {}
 
+  ~Visualizer() noexcept;
+
   void displayImpl() override;
 
   void setCameraTarget(const Eigen::Ref<const Vector3s> &target) override;
@@ -65,14 +66,12 @@ public:
 
   void setCameraPose(const Eigen::Ref<const Matrix4s> &pose) override;
 
-  ~Visualizer() {
-    robotScene.release();
-    debugScene.release();
-    guiSys.release();
-    renderer.destroy();
-    SDL_DestroyWindow(renderer.window);
-    SDL_Quit();
-  }
+  void eventLoop();
+
+  bool shouldExit() const noexcept { return m_shouldExit; }
+
+private:
+  bool m_shouldExit = false;
 };
 
 inline Renderer Visualizer::createRenderer(const Config &config) {
