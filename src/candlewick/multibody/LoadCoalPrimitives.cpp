@@ -73,15 +73,14 @@ MeshData loadCoalPrimitive(const hpp::fcl::CollisionGeometry &geometry,
 }
 
 namespace detail {
-template <typename BV>
-MeshData load_coal_heightfield_impl(const coal::HeightField<BV> &hf) {
-  Eigen::MatrixXf heights = hf.getHeights().template cast<float>();
-  Eigen::VectorXf xgrid = hf.getXGrid().template cast<float>();
-  Eigen::VectorXf ygrid = hf.getYGrid().template cast<float>();
+  template <typename BV>
+  MeshData load_coal_heightfield_impl(const coal::HeightField<BV> &hf) {
+    Eigen::MatrixXf heights = hf.getHeights().template cast<float>();
+    Eigen::VectorXf xgrid = hf.getXGrid().template cast<float>();
+    Eigen::VectorXf ygrid = hf.getYGrid().template cast<float>();
 
-  return loadHeightfield(heights, xgrid, ygrid);
-}
-
+    return loadHeightfield(heights, xgrid, ygrid);
+  }
 } // namespace detail
 
 MeshData loadCoalHeightField(const coal::CollisionGeometry &collGeom) {

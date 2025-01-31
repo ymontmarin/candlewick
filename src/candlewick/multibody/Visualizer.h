@@ -14,11 +14,11 @@
 namespace candlewick::multibody {
 
 namespace {
-using pinocchio_visualizers::BaseVisualizer;
-using pinocchio_visualizers::ConstVectorRef;
-using pinocchio_visualizers::Matrix4s;
-using pinocchio_visualizers::Vector3s;
-using pinocchio_visualizers::VectorXs;
+  using pinocchio_visualizers::BaseVisualizer;
+  using pinocchio_visualizers::ConstVectorRef;
+  using pinocchio_visualizers::Matrix4s;
+  using pinocchio_visualizers::Vector3s;
+  using pinocchio_visualizers::VectorXs;
 } // namespace
 
 /// \brief A synchronous renderer. The display() function will perform the draw

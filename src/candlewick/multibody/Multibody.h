@@ -9,9 +9,9 @@ namespace candlewick {
 /// geometries, classes for creating a \ref Scene for robots from Pinocchio
 /// models,  etc.
 namespace multibody {
-namespace pin = pinocchio;
-struct RobotDebugSystem;
-class RobotScene;
-class Visualizer;
+  namespace pin = pinocchio;
+  struct RobotDebugSystem;
+  class RobotScene;
+  class Visualizer;
 } // namespace multibody
 } // namespace candlewick

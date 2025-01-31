@@ -21,9 +21,9 @@ void triangleStripGenerateIndices(Uint32 vertexCount,
 MeshData generateIndices(const MeshData &meshData);
 
 namespace detail {
-/// \brief Number of vertices and indices in the merged mesh.
-std::pair<Uint32, Uint32>
-mergeCalcIndexVertexCount(std::span<const MeshData> meshes);
+  /// \brief Number of vertices and indices in the merged mesh.
+  std::pair<Uint32, Uint32>
+  mergeCalcIndexVertexCount(std::span<const MeshData> meshes);
 } // namespace detail
 
 /// \brief Merge meshes down to a single mesh with consistent indexing.

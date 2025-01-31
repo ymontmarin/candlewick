@@ -13,23 +13,23 @@
 namespace candlewick {
 namespace frustum_debug {
 
-SDL_GPUGraphicsPipeline *createFrustumDebugPipeline(const Renderer &renderer);
+  SDL_GPUGraphicsPipeline *createFrustumDebugPipeline(const Renderer &renderer);
 
-void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
-                   const Camera &mainCamera, const Camera &otherCam,
-                   const Float4 &color = 0x40FF00CC_rgbaf);
+  void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
+                     const Camera &mainCamera, const Camera &otherCam,
+                     const Float4 &color = 0x40FF00CC_rgbaf);
 
-void renderAABB(Renderer &renderer, SDL_GPURenderPass *render_pass,
-                const Camera &camera, const AABB &aabb,
-                const Float4 &color = 0x00BFFFff_rgbaf);
+  void renderAABB(Renderer &renderer, SDL_GPURenderPass *render_pass,
+                  const Camera &camera, const AABB &aabb,
+                  const Float4 &color = 0x00BFFFff_rgbaf);
 
-void renderOBB(Renderer &renderer, SDL_GPURenderPass *render_pass,
-               const Camera &camera, const OBB &obb,
-               const Float4 &color = 0x00BFFFff_rgbaf);
+  void renderOBB(Renderer &renderer, SDL_GPURenderPass *render_pass,
+                 const Camera &camera, const OBB &obb,
+                 const Float4 &color = 0x00BFFFff_rgbaf);
 
-void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
-                   const Mat4f &invProj, const Mat4f &mvp, const Float3 eyePos,
-                   const Float4 &color);
+  void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
+                     const Mat4f &invProj, const Mat4f &mvp,
+                     const Float3 eyePos, const Float4 &color);
 
 } // namespace frustum_debug
 

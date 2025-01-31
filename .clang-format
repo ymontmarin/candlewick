@@ -1,4 +1,6 @@
+Language: Cpp
 BasedOnStyle: LLVM
 SortIncludes: false
 
 IndentPPDirectives: None
+NamespaceIndentation: Inner
