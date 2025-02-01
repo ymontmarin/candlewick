@@ -1,0 +1,84 @@
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct ShadowParams
+{
+    float4x4 projection;
+    float4x4 invProjection;
+    packed_float3 lightDir;
+    float maxDistance;
+    float stepSize;
+    int numSteps;
+    float bias0;
+};
+
+struct main0_out
+{
+    float fragShadow [[color(0)]];
+};
+
+struct main0_in
+{
+    float2 fragUV [[user(locn0)]];
+};
+
+static inline __attribute__((always_inline))
+float3 reconstructViewPos(thread const float2& uv, thread const float& depth, constant ShadowParams& _34)
+{
+    float4 ndc = float4((uv * 2.0) - float2(1.0), depth, 1.0);
+    float4 viewPos = _34.invProjection * ndc;
+    return viewPos.xyz / float3(viewPos.w);
+}
+
+fragment main0_out main0(main0_in in [[stage_in]], constant ShadowParams& _34 [[buffer(0)]], texture2d<float> depthTexture [[texture(0)]], sampler depthTextureSmplr [[sampler(0)]])
+{
+    main0_out out = {};
+    float depth = depthTexture.sample(depthTextureSmplr, in.fragUV).x;
+    if (depth >= 1.0)
+    {
+        out.fragShadow = 1.0;
+        return out;
+    }
+    float2 param = in.fragUV;
+    float param_1 = depth;
+    float3 viewPos = reconstructViewPos(param, param_1, _34);
+    float3 rayStep = fast::normalize(-float3(_34.lightDir)) * _34.stepSize;
+    float3 rayPos = viewPos;
+    for (int i = 0; i < _34.numSteps; i++)
+    {
+        rayPos += rayStep;
+        float4 projectedPos = _34.projection * float4(rayPos, 1.0);
+        float3 screenPos = projectedPos.xyz / float3(projectedPos.w);
+        bool _128 = abs(screenPos.x) > 1.0;
+        bool _137;
+        if (!_128)
+        {
+            _137 = abs(screenPos.y) > 1.0;
+        }
+        else
+        {
+            _137 = _128;
+        }
+        if (_137)
+        {
+            break;
+        }
+        float2 sampleUV = float2(0.5) + (screenPos.xy * 0.5);
+        float sampledDepth = depthTexture.sample(depthTextureSmplr, sampleUV).x;
+        float rayDepth = screenPos.z - _34.bias0;
+        if (sampledDepth < rayDepth)
+        {
+            out.fragShadow = 0.0;
+        }
+        if (length(rayPos - viewPos) > _34.maxDistance)
+        {
+            break;
+        }
+    }
+    out.fragShadow = 1.0;
+    return out;
+}
