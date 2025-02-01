@@ -26,10 +26,16 @@ MeshData loadAiMesh(const aiMesh *inMesh, const aiMatrix4x4 transform) {
     DefaultVertex &vertex = vertexData[vertex_id];
     vertex.pos = Float3::Map(&pos.x);
 
+    aiMatrix3x3 normMatrix(transform);
     if (inMesh->HasNormals()) {
       aiVector3D n_ = inMesh->mNormals[vertex_id];
-      n_ = aiMatrix3x3(transform) * n_;
+      n_ = normMatrix * n_;
       vertex.normal = Float3::Map(&n_.x);
+    }
+    if (inMesh->HasTangentsAndBitangents()) {
+      aiVector3D t = inMesh->mTangents[vertex_id];
+      t = normMatrix * t;
+      vertex.tangent = Float3::Map(&t.x);
     }
   }
 
