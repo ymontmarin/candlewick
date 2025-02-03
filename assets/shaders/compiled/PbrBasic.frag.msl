@@ -160,7 +160,7 @@ float3 uncharted2ToneMapping(thread const float3& color)
     return curr * white_scale;
 }
 
-fragment main0_out main0(main0_in in [[stage_in]], constant Material& _294 [[buffer(0)]], constant LightBlock& _256 [[buffer(1)]], depth2d<float> shadowMap [[texture(0)]], sampler shadowMapSmplr [[sampler(0)]], bool gl_FrontFacing [[front_facing]])
+fragment main0_out main0(main0_in in [[stage_in]], constant Material& _294 [[buffer(0)]], constant LightBlock& _256 [[buffer(1)]], depth2d<float> shadowMap [[texture(0)]], texture2d<float> screenShadowMask [[texture(1)]], sampler shadowMapSmplr [[sampler(0)]], sampler screenShadowMaskSmplr [[sampler(1)]], bool gl_FrontFacing [[front_facing]], float4 gl_FragCoord [[position]])
 {
     main0_out out = {};
     float3 lightDir = fast::normalize(-_256.light.direction);
@@ -203,6 +203,9 @@ fragment main0_out main0(main0_in in [[stage_in]], constant Material& _294 [[buf
     {
         shadowValue = shadowMap.sample_compare(shadowMapSmplr, texCoords.xy, texCoords.z);
     }
+    float2 screenUV = gl_FragCoord.xy / float2(int2(screenShadowMask.get_width(), screenShadowMask.get_height()));
+    float screenSpaceShadow = screenShadowMask.sample(screenShadowMaskSmplr, screenUV).x;
+    shadowValue = fast::min(shadowValue, screenSpaceShadow);
     Lo *= shadowValue;
     float3 ambient = (float3(0.02999999932944774627685546875) * _294.material.baseColor.xyz) * _294.material.ao;
     float3 color = ambient + Lo;

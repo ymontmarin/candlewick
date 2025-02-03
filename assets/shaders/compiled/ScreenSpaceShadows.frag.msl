@@ -11,9 +11,7 @@ struct ShadowParams
     float4x4 invProjection;
     packed_float3 lightDir;
     float maxDistance;
-    float stepSize;
     int numSteps;
-    float bias0;
 };
 
 struct main0_out
@@ -27,14 +25,47 @@ struct main0_in
 };
 
 static inline __attribute__((always_inline))
-float3 reconstructViewPos(thread const float2& uv, thread const float& depth, constant ShadowParams& _34)
+float3 computeViewPos(thread const float3& ndcPos, constant ShadowParams& _27)
 {
-    float4 ndc = float4((uv * 2.0) - float2(1.0), depth, 1.0);
-    float4 viewPos = _34.invProjection * ndc;
+    float4 viewPos = _27.invProjection * float4(ndcPos, 1.0);
     return viewPos.xyz / float3(viewPos.w);
 }
 
-fragment main0_out main0(main0_in in [[stage_in]], constant ShadowParams& _34 [[buffer(0)]], texture2d<float> depthTexture [[texture(0)]], sampler depthTextureSmplr [[sampler(0)]])
+static inline __attribute__((always_inline))
+bool isCoordsInRange(thread const float2& uv)
+{
+    bool _54 = uv.x >= 0.0;
+    bool _60;
+    if (_54)
+    {
+        _60 = uv.x <= 1.0;
+    }
+    else
+    {
+        _60 = _54;
+    }
+    bool _67;
+    if (_60)
+    {
+        _67 = uv.y >= 0.0;
+    }
+    else
+    {
+        _67 = _60;
+    }
+    bool _73;
+    if (_67)
+    {
+        _73 = uv.y <= 1.0;
+    }
+    else
+    {
+        _73 = _67;
+    }
+    return _73;
+}
+
+fragment main0_out main0(main0_in in [[stage_in]], constant ShadowParams& _27 [[buffer(0)]], texture2d<float> depthTexture [[texture(0)]], sampler depthTextureSmplr [[sampler(0)]])
 {
     main0_out out = {};
     float depth = depthTexture.sample(depthTextureSmplr, in.fragUV).x;
@@ -43,42 +74,34 @@ fragment main0_out main0(main0_in in [[stage_in]], constant ShadowParams& _34 [[
         out.fragShadow = 1.0;
         return out;
     }
-    float2 param = in.fragUV;
-    float param_1 = depth;
-    float3 viewPos = reconstructViewPos(param, param_1, _34);
-    float3 rayStep = fast::normalize(-float3(_34.lightDir)) * _34.stepSize;
+    float3 ndcPos = float3((in.fragUV * 2.0) - float2(1.0), depth);
+    float3 param = ndcPos;
+    float3 viewPos = computeViewPos(param, _27);
     float3 rayPos = viewPos;
-    for (int i = 0; i < _34.numSteps; i++)
+    float stepSize = 0.0500000007450580596923828125 / float(_27.numSteps);
+    float3 toLight = fast::normalize(-float3(_27.lightDir));
+    float3 rayStep = toLight * stepSize;
+    float occlusion = 0.0;
+    for (int i = 0; i < _27.numSteps; i++)
     {
         rayPos += rayStep;
-        float4 projectedPos = _34.projection * float4(rayPos, 1.0);
+        float4 projectedPos = _27.projection * float4(rayPos, 1.0);
         float3 screenPos = projectedPos.xyz / float3(projectedPos.w);
-        bool _128 = abs(screenPos.x) > 1.0;
-        bool _137;
-        if (!_128)
-        {
-            _137 = abs(screenPos.y) > 1.0;
-        }
-        else
-        {
-            _137 = _128;
-        }
-        if (_137)
+        float2 rayUV = float2(0.5) + (screenPos.xy * 0.5);
+        float rayDepth = screenPos.z;
+        float sceneDepth = depthTexture.sample(depthTextureSmplr, rayUV).x;
+        float2 param_1 = rayUV;
+        if (!isCoordsInRange(param_1))
         {
             break;
         }
-        float2 sampleUV = float2(0.5) + (screenPos.xy * 0.5);
-        float sampledDepth = depthTexture.sample(depthTextureSmplr, sampleUV).x;
-        float rayDepth = screenPos.z - _34.bias0;
-        if (sampledDepth < rayDepth)
+        float depthDelta = (rayDepth - sceneDepth) - 0.001000000047497451305389404296875;
+        if ((depthDelta >= 0.0) && (depthDelta < 0.0199999995529651641845703125))
         {
-            out.fragShadow = 0.0;
-        }
-        if (length(rayPos - viewPos) > _34.maxDistance)
-        {
+            occlusion = 1.0;
             break;
         }
     }
-    out.fragShadow = 1.0;
+    out.fragShadow = 1.0 - occlusion;
     return out;
 }

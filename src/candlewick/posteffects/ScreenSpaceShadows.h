@@ -11,10 +11,8 @@ namespace effects {
 
   struct ScreenSpaceShadowPass {
     struct Config {
-      float maxDist;
-      float stepSize;
-      int numSteps;
-      float shadowBias;
+      float maxDist = 1.0f;
+      int numSteps = 16;
     } config;
     SDL_GPUTexture *depthTexture = nullptr;
     /// Sampler for the depth texture (e.g. from the prepass)
@@ -24,9 +22,12 @@ namespace effects {
     /// Render pipeline
     SDL_GPUGraphicsPipeline *pipeline = nullptr;
 
+    bool valid() const {
+      return depthTexture && depthSampler && targetTexture && pipeline;
+    }
+
     ScreenSpaceShadowPass(NoInitT) {}
-    ScreenSpaceShadowPass(const Renderer &renderer, const MeshLayout &layout,
-                          const Config &config);
+    ScreenSpaceShadowPass(const Renderer &renderer, const Config &config);
 
     void release(SDL_GPUDevice *device) noexcept;
 

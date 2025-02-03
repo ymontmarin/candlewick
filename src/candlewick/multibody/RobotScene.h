@@ -6,6 +6,7 @@
 #include "../core/LightUniforms.h"
 #include "../core/AABB.h"
 #include "../core/DepthAndShadowPass.h"
+#include "../posteffects/ScreenSpaceShadows.h"
 #include "../utils/MeshData.h"
 #include "../third-party/magic_enum.hpp"
 
@@ -129,6 +130,10 @@ namespace multibody {
 
     SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
     DirectionalLight directionalLight;
+    struct {
+      SDL_GPUSampler *sampler;
+      effects::ScreenSpaceShadowPass pass;
+    } screenSpaceShadows;
     ShadowPassInfo shadowPass;
     AABB worldSpaceBounds;
 

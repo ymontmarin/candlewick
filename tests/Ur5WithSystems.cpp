@@ -165,11 +165,10 @@ int main(int argc, char **argv) {
   CLI::App app{"Ur5 example"};
   bool performRecording{false};
   RobotScene::Config robot_scene_config;
+  robot_scene_config.triangle_has_prepass = true;
 
   argv = app.ensure_utf8(argv);
   app.add_flag("-r,--record", performRecording, "Record output");
-  app.add_flag("--prepass", robot_scene_config.triangle_has_prepass,
-               "Whether to have a prepass for the PBR'd triangle meshes.");
   CLI11_PARSE(app, argc, argv);
 
   if (!SDL_Init(SDL_INIT_VIDEO))
@@ -198,8 +197,8 @@ int main(int argc, char **argv) {
 
   RobotScene robot_scene{registry, renderer, geom_model, geom_data,
                          robot_scene_config};
-  auto &myLight = robot_scene.directionalLight;
-  myLight = {
+  auto &sceneLight = robot_scene.directionalLight;
+  sceneLight = {
       .direction = {-1.f, 0.f, -1.},
       .color = {1.0, 1.0, 1.0},
       .intensity = 8.0,
@@ -232,13 +231,16 @@ int main(int argc, char **argv) {
   robot_debug.addFrameTriad(debug_scene, ee_frame_id);
   robot_debug.addFrameVelocityArrow(debug_scene, ee_frame_id);
 
-  auto depth_debug = DepthDebugPass::create(renderer, renderer.depth_texture);
-  static DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
-
   auto depthPassInfo = DepthPassInfo::create(renderer, plane_obj.mesh.layout);
   auto &shadowPassInfo = robot_scene.shadowPass;
   auto shadowDebugPass =
       DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);
+
+  auto &screenSpacePass = robot_scene.screenSpaceShadows.pass;
+  auto depthPassDebug = DepthDebugPass::create(renderer,
+                                               // renderer.depth_texture);
+                                               screenSpacePass.targetTexture);
+  DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
 
   FrustumBoundsDebugSystem frustumBoundsDebug{registry, renderer};
 
@@ -269,7 +271,7 @@ int main(int argc, char **argv) {
                                        ImGuiSliderFlags_AlwaysClamp);
       persp_change |=
           ImGui::SliderFloat("Near plane", &nearZ, 0.01f, 0.8f * farZ);
-      persp_change |= ImGui::SliderFloat("Far plane", &farZ, nearZ, 10.f);
+      persp_change |= ImGui::SliderFloat("Far plane", &farZ, nearZ, 20.f);
       if (persp_change)
         updateFov(Radf(newFov));
       break;
@@ -293,9 +295,10 @@ int main(int argc, char **argv) {
     }
 
     ImGui::SeparatorText("Lights");
-    ImGui::SliderFloat("intens.", &myLight.intensity, 0.1f, 10.0f);
-    ImGui::DragFloat3("direction", myLight.direction.data(), 0.0f, -1.f, 1.f);
-    ImGui::ColorEdit3("color", myLight.color.data());
+    ImGui::SliderFloat("intens.", &sceneLight.intensity, 0.1f, 10.0f);
+    ImGui::DragFloat3("direction", sceneLight.direction.data(), 0.0f, -1.f,
+                      1.f);
+    ImGui::ColorEdit3("color", sceneLight.color.data());
     ImGui::Separator();
     ImGui::ColorEdit4("grid color", grid.colors[0].data(),
                       ImGuiColorEditFlags_AlphaPreview);
@@ -360,14 +363,15 @@ int main(int argc, char **argv) {
       multibody::updateRobotTransforms(registry, robot_scene.geomData());
       robot_scene.collectOpaqueCastables();
       auto castables = robot_scene.castables();
-      renderShadowPassFromAABB(renderer, shadowPassInfo, myLight, castables,
+      renderShadowPassFromAABB(renderer, shadowPassInfo, sceneLight, castables,
                                worldSpaceBounds);
       // renderShadowPassFromFrustum(renderer, shadowPassInfo, myLight,
       // castables,
       //                             main_cam_frustum);
       if (showDebugViz == DEPTH_DEBUG) {
         renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
-        renderDepthDebug(renderer, depth_debug, {depth_mode, nearZ, farZ});
+        screenSpacePass.render(renderer, camera, sceneLight);
+        renderDepthDebug(renderer, depthPassDebug, {depth_mode, nearZ, farZ});
       } else if (showDebugViz == LIGHT_DEBUG) {
         renderDepthDebug(renderer, shadowDebugPass,
                          {
@@ -377,8 +381,8 @@ int main(int argc, char **argv) {
                              CameraProjection::ORTHOGRAPHIC,
                          });
       } else {
-        if (robot_scene.pbrHasPrepass())
-          renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
+        renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
+        screenSpacePass.render(renderer, camera, sceneLight);
         robot_scene.render(renderer, camera);
         debug_scene.render(renderer, camera);
         frustumBoundsDebug.render(renderer, camera);
@@ -400,7 +404,7 @@ int main(int argc, char **argv) {
   frustumBoundsDebug.release();
   depthPassInfo.release(renderer.device);
   shadowDebugPass.release(renderer.device);
-  depth_debug.release(renderer.device);
+  depthPassDebug.release(renderer.device);
   robot_scene.release();
   debug_scene.release();
   gui_system.release();

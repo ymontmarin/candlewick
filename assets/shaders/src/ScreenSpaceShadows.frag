@@ -16,75 +16,77 @@ layout(set=3, binding=0) uniform ShadowParams {
     vec3 lightDir;
     // Maximum ray march distance
     float maxDistance;
-    // Ray march step size
-    float stepSize;
     // Maximum number of steps
     int numSteps;
-    // Depth comparison bias
-    float bias;
 };
 
-// Reconstruct view-space position from depth
-vec3 reconstructViewPos(vec2 uv, float depth) {
-    // Convert to NDC space
-    vec4 ndc = vec4(uv * 2.0 - 1.0, depth, 1.0);
-
-    // Convert to view space
-    vec4 viewPos = invProjection * ndc;
+// reconstruct view-space position from depth
+vec3 computeViewPos(vec3 ndcPos) {
+    vec4 viewPos = invProjection * vec4(ndcPos, 1.0);
     return viewPos.xyz / viewPos.w;
 }
+
+bool isCoordsInRange(vec2 uv) {
+    return uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0;
+}
+
+const float SSS_THICKNESS = 0.02;
+const float SSS_MAX_RAY_DISTANCE = 0.05;
 
 void main() {
     // Sample depth
     float depth = texture(depthTexture, fragUV).r;
 
-    // Early out if this is the far plane
     if (depth >= 1.0) {
         fragShadow = 1.0;
         return;
     }
 
-    // Reconstruct view-space position
-    vec3 viewPos = reconstructViewPos(fragUV, depth);
+    // reconstruct view-space position
+    const vec3 ndcPos = vec3(fragUV * 2. - 1., depth);
+    const vec3 viewPos = computeViewPos(ndcPos);
 
-    // Ray march towards light
-    vec3 rayStep = normalize(-lightDir) * stepSize;
+    // initial ray position
     vec3 rayPos = viewPos;
 
+    const float stepSize = SSS_MAX_RAY_DISTANCE / float(numSteps);
+    vec3 toLight = normalize(-lightDir);
+    vec3 rayStep = toLight * stepSize;
+
+    float depthDelta;
+    float occlusion = 0.0;
+
+    // march a ray from the fragment towards the light
     for (int i = 0; i < numSteps; i++) {
-        // Advance ray
+        // advance ray
         rayPos += rayStep;
 
-        // Project current position to screen space
+        // project current ray position to screen space
         vec4 projectedPos = projection * vec4(rayPos, 1.0);
         vec3 screenPos = projectedPos.xyz / projectedPos.w;
 
-        // Check if we're still in screen space
-        if (abs(screenPos.x) > 1.0 || abs(screenPos.y) > 1.0) {
+        // convert to UV coordinates
+        vec2 rayUV = 0.5 + screenPos.xy * 0.5;
+
+        // depth at the ray depth
+        float rayDepth = screenPos.z;
+        float sceneDepth = texture(depthTexture, rayUV).r;
+
+
+        if(!isCoordsInRange(rayUV)) {
             break;
         }
 
-        // Convert to UV coordinates
-        vec2 sampleUV = 0.5 + screenPos.xy * 0.5;
+        depthDelta = rayDepth - sceneDepth - 0.001;
 
-        // Sample depth at current position
-        float sampledDepth = texture(depthTexture, sampleUV).r;
-
-        // Convert ray position to NDC depth
-        float rayDepth = screenPos.z - bias;
-
-        // Compare depths
-        if (sampledDepth < rayDepth) {
-            fragShadow = 0.0;
-            // return;
-        }
-
-        // Check distance
-        if (length(rayPos - viewPos) > maxDistance) {
+        // compare depths: if the current depth is closer than the ray,
+        // then fragment is occluded.
+        if ((depthDelta >= 0.0) && (depthDelta < SSS_THICKNESS)) {
+            occlusion = 1.0;
             break;
         }
     }
 
     // No shadow found
-    fragShadow = 1.0;
+    fragShadow = 1.0 - occlusion;
 }

@@ -26,6 +26,7 @@ layout(set=3, binding=1) uniform LightBlock {
 };
 
 layout (set=2, binding=0) uniform sampler2DShadow shadowMap;
+layout (set=2, binding=1) uniform sampler2D screenShadowMask;
 
 layout(location=0) out vec4 fragColor;
 
@@ -128,6 +129,9 @@ void main() {
             shadowValue = texture(shadowMap, texCoords);
         }
     }
+    vec2 screenUV = gl_FragCoord.xy / textureSize(screenShadowMask, 0);
+    float screenSpaceShadow = texture(screenShadowMask, screenUV).r;
+    shadowValue = min(shadowValue, screenSpaceShadow);
     Lo = shadowValue * Lo;
 
     // Ambient term (very simple)

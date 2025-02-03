@@ -2,47 +2,51 @@
 
 #include "../core/math_types.h"
 #include "../core/Renderer.h"
-#include "../core/MeshLayout.h"
 #include "../core/Shader.h"
 #include "../core/Camera.h"
+
+#include <SDL3/SDL_log.h>
 
 namespace candlewick {
 namespace effects {
   ScreenSpaceShadowPass::ScreenSpaceShadowPass(const Renderer &renderer,
-                                               const MeshLayout &layout,
                                                const Config &config)
       : config(config) {
     const Device &device = renderer.device;
     this->depthTexture = renderer.depth_texture;
 
-    auto vertexShader = Shader::fromMetadata(device, "ScreenSpaceShadows.vert");
+    auto vertexShader = Shader::fromMetadata(device, "DrawQuad.vert");
     auto fragmentShader =
         Shader::fromMetadata(device, "ScreenSpaceShadows.frag");
+
+    auto outputAttachmentFormat = SDL_GPU_TEXTUREFORMAT_R32_FLOAT;
+    SDL_GPUColorTargetDescription color_target_desc;
+    SDL_zero(color_target_desc);
+    color_target_desc.format = outputAttachmentFormat;
     SDL_GPUGraphicsPipelineCreateInfo pipeline_desc{
         .vertex_shader = vertexShader,
         .fragment_shader = fragmentShader,
-        .vertex_input_state = layout.toVertexInputState(),
+        .vertex_input_state{},
         .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-        .rasterizer_state{.depth_bias_constant_factor = config.shadowBias},
-        .depth_stencil_state{.compare_op = SDL_GPU_COMPAREOP_LESS,
-                             .enable_depth_test = true,
-                             .enable_depth_write = true},
-        .target_info{.color_target_descriptions = nullptr,
-                     .num_color_targets = 0,
-                     .depth_stencil_format = renderer.depth_format,
-                     .has_depth_stencil_target = true},
+        .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
+                          .cull_mode = SDL_GPU_CULLMODE_BACK},
+        .target_info{.color_target_descriptions = &color_target_desc,
+                     .num_color_targets = 1,
+                     .has_depth_stencil_target = false},
+        .props = 0,
     };
 
-    this->pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
+    pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
+    assert(pipeline);
 
     auto *window = renderer.window;
     int width, height;
     SDL_GetWindowSizeInPixels(window, &width, &height);
     SDL_GPUTextureCreateInfo texture_desc{
         .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = SDL_GPU_TEXTUREFORMAT_D24_UNORM,
-        .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET |
-                 SDL_GPU_TEXTUREUSAGE_SAMPLER,
+        .format = outputAttachmentFormat,
+        .usage =
+            SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
         .width = Uint32(width),
         .height = Uint32(height),
         .layer_count_or_depth = 1,
@@ -50,7 +54,9 @@ namespace effects {
         .sample_count = SDL_GPU_SAMPLECOUNT_1,
         .props = 0,
     };
-    this->targetTexture = SDL_CreateGPUTexture(device, &texture_desc);
+    targetTexture = SDL_CreateGPUTexture(device, &texture_desc);
+    assert(targetTexture);
+
     SDL_GPUSamplerCreateInfo sampler_desc{};
     sampler_desc.min_filter = SDL_GPU_FILTER_NEAREST;
     sampler_desc.mag_filter = SDL_GPU_FILTER_NEAREST;
@@ -59,7 +65,8 @@ namespace effects {
     sampler_desc.enable_compare = false;
     sampler_desc.enable_anisotropy = false;
     sampler_desc.props = 0;
-    this->depthSampler = SDL_CreateGPUSampler(device, &sampler_desc);
+    depthSampler = SDL_CreateGPUSampler(device, &sampler_desc);
+    assert(depthSampler);
   }
 
   struct alignas(16) ScreenSpaceShadowsUniform {
@@ -67,9 +74,7 @@ namespace effects {
     GpuMat4 invProj;
     GpuVec3 viewSpaceLightDir;
     float maxDist;
-    float stepSize;
     int numSteps;
-    float bias;
   };
 
   void ScreenSpaceShadowPass::release(SDL_GPUDevice *device) noexcept {
@@ -85,15 +90,16 @@ namespace effects {
 
   void ScreenSpaceShadowPass::render(Renderer &renderer, const Camera &camera,
                                      const DirectionalLight &light) {
-    SDL_GPUDepthStencilTargetInfo dsti{
-        .texture = this->targetTexture,
-        .load_op = SDL_GPU_LOADOP_CLEAR,
-        .store_op = SDL_GPU_STOREOP_STORE,
-        .cycle = false,
-    };
+    SDL_GPUColorTargetInfo color_target_info;
+    SDL_zero(color_target_info);
+    color_target_info.texture = targetTexture;
+    color_target_info.clear_color = {0., 0., 0., 0.};
+    color_target_info.load_op = SDL_GPU_LOADOP_CLEAR;
+    color_target_info.store_op = SDL_GPU_STOREOP_STORE;
+    color_target_info.cycle = false;
 
-    SDL_GPURenderPass *render_pass =
-        SDL_BeginGPURenderPass(renderer.command_buffer, nullptr, 0u, &dsti);
+    SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
+        renderer.command_buffer, &color_target_info, 1, nullptr);
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
     Mat4f invProj = camera.projection.inverse();
@@ -102,18 +108,16 @@ namespace effects {
         invProj,
         camera.transformVector(light.direction),
         config.maxDist,
-        config.stepSize,
         config.numSteps,
-        config.shadowBias,
     };
-    renderer.pushVertexUniform(0, &ubo, sizeof(ubo));
+    renderer.pushFragmentUniform(0, &ubo, sizeof(ubo));
     renderer.bindFragmentSampler(render_pass, 0,
                                  {
                                      .texture = depthTexture,
                                      .sampler = depthSampler,
                                  });
 
-    SDL_DrawGPUPrimitives(render_pass, 4u, 1, 0, 0);
+    SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
 
     SDL_EndGPURenderPass(render_pass);
   }
