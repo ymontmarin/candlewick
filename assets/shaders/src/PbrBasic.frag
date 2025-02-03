@@ -34,13 +34,20 @@ layout(location=0) out vec4 fragColor;
 const float PI = 3.14159265359;
 const float F0 = 0.04; // Standard base reflectivity
 
-bool isShadowCoordInRange(vec3 shadowCoord) {
-    return shadowCoord.x >= 0.0 &&
-           shadowCoord.y >= 0.0 &&
-           shadowCoord.x <= 1.0 &&
-           shadowCoord.y <= 1.0 &&
-           shadowCoord.z >= 0.0 &&
-           shadowCoord.z <= 1.0;
+bool isCoordsInRange(vec3 uv) {
+    return uv.x >= 0.0 &&
+           uv.y >= 0.0 &&
+           uv.x <= 1.0 &&
+           uv.y <= 1.0 &&
+           uv.z >= 0.0 &&
+           uv.z <= 1.0;
+}
+
+bool isCoordsInRange(vec2 uv) {
+    return uv.x >= 0.0 &&
+           uv.y >= 0.0 &&
+           uv.x <= 1.0 &&
+           uv.y <= 1.0;
 }
 
 // Schlick's Fresnel approximation
@@ -81,6 +88,20 @@ float geometrySmith(vec3 normal, vec3 V, vec3 L, float roughness) {
     return ggx1 * ggx2;
 }
 
+float calcShadowmap(float NdotL) {
+    float bias = max(0.05 * (1.0 - NdotL), 0.005);
+    // float bias = 0.005;
+    vec3 texCoords = fragLightPos;
+    texCoords.x = 0.5 + texCoords.x * 0.5;
+    texCoords.y = 0.5 - texCoords.y * 0.5;
+    texCoords.z -= bias;
+    float shadowValue = 1.0;
+    if (isCoordsInRange(texCoords)) {
+        shadowValue = texture(shadowMap, texCoords);
+    }
+    return shadowValue;
+}
+
 void main() {
     vec3 lightDir = normalize(-light.direction);
     vec3 normal = normalize(fragViewNormal);
@@ -116,22 +137,7 @@ void main() {
     const vec3 lightCol = light.intensity * light.color;
     vec3 Lo = (kD * material.baseColor.rgb / PI + specular) * lightCol * NdotL;
 
-    float shadowValue = 1.0;
-    vec3 texCoords;
-    {
-        float bias = max(0.05 * (1.0 - NdotL), 0.005);
-        // float bias = 0.005;
-        texCoords = fragLightPos;
-        texCoords.x = 0.5 + texCoords.x * 0.5;
-        texCoords.y = 0.5 - texCoords.y * 0.5;
-        texCoords.z -= bias;
-        if (isShadowCoordInRange(texCoords)) {
-            shadowValue = texture(shadowMap, texCoords);
-        }
-    }
-    vec2 screenUV = gl_FragCoord.xy / textureSize(screenShadowMask, 0);
-    float screenSpaceShadow = texture(screenShadowMask, screenUV).r;
-    shadowValue = min(shadowValue, screenSpaceShadow);
+    float shadowValue = calcShadowmap(NdotL);
     Lo = shadowValue * Lo;
 
     // Ambient term (very simple)
