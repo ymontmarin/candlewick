@@ -3,6 +3,9 @@
 
 #include "depth_utils.glsl"
 
+#define VIZ_GRAYSCALE   0
+#define VIZ_HEATMAP     1
+
 layout(location = 0) in vec2 inUV;
 layout(location = 0) out vec4 outColor;
 
@@ -64,10 +67,10 @@ void main() {
 
     vec3 color;
     switch (mode) {
-        case 0:
+        case VIZ_GRAYSCALE:
             color = visualizeDepthGrayscale(depth);
             break;
-        case 1:
+        case VIZ_HEATMAP:
             color = visualizeDepthHeatmap(depth);
             break;
     }
