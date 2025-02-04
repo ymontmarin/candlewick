@@ -6,6 +6,7 @@
 #include "../core/LightUniforms.h"
 #include "../core/AABB.h"
 #include "../core/DepthAndShadowPass.h"
+#include "../core/Texture.h"
 #include "../utils/MeshData.h"
 #include "../third-party/magic_enum.hpp"
 
@@ -94,6 +95,7 @@ namespace multibody {
       bool enable_msaa = false;
       bool enable_shadows = true;
       bool triangle_has_prepass = false;
+      bool enable_normal_target = false;
       SDL_GPUSampleCount msaa_samples = SDL_GPU_SAMPLECOUNT_1;
       ShadowPassConfig shadow_config;
     };
@@ -129,8 +131,13 @@ namespace multibody {
     /// \brief Getter for the referenced pinocchio GeometryData object.
     const pin::GeometryData &geomData() const { return *_geomData; }
 
+    void initGBuffer(const Renderer &renderer);
+
     SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
     DirectionalLight directionalLight;
+    struct GBuffer {
+      Texture normalMap{NoInit};
+    } gBuffer;
     ShadowPassInfo shadowPass;
     AABB worldSpaceBounds;
 

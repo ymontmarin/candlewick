@@ -1,4 +1,6 @@
 #version 450
+#define HAS_SHADOW_MAPS
+#define HAS_G_BUFFER
 
 #include "tone_mapping.glsl"
 #include "pbr_material.glsl"
@@ -22,9 +24,15 @@ layout(set=3, binding=1) uniform LightBlock {
     mat4 camProjection;
 } light;
 
-layout (set=2, binding=0) uniform sampler2DShadow shadowMap;
+#ifdef HAS_SHADOW_MAPS
+    layout (set=2, binding=0) uniform sampler2DShadow shadowMap;
+#endif
 
 layout(location=0) out vec4 fragColor;
+#ifdef HAS_G_BUFFER
+    // output normals for post-effects
+    layout(location=1) out vec2 outNormal;
+#endif
 
 // Constants
 const float PI = 3.14159265359;
@@ -84,6 +92,7 @@ float geometrySmith(vec3 normal, vec3 V, vec3 L, float roughness) {
     return ggx1 * ggx2;
 }
 
+#ifdef HAS_SHADOW_MAPS
 float calcShadowmap(float NdotL) {
     float bias = max(0.05 * (1.0 - NdotL), 0.005);
     // float bias = 0.005;
@@ -97,6 +106,7 @@ float calcShadowmap(float NdotL) {
     }
     return shadowValue;
 }
+#endif
 
 void main() {
     vec3 lightDir = normalize(-light.direction);
@@ -133,8 +143,10 @@ void main() {
     const vec3 lightCol = light.intensity * light.color;
     vec3 Lo = (kD * material.baseColor.rgb / PI + specular) * lightCol * NdotL;
 
+#ifdef HAS_SHADOW_MAPS
     float shadowValue = calcShadowmap(NdotL);
     Lo = shadowValue * Lo;
+#endif
 
     // Ambient term (very simple)
     vec3 ambient = vec3(0.03) * material.baseColor.rgb * material.ao;
@@ -148,4 +160,8 @@ void main() {
 
     // Output
     fragColor = vec4(color, material.baseColor.a);
+    // fragColor = vec4(ssao_val.rrr, 1.0);
+#ifdef HAS_G_BUFFER
+    outNormal = fragViewNormal.rg;
+#endif
 }
