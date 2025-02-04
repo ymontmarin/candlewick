@@ -26,6 +26,11 @@ struct Material
     PbrMaterial material;
 };
 
+struct EffectParams
+{
+    uint useSsao;
+};
+
 struct main0_out
 {
     float4 fragColor [[color(0)]];
@@ -174,7 +179,7 @@ float3 uncharted2ToneMapping(thread const float3& color)
     return curr * white_scale;
 }
 
-fragment main0_out main0(main0_in in [[stage_in]], constant Material& _340 [[buffer(0)]], constant LightBlock& light [[buffer(1)]], depth2d<float> shadowMap [[texture(0)]], texture2d<float> ssaoTex [[texture(1)]], sampler shadowMapSmplr [[sampler(0)]], sampler ssaoTexSmplr [[sampler(1)]], bool gl_FrontFacing [[front_facing]], float4 gl_FragCoord [[position]])
+fragment main0_out main0(main0_in in [[stage_in]], constant Material& _340 [[buffer(0)]], constant LightBlock& light [[buffer(1)]], constant EffectParams& params [[buffer(2)]], depth2d<float> shadowMap [[texture(0)]], texture2d<float> ssaoTex [[texture(1)]], sampler shadowMapSmplr [[sampler(0)]], sampler ssaoTexSmplr [[sampler(1)]], bool gl_FrontFacing [[front_facing]], float4 gl_FragCoord [[position]])
 {
     main0_out out = {};
     float3 lightDir = fast::normalize(-light.direction);
@@ -212,7 +217,11 @@ fragment main0_out main0(main0_in in [[stage_in]], constant Material& _340 [[buf
     float3 ambient = (float3(0.02999999932944774627685546875) * _340.material.baseColor.xyz) * _340.material.ao;
     float2 ssaoTexSize = float2(int2(ssaoTex.get_width(), ssaoTex.get_height()));
     float2 ssaoUV = gl_FragCoord.xy / ssaoTexSize;
-    float ssao_val = ssaoTex.sample(ssaoTexSmplr, ssaoUV).x;
+    float ssao_val;
+    if (params.useSsao == 1u)
+    {
+        ssao_val = ssaoTex.sample(ssaoTexSmplr, ssaoUV).x;
+    }
     ambient *= ssao_val;
     float3 color = ambient + Lo;
     float3 param_10 = color;

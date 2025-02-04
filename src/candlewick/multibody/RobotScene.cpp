@@ -291,6 +291,8 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
                                });
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                                sizeof(lightUbo));
+  int _useSsao = useSsao;
+  renderer.pushFragmentUniform(2, &_useSsao, sizeof(_useSsao));
 
   auto *pipeline = renderPipelines[PIPELINE_TRIANGLEMESH];
   assert(pipeline);

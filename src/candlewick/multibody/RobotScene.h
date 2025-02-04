@@ -142,6 +142,7 @@ namespace multibody {
     } gBuffer;
     ShadowPassInfo shadowPass;
     AABB worldSpaceBounds;
+    bool useSsao = true;
 
   private:
     entt::registry &_registry;

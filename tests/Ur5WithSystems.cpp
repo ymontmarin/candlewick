@@ -283,6 +283,8 @@ int main(int argc, char **argv) {
     ImGui::Checkbox("Render triad", &triad.enable);
     ImGui::Checkbox("Render frustum", &showFrustum);
 
+    ImGui::Checkbox("Ambient occlusion (SSAO)", &robot_scene.useSsao);
+
     ImGui::RadioButton("Full render mode", (int *)&showDebugViz, FULL_RENDER);
     ImGui::SameLine();
     ImGui::RadioButton("Depth debug", (int *)&showDebugViz, DEPTH_DEBUG);

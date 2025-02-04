@@ -25,6 +25,10 @@ layout(set=3, binding=1) uniform LightBlock {
     mat4 camProjection;
 } light;
 
+layout(set=3, binding=2) uniform EffectParams {
+    uint useSsao;
+} params;
+
 #ifdef HAS_SHADOW_MAPS
     layout (set=2, binding=0) uniform sampler2DShadow shadowMap;
 #endif
@@ -156,13 +160,13 @@ void main() {
     vec3 ambient = vec3(0.03) * material.baseColor.rgb * material.ao;
 #ifdef HAS_SSAO
     float ssao_val;
-    {
-        vec2 ssaoTexSize = textureSize(ssaoTex, 0).xy;
-        vec2 ssaoUV;
-        ssaoUV = gl_FragCoord.xy / ssaoTexSize;
+    vec2 ssaoTexSize = textureSize(ssaoTex, 0).xy;
+    vec2 ssaoUV;
+    ssaoUV = gl_FragCoord.xy / ssaoTexSize;
+    if(params.useSsao == 1) {
         ssao_val = texture(ssaoTex, ssaoUV).r;
-        ambient *= ssao_val;
     }
+    ambient *= ssao_val;
 #endif
 
     // Final color
@@ -174,7 +178,6 @@ void main() {
 
     // Output
     fragColor = vec4(color, material.baseColor.a);
-    // fragColor = vec4(ssao_val.rrr, 1.0);
 #ifdef HAS_G_BUFFER
     outNormal = fragViewNormal.rg;
 #endif
