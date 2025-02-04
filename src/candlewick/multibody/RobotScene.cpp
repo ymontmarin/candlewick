@@ -168,13 +168,6 @@ void RobotScene::collectOpaqueCastables() {
 }
 
 void RobotScene::render(Renderer &renderer, const Camera &camera) {
-  // if (_config.enable_shadows) {
-  //   collectOpaqueCastables();
-  //   renderShadowPassFromAABB(renderer, shadowPass, directionalLight,
-  //   _castables,
-  //                            worldSpaceBounds);
-  // }
-
   // render geometry which participated in the prepass
   renderPBRTriangleGeometry(renderer, camera);
 

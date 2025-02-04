@@ -61,6 +61,7 @@ static Camera camera{
     .view{lookAt({2.0, 0, 2.}, Float3::Zero())},
 };
 static bool quitRequested = false;
+static bool showFrustum = false;
 enum VizMode {
   FULL_RENDER,
   DEPTH_DEBUG,
@@ -279,6 +280,7 @@ int main(int argc, char **argv) {
     ImGui::Checkbox("Render plane", &plane_vis.status);
     ImGui::Checkbox("Render grid", &grid.enable);
     ImGui::Checkbox("Render triad", &triad.enable);
+    ImGui::Checkbox("Render frustum", &showFrustum);
 
     ImGui::RadioButton("Full render mode", (int *)&showDebugViz, FULL_RENDER);
     ImGui::SameLine();
@@ -360,28 +362,28 @@ int main(int argc, char **argv) {
       const GpuMat4 viewProj = camera.viewProj();
       multibody::updateRobotTransforms(registry, robot_scene.geomData());
       robot_scene.collectOpaqueCastables();
-      auto castables = robot_scene.castables();
+      auto &castables = robot_scene.castables();
       renderShadowPassFromAABB(renderer, shadowPassInfo, sceneLight, castables,
                                worldSpaceBounds);
-      // renderShadowPassFromFrustum(renderer, shadowPassInfo, myLight,
-      // castables,
-      //                             main_cam_frustum);
-      if (showDebugViz == DEPTH_DEBUG) {
-        renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
-        renderDepthDebug(renderer, depthPassDebug, {depth_mode, nearZ, farZ});
-      } else if (showDebugViz == LIGHT_DEBUG) {
-        renderDepthDebug(renderer, shadowDebugPass,
-                         {
-                             depth_mode,
-                             orthoProjNear(shadowPassInfo.cam.projection),
-                             orthoProjFar(shadowPassInfo.cam.projection),
-                             CameraProjection::ORTHOGRAPHIC,
-                         });
-      } else {
+      renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
+      switch (showDebugViz) {
+      case FULL_RENDER:
         renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
         robot_scene.render(renderer, camera);
         debug_scene.render(renderer, camera);
-        frustumBoundsDebug.render(renderer, camera);
+        if (showFrustum)
+          frustumBoundsDebug.render(renderer, camera);
+        break;
+      case DEPTH_DEBUG:
+        renderDepthDebug(renderer, depthPassDebug, {depth_mode, nearZ, farZ});
+        break;
+      case LIGHT_DEBUG:
+        renderDepthDebug(renderer, shadowDebugPass,
+                         {depth_mode,
+                          orthoProjNear(shadowPassInfo.cam.projection),
+                          orthoProjFar(shadowPassInfo.cam.projection),
+                          CameraProjection::ORTHOGRAPHIC});
+        break;
       }
       gui_system.render(renderer);
     } else {

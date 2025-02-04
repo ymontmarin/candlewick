@@ -103,7 +103,7 @@ namespace multibody {
                const pin::GeometryData &geom_data, Config config);
 
     void collectOpaqueCastables();
-    std::span<const OpaqueCastable> castables() const { return _castables; }
+    const std::vector<OpaqueCastable> &castables() const { return _castables; }
 
     entt::entity
     addEnvironmentObject(MeshData &&data, Mat4f placement,
@@ -122,7 +122,9 @@ namespace multibody {
     void renderOtherGeometry(Renderer &renderer, const Camera &camera);
     void release();
 
+    const Config &config() const { return _config; }
     inline bool pbrHasPrepass() const { return _config.triangle_has_prepass; }
+    inline bool shadowsEnabled() const { return _config.enable_shadows; }
 
     /// \brief Getter for the referenced pinocchio GeometryData object.
     const pin::GeometryData &geomData() const { return *_geomData; }
