@@ -34,6 +34,8 @@ private:
 inline void Texture::release() noexcept {
   if (_device && _texture) {
     SDL_ReleaseGPUTexture(_device, _texture);
+    _texture = nullptr;
+    _device = nullptr;
   }
 }
 } // namespace candlewick
