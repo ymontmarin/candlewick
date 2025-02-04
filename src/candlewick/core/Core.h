@@ -3,6 +3,7 @@
 namespace candlewick {
 struct Camera;
 struct Device;
+struct Texture;
 class Mesh;
 class MeshView;
 struct MeshLayout;
