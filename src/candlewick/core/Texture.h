@@ -23,6 +23,8 @@ struct Texture {
   SDL_GPUTextureFormat format() const { return _description.format; }
   SDL_GPUTextureUsageFlags usage() const { return _description.usage; }
 
+  SDL_GPUDevice *device() const { return _device; }
+
   void release() noexcept;
 
 private:
