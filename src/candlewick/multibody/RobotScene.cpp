@@ -118,11 +118,16 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     registry.emplace<MeshMaterialComponent>(
         entity, std::move(mesh), extractMaterials(meshDatas), pipeline_type);
 
-    // configure shadow pass
-    if (enable_shadows && pipeline_type == PIPELINE_TRIANGLEMESH &&
-        !shadowPass.pipeline)
-      shadowPass =
-          ShadowPassInfo::create(renderer, layout, config.shadow_config);
+    if (pipeline_type == PIPELINE_TRIANGLEMESH) {
+      if (!ssaoPass.pipeline) {
+        ssaoPass = ssao::SsaoPass(renderer, layout, gBuffer.normalMap);
+      }
+      // configure shadow pass
+      if (enable_shadows && !shadowPass.pipeline) {
+        shadowPass =
+            ShadowPassInfo::create(renderer, layout, config.shadow_config);
+      }
+    }
 
     if (!renderPipelines[pipeline_type]) {
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
@@ -188,6 +193,8 @@ void RobotScene::collectOpaqueCastables() {
 }
 
 void RobotScene::render(Renderer &renderer, const Camera &camera) {
+  ssaoPass.render(renderer, camera);
+
   // render geometry which participated in the prepass
   renderPBRTriangleGeometry(renderer, camera);
 
@@ -239,7 +246,7 @@ static SDL_GPURenderPass *getRenderPass(Renderer &renderer,
 
 enum FragmentSamplerSlots {
   SHADOW_MAP_SLOT,
-  SCREEN_SPACE_SHADOW_SLOT,
+  SSAO_SLOT,
 };
 
 void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
@@ -277,6 +284,11 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
                                      .sampler = shadowPass.sampler,
                                  });
   }
+  renderer.bindFragmentSampler(render_pass, SSAO_SLOT,
+                               {
+                                   .texture = ssaoPass.ssaoMap,
+                                   .sampler = ssaoPass.texSampler,
+                               });
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                                sizeof(lightUbo));
 
@@ -365,6 +377,7 @@ void RobotScene::release() {
   }
 
   gBuffer.normalMap.release();
+  ssaoPass.release();
   shadowPass.release();
 }
 

@@ -7,6 +7,7 @@
 #include "../core/AABB.h"
 #include "../core/DepthAndShadowPass.h"
 #include "../core/Texture.h"
+#include "../posteffects/SSAO.h"
 #include "../utils/MeshData.h"
 #include "../third-party/magic_enum.hpp"
 
@@ -135,6 +136,7 @@ namespace multibody {
 
     SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
     DirectionalLight directionalLight;
+    ssao::SsaoPass ssaoPass{NoInit};
     struct GBuffer {
       Texture normalMap{NoInit};
     } gBuffer;

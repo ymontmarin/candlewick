@@ -20,6 +20,7 @@ struct main0_out
     float3 fragViewPos [[user(locn0)]];
     float3 fragViewNormal [[user(locn1)]];
     float3 fragLightPos [[user(locn2)]];
+    float4 fragClipPos [[user(locn3)]];
     float4 gl_Position [[position]];
 };
 
@@ -29,14 +30,15 @@ struct main0_in
     float3 inNormal [[attribute(1)]];
 };
 
-vertex main0_out main0(main0_in in [[stage_in]], constant TranformBlock& _25 [[buffer(0)]], constant LightBlockV& _66 [[buffer(1)]])
+vertex main0_out main0(main0_in in [[stage_in]], constant TranformBlock& _25 [[buffer(0)]], constant LightBlockV& _69 [[buffer(1)]])
 {
     main0_out out = {};
     float4 hp = float4(in.inPosition, 1.0);
     out.fragViewPos = float3((_25.modelView * hp).xyz);
     out.fragViewNormal = fast::normalize(_25.normalMatrix * in.inNormal);
     out.gl_Position = _25.mvp * float4(in.inPosition, 1.0);
-    float4 flps = _66.lightMvp * hp;
+    out.fragClipPos = out.gl_Position;
+    float4 flps = _69.lightMvp * hp;
     out.fragLightPos = flps.xyz / float3(flps.w);
     return out;
 }

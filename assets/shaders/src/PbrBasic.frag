@@ -1,6 +1,7 @@
 #version 450
 #define HAS_SHADOW_MAPS
 #define HAS_G_BUFFER
+#define HAS_SSAO
 
 #include "tone_mapping.glsl"
 #include "pbr_material.glsl"
@@ -8,6 +9,7 @@
 layout(location=0) in vec3 fragViewPos;
 layout(location=1) in vec3 fragViewNormal;
 layout(location=2) in vec3 fragLightPos;
+layout(location=3) in vec4 fragClipPos;
 
 // set=3 is required, see SDL3's documentation for SDL_CreateGPUShader
 // https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader
@@ -26,6 +28,9 @@ layout(set=3, binding=1) uniform LightBlock {
 
 #ifdef HAS_SHADOW_MAPS
     layout (set=2, binding=0) uniform sampler2DShadow shadowMap;
+#endif
+#ifdef HAS_SSAO
+    layout (set=2, binding=1) uniform sampler2D ssaoTex;
 #endif
 
 layout(location=0) out vec4 fragColor;
@@ -109,6 +114,10 @@ float calcShadowmap(float NdotL) {
 #endif
 
 void main() {
+    vec2 fragUV;
+    fragUV = fragClipPos.xy / fragClipPos.w;
+    fragUV.x = 0.5 + 0.5 * fragUV.x;
+    fragUV.y = 0.5 - 0.5 * fragUV.y;
     vec3 lightDir = normalize(-light.direction);
     vec3 normal = normalize(fragViewNormal);
     vec3 V = normalize(-fragViewPos);
@@ -150,6 +159,13 @@ void main() {
 
     // Ambient term (very simple)
     vec3 ambient = vec3(0.03) * material.baseColor.rgb * material.ao;
+#ifdef HAS_SSAO
+    float ssao_val;
+    {
+        ssao_val = texture(ssaoTex, fragUV).r;
+        ambient *= ssao_val;
+    }
+#endif
 
     // Final color
     vec3 color = ambient + Lo;
