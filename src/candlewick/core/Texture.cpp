@@ -3,6 +3,8 @@
 #include "errors.h"
 #include "../third-party/magic_enum.hpp"
 
+#include <cassert>
+
 namespace candlewick {
 
 Texture::Texture(NoInitT) : _texture(nullptr), _device(nullptr) {}
@@ -40,6 +42,20 @@ Texture &Texture::operator=(Texture &&other) noexcept {
   other._device = nullptr;
   other._texture = nullptr;
   return *this;
+}
+
+SDL_GPUBlitRegion Texture::blitRegion(Uint32 x, Uint32 y,
+                                      Uint32 layer_or_depth_plane) const {
+  assert(layer_or_depth_plane < layerCount());
+  return {
+      .texture = _texture,
+      .mip_level = 0,
+      .layer_or_depth_plane = layer_or_depth_plane,
+      .x = x,
+      .y = y,
+      .w = width(),
+      .h = height(),
+  };
 }
 
 } // namespace candlewick

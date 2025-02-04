@@ -22,6 +22,13 @@ struct Texture {
   const auto &description() const { return _description; }
   SDL_GPUTextureFormat format() const { return _description.format; }
   SDL_GPUTextureUsageFlags usage() const { return _description.usage; }
+  Uint32 width() const { return _description.width; }
+  Uint32 height() const { return _description.height; }
+  Uint32 depth() const { return _description.layer_count_or_depth; }
+  Uint32 layerCount() const { return _description.layer_count_or_depth; }
+
+  SDL_GPUBlitRegion blitRegion(Uint32 offset_x, Uint32 y_offset,
+                               Uint32 layer_or_depth_plane = 0) const;
 
   SDL_GPUDevice *device() const { return _device; }
 
