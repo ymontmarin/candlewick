@@ -25,6 +25,7 @@ add_library(
   candlewick/core/debug/DepthViz.cpp
   candlewick/core/debug/Frustum.cpp
   candlewick/posteffects/ScreenSpaceShadows.cpp
+  candlewick/posteffects/SSAO.cpp
   candlewick/utils/LoadMesh.cpp
   candlewick/utils/LoadMaterial.cpp
   candlewick/utils/MeshData.cpp
