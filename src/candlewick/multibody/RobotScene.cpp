@@ -18,6 +18,7 @@ struct alignas(16) light_ubo_t {
   GpuVec3 viewSpaceDir;
   alignas(16) GpuVec3 color;
   float intensity;
+  alignas(16) GpuMat4 projMat;
 };
 
 auto RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom)
@@ -70,7 +71,7 @@ entt::entity RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
 RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
                        const pin::GeometryModel &geom_model,
                        const pin::GeometryData &geom_data, Config config)
-    : screenSpaceShadows{.sampler = nullptr, .pass{NoInit}},
+    : // screenSpaceShadows{.sampler = nullptr, .pass{NoInit}},
       _registry(registry), _config(config), _device(renderer.device),
       _geomData(&geom_data) {
 
@@ -115,9 +116,6 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     registry.emplace<MeshMaterialComponent>(
         entity, std::move(mesh), extractMaterials(meshDatas), pipeline_type);
 
-    if (!screenSpaceShadows.pass.valid()) {
-      screenSpaceShadows.pass = effects::ScreenSpaceShadowPass{renderer, {}};
-    }
     // configure shadow pass
     if (enable_shadows && pipeline_type == PIPELINE_TRIANGLEMESH &&
         !shadowPass.pipeline)
@@ -134,17 +132,6 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
       renderPipelines[pipeline_type] = pipeline;
     }
   }
-
-  SDL_GPUSamplerCreateInfo ss_shad_desc{
-      .min_filter = SDL_GPU_FILTER_LINEAR,
-      .mag_filter = SDL_GPU_FILTER_LINEAR,
-      .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
-      .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
-      .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
-      .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
-      .compare_op = SDL_GPU_COMPAREOP_NEVER,
-  };
-  screenSpaceShadows.sampler = SDL_CreateGPUSampler(_device, &ss_shad_desc);
 }
 
 void updateRobotTransforms(entt::registry &registry,
@@ -240,6 +227,7 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
       camera.transformVector(directionalLight.direction),
       directionalLight.color,
       directionalLight.intensity,
+      camera.projection,
   };
 
   const bool enable_shadows = _config.enable_shadows;
@@ -260,12 +248,6 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
                                      .sampler = shadowPass.sampler,
                                  });
   }
-  renderer.bindFragmentSampler(
-      render_pass, SCREEN_SPACE_SHADOW_SLOT,
-      {
-          .texture = screenSpaceShadows.pass.targetTexture,
-          .sampler = screenSpaceShadows.pass.depthSampler,
-      });
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                                sizeof(lightUbo));
 
@@ -353,8 +335,6 @@ void RobotScene::release() {
     pipeline = nullptr;
   }
 
-  SDL_ReleaseGPUSampler(_device, screenSpaceShadows.sampler);
-  screenSpaceShadows.pass.release(_device);
   shadowPass.release(_device);
 }
 

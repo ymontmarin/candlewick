@@ -5,10 +5,13 @@
 #include "../core/LightUniforms.h"
 
 #include <SDL3/SDL_gpu.h>
+#include <span>
 
 namespace candlewick {
+struct OpaqueCastable;
 namespace effects {
 
+  /// \brief WIP screen space shadows
   struct ScreenSpaceShadowPass {
     struct Config {
       float maxDist = 1.0f;
@@ -32,7 +35,8 @@ namespace effects {
     void release(SDL_GPUDevice *device) noexcept;
 
     void render(Renderer &renderer, const Camera &camera,
-                const DirectionalLight &light);
+                const DirectionalLight &light,
+                std::span<const OpaqueCastable> castables);
   };
 
 } // namespace effects

@@ -1,6 +1,7 @@
 #include "ScreenSpaceShadows.h"
 
 #include "../core/math_types.h"
+#include "../core/DepthAndShadowPass.h"
 #include "../core/Renderer.h"
 #include "../core/Shader.h"
 #include "../core/Camera.h"
@@ -15,7 +16,7 @@ namespace effects {
     const Device &device = renderer.device;
     this->depthTexture = renderer.depth_texture;
 
-    auto vertexShader = Shader::fromMetadata(device, "DrawQuad.vert");
+    auto vertexShader = Shader::fromMetadata(device, "ShadowCast.vert");
     auto fragmentShader =
         Shader::fromMetadata(device, "ScreenSpaceShadows.frag");
 
@@ -88,8 +89,10 @@ namespace effects {
       SDL_ReleaseGPUSampler(device, depthSampler);
   }
 
-  void ScreenSpaceShadowPass::render(Renderer &renderer, const Camera &camera,
-                                     const DirectionalLight &light) {
+  void
+  ScreenSpaceShadowPass::render(Renderer &renderer, const Camera &camera,
+                                const DirectionalLight &light,
+                                std::span<const OpaqueCastable> castables) {
     SDL_GPUColorTargetInfo color_target_info;
     SDL_zero(color_target_info);
     color_target_info.texture = targetTexture;
@@ -103,6 +106,7 @@ namespace effects {
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
     Mat4f invProj = camera.projection.inverse();
+    Mat4f vp = camera.viewProj();
     ScreenSpaceShadowsUniform ubo{
         camera.projection,
         invProj,
@@ -116,6 +120,13 @@ namespace effects {
                                      .texture = depthTexture,
                                      .sampler = depthSampler,
                                  });
+
+    for (auto &cs : castables) {
+      GpuMat4 mvp = vp * cs.transform;
+      renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
+      renderer.bindMeshView(render_pass, cs.mesh);
+      renderer.drawView(render_pass, cs.mesh);
+    }
 
     SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
 

@@ -236,10 +236,8 @@ int main(int argc, char **argv) {
   auto shadowDebugPass =
       DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);
 
-  auto &screenSpacePass = robot_scene.screenSpaceShadows.pass;
-  auto depthPassDebug = DepthDebugPass::create(renderer,
-                                               // renderer.depth_texture);
-                                               screenSpacePass.targetTexture);
+  auto depthPassDebug =
+      DepthDebugPass::create(renderer, renderer.depth_texture);
   DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
 
   FrustumBoundsDebugSystem frustumBoundsDebug{registry, renderer};
@@ -370,7 +368,6 @@ int main(int argc, char **argv) {
       //                             main_cam_frustum);
       if (showDebugViz == DEPTH_DEBUG) {
         renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
-        screenSpacePass.render(renderer, camera, sceneLight);
         renderDepthDebug(renderer, depthPassDebug, {depth_mode, nearZ, farZ});
       } else if (showDebugViz == LIGHT_DEBUG) {
         renderDepthDebug(renderer, shadowDebugPass,
@@ -382,7 +379,6 @@ int main(int argc, char **argv) {
                          });
       } else {
         renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
-        screenSpacePass.render(renderer, camera, sceneLight);
         robot_scene.render(renderer, camera);
         debug_scene.render(renderer, camera);
         frustumBoundsDebug.render(renderer, camera);
