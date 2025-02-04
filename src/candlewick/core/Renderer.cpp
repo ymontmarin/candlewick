@@ -45,8 +45,7 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
     texInfo.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
     try_idx++;
   }
-  this->depth_format = texInfo.format;
-  depth_texture = SDL_CreateGPUTexture(this->device, &texInfo);
+  depth_texture = Texture(this->device, texInfo);
   SDL_SetGPUTextureName(device, depth_texture, "Main depth texture");
 }
 

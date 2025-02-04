@@ -299,7 +299,7 @@ int main(int argc, char **argv) {
                              .enable_depth_write = true},
         .target_info{.color_target_descriptions = &colorTarget,
                      .num_color_targets = 1,
-                     .depth_stencil_format = renderer.depth_format,
+                     .depth_stencil_format = renderer.depthFormat(),
                      .has_depth_stencil_target = true},
         .props = 0,
     };
@@ -316,10 +316,10 @@ int main(int argc, char **argv) {
 
   SDL_GPUGraphicsPipeline *debugLinePipeline =
       initGridPipeline(renderer.device, renderer.window, gridMesh.layout,
-                       renderer.depth_format, SDL_GPU_PRIMITIVETYPE_LINELIST);
+                       renderer.depthFormat(), SDL_GPU_PRIMITIVETYPE_LINELIST);
   SDL_GPUGraphicsPipeline *debugTrianglePipeline = initGridPipeline(
       renderer.device, renderer.window, triad_meshes[0].layout,
-      renderer.depth_format, SDL_GPU_PRIMITIVETYPE_TRIANGLELIST);
+      renderer.depthFormat(), SDL_GPU_PRIMITIVETYPE_TRIANGLELIST);
 
   // MAIN APPLICATION LOOP
 

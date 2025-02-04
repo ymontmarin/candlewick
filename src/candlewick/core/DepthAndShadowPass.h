@@ -61,6 +61,9 @@ struct DepthPassInfo {
   [[nodiscard]] static DepthPassInfo
   create(const Renderer &renderer, const MeshLayout &layout,
          SDL_GPUTexture *depth_texture = NULL, Config config = {});
+  /// Release the pass pipeline.
+  /// \warning We do not depth texture here, because it is assumed to be
+  /// borrowed.
   void release(SDL_GPUDevice *device);
 };
 
