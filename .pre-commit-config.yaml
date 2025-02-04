@@ -40,3 +40,4 @@ repos:
     rev: v1.5.5
     hooks:
       - id: forbid-tabs
+      - id: remove-tabs
