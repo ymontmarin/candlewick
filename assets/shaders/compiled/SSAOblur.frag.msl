@@ -1,0 +1,77 @@
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+#pragma clang diagnostic ignored "-Wmissing-braces"
+
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+template<typename T, size_t Num>
+struct spvUnsafeArray
+{
+    T elements[Num ? Num : 1];
+
+    thread T& operator [] (size_t pos) thread
+    {
+        return elements[pos];
+    }
+    constexpr const thread T& operator [] (size_t pos) const thread
+    {
+        return elements[pos];
+    }
+
+    device T& operator [] (size_t pos) device
+    {
+        return elements[pos];
+    }
+    constexpr const device T& operator [] (size_t pos) const device
+    {
+        return elements[pos];
+    }
+
+    constexpr const constant T& operator [] (size_t pos) const constant
+    {
+        return elements[pos];
+    }
+
+    threadgroup T& operator [] (size_t pos) threadgroup
+    {
+        return elements[pos];
+    }
+    constexpr const threadgroup T& operator [] (size_t pos) const threadgroup
+    {
+        return elements[pos];
+    }
+};
+
+struct BlurParams
+{
+    float2 direction;
+};
+
+constant spvUnsafeArray<float, 5> _73 = spvUnsafeArray<float, 5>({ 0.227026998996734619140625, 0.19459460675716400146484375, 0.121621601283550262451171875, 0.054053999483585357666015625, 0.01621600054204463958740234375 });
+
+struct main0_out
+{
+    float aoValue [[color(0)]];
+};
+
+struct main0_in
+{
+    float2 inUV [[user(locn0)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]], constant BlurParams& _52 [[buffer(0)]], texture2d<float> aoTex [[texture(0)]], sampler aoTexSmplr [[sampler(0)]])
+{
+    main0_out out = {};
+    float2 texelSize = float2(1.0) / float2(int2(aoTex.get_width(), aoTex.get_height()));
+    float result = aoTex.sample(aoTexSmplr, in.inUV).x * 0.227026998996734619140625;
+    for (int i = 1; i <= 4; i++)
+    {
+        float2 off = (_52.direction * texelSize) * float(i);
+        result += (aoTex.sample(aoTexSmplr, (in.inUV + off)).x * _73[i]);
+        result += (aoTex.sample(aoTexSmplr, (in.inUV - off)).x * _73[i]);
+    }
+    out.aoValue = result;
+    return out;
+}

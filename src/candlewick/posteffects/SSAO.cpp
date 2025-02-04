@@ -147,7 +147,8 @@ namespace ssao {
         .sample_count = SDL_GPU_SAMPLECOUNT_1,
         .props = 0,
     };
-    ssaoMap = Texture{device, texture_desc, "SSAO Map"};
+    ssaoMap = Texture{device, texture_desc, "SSAO map (pre-blur)"};
+    blurPass1Tex = Texture{device, texture_desc, "SSAO output map"};
 
     auto vertexShader = Shader::fromMetadata(device, "DrawQuad.vert");
     auto fragmentShader = Shader::fromMetadata(device, "SSAO.frag");
@@ -158,7 +159,6 @@ namespace ssao {
     SDL_GPUGraphicsPipelineCreateInfo pipeline_desc{
         .vertex_shader = vertexShader,
         .fragment_shader = fragmentShader,
-        .vertex_input_state = layout.toVertexInputState(),
         .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
         .rasterizer_state{.fill_mode = SDL_GPU_FILLMODE_FILL,
                           .cull_mode = SDL_GPU_CULLMODE_BACK},
@@ -167,6 +167,10 @@ namespace ssao {
                      .has_depth_stencil_target = false},
     };
     pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
+    auto blurShader = Shader::fromMetadata(device, "SSAOblur.frag");
+    SDL_GPUGraphicsPipelineCreateInfo blur_pipeline_desc = pipeline_desc;
+    blur_pipeline_desc.fragment_shader = blurShader;
+    blurPipeline = SDL_CreateGPUGraphicsPipeline(device, &blur_pipeline_desc);
 
     // Now, we create the noise texture
     Uint32 num_pixels_rows = 4u;
@@ -186,13 +190,21 @@ namespace ssao {
     SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
         renderer.command_buffer, &color_info, 1, nullptr);
 
-    renderer.bindFragmentSampler(
-        render_pass, 0, {.texture = inDepthMap, .sampler = texSampler});
-    renderer.bindFragmentSampler(
-        render_pass, 1, {.texture = inNormalMap, .sampler = texSampler});
-    renderer.bindFragmentSampler(
-        render_pass, 2,
-        {.texture = ssaoNoise.tex, .sampler = ssaoNoise.sampler});
+    renderer.bindFragmentSampler(render_pass, 0,
+                                 {
+                                     .texture = inDepthMap,
+                                     .sampler = texSampler,
+                                 });
+    renderer.bindFragmentSampler(render_pass, 1,
+                                 {
+                                     .texture = inNormalMap,
+                                     .sampler = texSampler,
+                                 });
+    renderer.bindFragmentSampler(render_pass, 2,
+                                 {
+                                     .texture = ssaoNoise.tex,
+                                     .sampler = ssaoNoise.sampler,
+                                 });
     auto SAMPLES_PAYLOAD_BYTES =
         Uint32(KERNEL_SAMPLES.size() * sizeof(GpuVec4));
     renderer.pushFragmentUniform(0, KERNEL_SAMPLES.data(),
@@ -201,6 +213,27 @@ namespace ssao {
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
     SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
     SDL_EndGPURenderPass(render_pass);
+
+    const GpuVec2 blurDirections[] = {{1, 0}, {0, 1}};
+    for (size_t i = 0; i < 2; i++) {
+      const GpuVec2 blurDir = blurDirections[i];
+      // if i = 0, render to pass 1 blur texture
+      color_info.texture = (i == 0) ? blurPass1Tex : ssaoMap;
+
+      render_pass = SDL_BeginGPURenderPass(renderer.command_buffer, &color_info,
+                                           1, nullptr);
+      SDL_BindGPUGraphicsPipeline(render_pass, blurPipeline);
+
+      renderer.pushFragmentUniform(0, &blurDir, sizeof(blurDir));
+      renderer.bindFragmentSampler(
+          render_pass, 0,
+          {
+              .texture = (i == 0) ? ssaoMap : blurPass1Tex,
+              .sampler = texSampler,
+          });
+      SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
+      SDL_EndGPURenderPass(render_pass);
+    }
   }
 
   void SsaoPass::release() {
@@ -217,6 +250,10 @@ namespace ssao {
     ssaoNoise.tex.release();
     if (ssaoNoise.sampler)
       SDL_ReleaseGPUSampler(device, ssaoNoise.sampler);
+
+    if (blurPipeline)
+      SDL_ReleaseGPUGraphicsPipeline(device, blurPipeline);
+    blurPass1Tex.release();
   }
 
 } // namespace ssao
