@@ -8,11 +8,6 @@ layout(location=1) in vec3 fragViewNormal;
 layout(location=2) in vec3 fragLightPos;
 
 // Light structure
-struct DirectionalLight {
-    vec3 direction;
-    vec3 color;
-    float intensity;
-};
 
 // set=3 is required, see SDL3's documentation for SDL_CreateGPUShader
 // https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader
@@ -22,8 +17,12 @@ layout (set=3, binding=0) uniform Material {
 };
 
 layout(set=3, binding=1) uniform LightBlock {
-    DirectionalLight light;
-};
+    vec3 direction;
+    vec3 color;
+    float intensity;
+    // direction in NDC space
+    mat4 camProjection;
+} light;
 
 layout (set=2, binding=0) uniform sampler2DShadow shadowMap;
 layout (set=2, binding=1) uniform sampler2D screenShadowMask;
