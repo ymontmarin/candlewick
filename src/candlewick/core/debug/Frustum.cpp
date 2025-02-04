@@ -28,7 +28,7 @@ namespace frustum_debug {
                              .enable_depth_write = true},
         .target_info{.color_target_descriptions = &color_target,
                      .num_color_targets = 1,
-                     .depth_stencil_format = renderer.depth_format,
+                     .depth_stencil_format = renderer.depthFormat(),
                      .has_depth_stencil_target = true},
     };
     return SDL_CreateGPUGraphicsPipeline(device, &info);

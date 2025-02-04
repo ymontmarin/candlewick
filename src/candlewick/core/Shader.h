@@ -35,7 +35,7 @@ struct Shader {
   /// Move constructor
   Shader(Shader &&other) noexcept;
 
-  operator SDL_GPUShader *() noexcept { return _shader; }
+  operator SDL_GPUShader *() const noexcept { return _shader; }
   void release() noexcept;
   ~Shader() noexcept { release(); }
 

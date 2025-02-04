@@ -36,20 +36,21 @@ DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
                            .enable_depth_write = true},
       .target_info{.color_target_descriptions = nullptr,
                    .num_color_targets = 0,
-                   .depth_stencil_format = renderer.depth_format,
+                   .depth_stencil_format = renderer.depthFormat(),
                    .has_depth_stencil_target = true},
   };
   auto *pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
-  return {depth_texture, pipeline};
+  DepthPassInfo out;
+  out.depthTexture = depth_texture;
+  out.pipeline = pipeline;
+  out._device = device;
+  return out;
 }
 
-void DepthPassInfo::release(SDL_GPUDevice *device) {
-  if (depthTexture) {
-    SDL_ReleaseGPUTexture(device, depthTexture);
-    depthTexture = nullptr;
-  }
-  if (pipeline) {
-    SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
+void DepthPassInfo::release() {
+  // do not release depth texture here, because it is assumed to be borrowed.
+  if (_device && pipeline) {
+    SDL_ReleaseGPUGraphicsPipeline(_device, pipeline);
     pipeline = nullptr;
   }
 }
@@ -63,7 +64,7 @@ ShadowPassInfo ShadowPassInfo::create(const Renderer &renderer,
   // 2k x 2k texture
   SDL_GPUTextureCreateInfo texInfo{
       .type = SDL_GPU_TEXTURETYPE_2D,
-      .format = renderer.depth_format,
+      .format = renderer.depthFormat(),
       .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET |
                SDL_GPU_TEXTUREUSAGE_SAMPLER,
       .width = config.width,
@@ -111,10 +112,14 @@ ShadowPassInfo ShadowPassInfo::create(const Renderer &renderer,
   return ShadowPassInfo{passInfo, SDL_CreateGPUSampler(device, &sample_desc)};
 }
 
-void ShadowPassInfo::release(SDL_GPUDevice *device) {
-  DepthPassInfo::release(device);
+void ShadowPassInfo::release() {
+  DepthPassInfo::release();
+  if (depthTexture) {
+    SDL_ReleaseGPUTexture(_device, depthTexture);
+    depthTexture = nullptr;
+  }
   if (sampler) {
-    SDL_ReleaseGPUSampler(device, sampler);
+    SDL_ReleaseGPUSampler(_device, sampler);
     sampler = nullptr;
   }
 }

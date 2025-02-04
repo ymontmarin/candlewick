@@ -61,7 +61,13 @@ struct DepthPassInfo {
   [[nodiscard]] static DepthPassInfo
   create(const Renderer &renderer, const MeshLayout &layout,
          SDL_GPUTexture *depth_texture = NULL, Config config = {});
-  void release(SDL_GPUDevice *device);
+  /// Release the pass pipeline.
+  /// \warning We do not depth texture here, because it is assumed to be
+  /// borrowed.
+  void release();
+
+protected:
+  SDL_GPUDevice *_device = nullptr;
 };
 
 /// \brief Shadow pass configuration, to use in createShadowPass().
@@ -81,7 +87,7 @@ struct ShadowPassInfo : DepthPassInfo {
                                              const MeshLayout &layout,
                                              const ShadowPassConfig &config);
 
-  void release(SDL_GPUDevice *device);
+  void release();
 };
 
 /// \ingroup depth_pass

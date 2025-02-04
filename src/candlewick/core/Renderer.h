@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Device.h"
+#include "Texture.h"
 #include "Mesh.h"
 
 #include <span>
@@ -18,8 +19,7 @@ struct Renderer {
   Device device;
   SDL_Window *window = nullptr;
   SDL_GPUTexture *swapchain;
-  SDL_GPUTexture *depth_texture = nullptr;
-  SDL_GPUTextureFormat depth_format;
+  Texture depth_texture{NoInit};
   SDL_GPUCommandBuffer *command_buffer;
 
   Renderer(Device &&device, SDL_Window *window);
@@ -46,7 +46,8 @@ struct Renderer {
     return SDL_GetGPUSwapchainTextureFormat(device, window);
   }
 
-  bool hasDepthTexture() const { return depth_texture != nullptr; }
+  bool hasDepthTexture() const { return depth_texture.hasValue(); }
+  SDL_GPUTextureFormat depthFormat() const { return depth_texture.format(); }
 
   /// \brief Bind a Mesh object.
   /// \sa bindMeshView()
@@ -142,6 +143,7 @@ struct Renderer {
 
   void destroy() {
     SDL_ReleaseWindowFromGPUDevice(device, window);
+    depth_texture.release();
     device.destroy();
   }
 };

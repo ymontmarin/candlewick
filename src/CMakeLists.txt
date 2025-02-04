@@ -11,6 +11,7 @@ add_library(
   SHARED
   candlewick/core/Camera.cpp
   candlewick/core/DebugScene.cpp
+  candlewick/core/DepthAndShadowPass.cpp
   candlewick/core/Device.cpp
   candlewick/core/math_util.cpp
   candlewick/core/errors.cpp
@@ -20,7 +21,7 @@ add_library(
   candlewick/core/OBB.cpp
   candlewick/core/Renderer.cpp
   candlewick/core/Shader.cpp
-  candlewick/core/DepthAndShadowPass.cpp
+  candlewick/core/Texture.cpp
   candlewick/core/debug/DepthViz.cpp
   candlewick/core/debug/Frustum.cpp
   candlewick/posteffects/ScreenSpaceShadows.cpp

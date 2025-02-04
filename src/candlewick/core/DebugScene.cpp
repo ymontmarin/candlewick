@@ -11,7 +11,7 @@ DebugScene::DebugScene(const Renderer &renderer)
     : _device(renderer.device), _trianglePipeline(nullptr),
       _linePipeline(nullptr), _registry() {
   _swapchainTextureFormat = renderer.getSwapchainTextureFormat();
-  _depthFormat = renderer.depth_format;
+  _depthFormat = renderer.depthFormat();
 }
 
 std::tuple<entt::entity, DebugMeshComponent &> DebugScene::addTriad() {
