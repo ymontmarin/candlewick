@@ -464,9 +464,7 @@ int main(int argc, char **argv) {
     frameNo++;
   }
 
-  for (auto &shape : robotShapes) {
-    shape.mesh.release();
-  }
+  robotShapes.clear();
   SDL_ReleaseGPUGraphicsPipeline(device, meshPipeline);
   SDL_ReleaseGPUGraphicsPipeline(device, debugLinePipeline);
 

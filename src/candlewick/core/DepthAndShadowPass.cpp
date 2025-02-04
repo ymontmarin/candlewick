@@ -40,13 +40,17 @@ DepthPassInfo DepthPassInfo::create(const Renderer &renderer,
                    .has_depth_stencil_target = true},
   };
   auto *pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
-  return {depth_texture, pipeline};
+  DepthPassInfo out;
+  out.depthTexture = depth_texture;
+  out.pipeline = pipeline;
+  out._device = device;
+  return out;
 }
 
-void DepthPassInfo::release(SDL_GPUDevice *device) {
+void DepthPassInfo::release() {
   // do not release depth texture here, because it is assumed to be borrowed.
-  if (pipeline) {
-    SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
+  if (_device && pipeline) {
+    SDL_ReleaseGPUGraphicsPipeline(_device, pipeline);
     pipeline = nullptr;
   }
 }
@@ -108,14 +112,14 @@ ShadowPassInfo ShadowPassInfo::create(const Renderer &renderer,
   return ShadowPassInfo{passInfo, SDL_CreateGPUSampler(device, &sample_desc)};
 }
 
-void ShadowPassInfo::release(SDL_GPUDevice *device) {
-  DepthPassInfo::release(device);
+void ShadowPassInfo::release() {
+  DepthPassInfo::release();
   if (depthTexture) {
-    SDL_ReleaseGPUTexture(device, depthTexture);
+    SDL_ReleaseGPUTexture(_device, depthTexture);
     depthTexture = nullptr;
   }
   if (sampler) {
-    SDL_ReleaseGPUSampler(device, sampler);
+    SDL_ReleaseGPUSampler(_device, sampler);
     sampler = nullptr;
   }
 }

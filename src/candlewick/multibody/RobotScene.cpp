@@ -328,7 +328,7 @@ void RobotScene::release() {
     pipeline = nullptr;
   }
 
-  shadowPass.release(_device);
+  shadowPass.release();
 }
 
 SDL_GPUGraphicsPipeline *RobotScene::createPipeline(

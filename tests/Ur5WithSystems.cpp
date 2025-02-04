@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
   auto shadowDebugPass =
       DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);
 
-  auto depthPassDebug =
+  auto depthDebugPass =
       DepthDebugPass::create(renderer, renderer.depth_texture);
   DepthDebugPass::VizStyle depth_mode = DepthDebugPass::VIZ_GRAYSCALE;
 
@@ -375,7 +375,7 @@ int main(int argc, char **argv) {
           frustumBoundsDebug.render(renderer, camera);
         break;
       case DEPTH_DEBUG:
-        renderDepthDebug(renderer, depthPassDebug, {depth_mode, nearZ, farZ});
+        renderDepthDebug(renderer, depthDebugPass, {depth_mode, nearZ, farZ});
         break;
       case LIGHT_DEBUG:
         renderDepthDebug(renderer, shadowDebugPass,
@@ -400,9 +400,9 @@ int main(int argc, char **argv) {
   }
 
   frustumBoundsDebug.release();
-  depthPassInfo.release(renderer.device);
+  depthPassInfo.release();
   shadowDebugPass.release(renderer.device);
-  depthPassDebug.release(renderer.device);
+  depthDebugPass.release(renderer.device);
   robot_scene.release();
   debug_scene.release();
   gui_system.release();
