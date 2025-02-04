@@ -47,6 +47,7 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
   }
   this->depth_format = texInfo.format;
   depth_texture = SDL_CreateGPUTexture(this->device, &texInfo);
+  SDL_SetGPUTextureName(device, depth_texture, "Main depth texture");
 }
 
 void Renderer::bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
