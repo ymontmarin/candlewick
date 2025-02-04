@@ -16,6 +16,8 @@ namespace ssao {
     struct SsaoNoise {
       Texture tex{NoInit};
       SDL_GPUSampler *sampler = nullptr;
+      // The texture will be N x N where N is this value.
+      Uint32 pixel_window_size;
     } ssaoNoise;
 
     SsaoPass(NoInitT) {}

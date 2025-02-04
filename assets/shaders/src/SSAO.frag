@@ -6,11 +6,12 @@ layout(location=0) out float aoValue;
 
 layout(set=2, binding=0) uniform sampler2D depthTex;
 layout(set=2, binding=1) uniform sampler2D normalMap;
+layout(set=2, binding=2) uniform sampler2D ssaoNoise;
 
 const int SSAO_KERNEL_SIZE = 64;
-const float SSAO_RADIUS = 0.5;
-const float SSAO_BIAS = 0.025;
-const float SSAO_INTENSITY = 1.0;
+const float SSAO_RADIUS = 1.0;
+const float SSAO_BIAS = 0.01;
+const float SSAO_INTENSITY = 1.5;
 
 layout(set=3, binding=0) uniform SSAOParams {
     vec4 samples[SSAO_KERNEL_SIZE];
@@ -27,12 +28,9 @@ vec3 getViewPos(float depth, vec2 uv) {
 }
 
 vec3 getRandom(vec2 uv) {
-    // Generate a random vector from UV
-    vec3 rand;
-    rand.x = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
-    rand.y = fract(sin(dot(uv, vec2(4.898, 7.23))) * 23421.631);
-    rand.z = fract(sin(dot(uv, vec2(4.1239, 9.12))) * 32974.821);
-    return normalize(rand * 2.0 - 1.0);
+    vec2 noiseScale = vec2(1680, 1050) / 4.0;
+    uv = uv * noiseScale;
+    return vec3(texture(ssaoNoise, uv).rg, 0);
 }
 
 float calculatePixelAO(vec2 uv) {
@@ -46,7 +44,7 @@ float calculatePixelAO(vec2 uv) {
 
     // tbn matrix for rotating samples
     vec3 tangent = normalize(randVec - viewNormal * dot(randVec, viewNormal));
-    vec3 bitangent = cross(viewNormal, tangent);
+    vec3 bitangent = cross(tangent, viewNormal);
     mat3 TBN = mat3(tangent, bitangent, viewNormal);
 
     // accumulate occlusion
@@ -68,15 +66,14 @@ float calculatePixelAO(vec2 uv) {
         vec3 sampleViewPos = getViewPos(sampleDepth, offset.xy);
 
         // Rarnge check & accumulate
-        float rangeCheck = smoothstep(0.0, 1.0, SSAO_RADIUS / abs(viewPos.z - sampleViewPos.z));
+        float rangeCheck = smoothstep(0.0, 1.0, SSAO_RADIUS / abs(viewPos.z - sampleViewPos.z - SSAO_BIAS));
         occlusion += (sampleViewPos.z >= samplePos.z + SSAO_BIAS ? 1.0 : 0.0) * rangeCheck;
     }
 
-    occlusion = 1.0 - (occlusion / 64.0) * SSAO_INTENSITY;
+    occlusion = 1.0 - (occlusion / SSAO_KERNEL_SIZE) * SSAO_INTENSITY;
     return occlusion;
 }
 
 void main() {
-    float center = calculatePixelAO(inUV);
-    aoValue = center;
+    aoValue = calculatePixelAO(inUV);
 }

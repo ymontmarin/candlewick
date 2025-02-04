@@ -24,7 +24,7 @@ float spvDet3x3(float a1, float a2, float a3, float b1, float b2, float b3, floa
 static inline __attribute__((always_inline))
 float4x4 spvInverse4x4(float4x4 m)
 {
-    float4x4 adj;	// The adjoint matrix (inverse after dividing by determinant)
+    float4x4 adj;   // The adjoint matrix (inverse after dividing by determinant)
 
     // Create the transpose of the cofactors, as the classical adjoint of the matrix.
     adj[0][0] =  spvDet3x3(m[1][1], m[1][2], m[1][3], m[2][1], m[2][2], m[2][3], m[3][1], m[3][2], m[3][3]);
@@ -84,63 +84,61 @@ float3 getViewPos(thread const float& depth, thread const float2& uv, constant C
 }
 
 static inline __attribute__((always_inline))
-float3 getRandom(thread const float2& uv)
+float3 getRandom(thread float2& uv, texture2d<float> ssaoNoise, sampler ssaoNoiseSmplr)
 {
-    float3 rand;
-    rand.x = fract(sin(dot(uv, float2(12.98980045318603515625, 78.233001708984375))) * 43758.546875);
-    rand.y = fract(sin(dot(uv, float2(4.89799976348876953125, 7.230000019073486328125))) * 23421.630859375);
-    rand.z = fract(sin(dot(uv, float2(4.123899936676025390625, 9.11999988555908203125))) * 32974.8203125);
-    return fast::normalize((rand * 2.0) - float3(1.0));
+    float2 noiseScale = float2(420.0, 262.5);
+    uv *= noiseScale;
+    return float3(ssaoNoise.sample(ssaoNoiseSmplr, uv).xy, 0.0);
 }
 
 static inline __attribute__((always_inline))
-float calculatePixelAO(thread const float2& uv, constant Camera& camera, texture2d<float> depthTex, sampler depthTexSmplr, texture2d<float> normalMap, sampler normalMapSmplr, constant SSAOParams& kernel0)
+float calculatePixelAO(thread const float2& uv, constant Camera& camera, texture2d<float> ssaoNoise, sampler ssaoNoiseSmplr, texture2d<float> depthTex, sampler depthTexSmplr, texture2d<float> normalMap, sampler normalMapSmplr, constant SSAOParams& kernel0)
 {
     float depth = depthTex.sample(depthTexSmplr, uv).x;
     float param = depth;
     float2 param_1 = uv;
     float3 viewPos = getViewPos(param, param_1, camera);
-    float2 _122 = normalMap.sample(normalMapSmplr, uv).xy;
+    float2 _100 = normalMap.sample(normalMapSmplr, uv).xy;
     float3 viewNormal;
-    viewNormal.x = _122.x;
-    viewNormal.y = _122.y;
+    viewNormal.x = _100.x;
+    viewNormal.y = _100.y;
     viewNormal.z = sqrt(1.0 - dot(viewNormal.xy, viewNormal.xy));
     float2 param_2 = uv;
-    float3 randVec = getRandom(param_2);
+    float3 _118 = getRandom(param_2, ssaoNoise, ssaoNoiseSmplr);
+    float3 randVec = _118;
     float3 tangent = fast::normalize(randVec - (viewNormal * dot(randVec, viewNormal)));
-    float3 bitangent = cross(viewNormal, tangent);
+    float3 bitangent = cross(tangent, viewNormal);
     float3x3 TBN = float3x3(float3(tangent), float3(bitangent), float3(viewNormal));
     float occlusion = 0.0;
     for (int i = 0; i < 64; i++)
     {
         float3 samplePos = TBN * kernel0.samples[i].xyz;
-        samplePos = viewPos + (samplePos * 0.5);
+        samplePos = viewPos + (samplePos * 1.0);
         float4 offset = camera.projection * float4(samplePos, 1.0);
-        float _212 = offset.w;
-        float4 _213 = offset;
-        float2 _216 = _213.xy / float2(_212);
-        offset.x = _216.x;
-        offset.y = _216.y;
-        float4 _221 = offset;
-        float2 _225 = (_221.xy * 0.5) + float2(0.5);
-        offset.x = _225.x;
-        offset.y = _225.y;
+        float _190 = offset.w;
+        float4 _191 = offset;
+        float2 _194 = _191.xy / float2(_190);
+        offset.x = _194.x;
+        offset.y = _194.y;
+        float4 _199 = offset;
+        float2 _204 = (_199.xy * 0.5) + float2(0.5);
+        offset.x = _204.x;
+        offset.y = _204.y;
         float sampleDepth = depthTex.sample(depthTexSmplr, offset.xy).x;
         float param_3 = sampleDepth;
         float2 param_4 = offset.xy;
         float3 sampleViewPos = getViewPos(param_3, param_4, camera);
-        float rangeCheck = smoothstep(0.0, 1.0, 0.5 / abs(viewPos.z - sampleViewPos.z));
-        occlusion += (float(sampleViewPos.z >= (samplePos.z + 0.02500000037252902984619140625)) * rangeCheck);
+        float rangeCheck = smoothstep(0.0, 1.0, 1.0 / abs((viewPos.z - sampleViewPos.z) - 0.00999999977648258209228515625));
+        occlusion += (float(sampleViewPos.z >= (samplePos.z + 0.00999999977648258209228515625)) * rangeCheck);
     }
-    occlusion = 1.0 - ((occlusion / 64.0) * 1.0);
+    occlusion = 1.0 - ((occlusion / 64.0) * 1.5);
     return occlusion;
 }
 
-fragment main0_out main0(main0_in in [[stage_in]], constant SSAOParams& kernel0 [[buffer(0)]], constant Camera& camera [[buffer(1)]], texture2d<float> depthTex [[texture(0)]], texture2d<float> normalMap [[texture(1)]], sampler depthTexSmplr [[sampler(0)]], sampler normalMapSmplr [[sampler(1)]])
+fragment main0_out main0(main0_in in [[stage_in]], constant SSAOParams& kernel0 [[buffer(0)]], constant Camera& camera [[buffer(1)]], texture2d<float> depthTex [[texture(0)]], texture2d<float> normalMap [[texture(1)]], texture2d<float> ssaoNoise [[texture(2)]], sampler depthTexSmplr [[sampler(0)]], sampler normalMapSmplr [[sampler(1)]], sampler ssaoNoiseSmplr [[sampler(2)]])
 {
     main0_out out = {};
     float2 param = in.inUV;
-    float center = calculatePixelAO(param, camera, depthTex, depthTexSmplr, normalMap, normalMapSmplr, kernel0);
-    out.aoValue = center;
+    out.aoValue = calculatePixelAO(param, camera, ssaoNoise, ssaoNoiseSmplr, depthTex, depthTexSmplr, normalMap, normalMapSmplr, kernel0);
     return out;
 }
