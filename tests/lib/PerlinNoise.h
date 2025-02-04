@@ -31,6 +31,4 @@ struct PerlinNoise {
   /// Perlin fade function, t^5 - 15t^4 + 10t^3
   static float fade(float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
   static float fade(float x, float y) { return fade(x) * fade(y); }
-
-  static float lerp(float t, float a, float b) { return a + t * (b - a); }
 };
