@@ -9,7 +9,6 @@
 layout(location=0) in vec3 fragViewPos;
 layout(location=1) in vec3 fragViewNormal;
 layout(location=2) in vec3 fragLightPos;
-layout(location=3) in vec4 fragClipPos;
 
 // set=3 is required, see SDL3's documentation for SDL_CreateGPUShader
 // https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader
@@ -114,10 +113,6 @@ float calcShadowmap(float NdotL) {
 #endif
 
 void main() {
-    vec2 fragUV;
-    fragUV = fragClipPos.xy / fragClipPos.w;
-    fragUV.x = 0.5 + 0.5 * fragUV.x;
-    fragUV.y = 0.5 - 0.5 * fragUV.y;
     vec3 lightDir = normalize(-light.direction);
     vec3 normal = normalize(fragViewNormal);
     vec3 V = normalize(-fragViewPos);
@@ -162,7 +157,10 @@ void main() {
 #ifdef HAS_SSAO
     float ssao_val;
     {
-        ssao_val = texture(ssaoTex, fragUV).r;
+        vec2 ssaoTexSize = textureSize(ssaoTex, 0).xy;
+        vec2 ssaoUV;
+        ssaoUV = gl_FragCoord.xy / ssaoTexSize;
+        ssao_val = texture(ssaoTex, ssaoUV).r;
         ambient *= ssao_val;
     }
 #endif
