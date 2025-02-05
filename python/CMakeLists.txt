@@ -12,6 +12,10 @@ target_include_directories(
   pycandlewick
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
+target_compile_definitions(
+  pycandlewick
+  PRIVATE SHADERS_INSTALL_DIR="${CANDLEWICK_SHADER_INSTALL_DIR}/compiled"
+)
 
 set_target_properties(
   pycandlewick

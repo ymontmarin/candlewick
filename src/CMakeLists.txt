@@ -49,11 +49,11 @@ target_link_libraries(
   PUBLIC SDL3::SDL3-shared assimp::assimp Eigen3::Eigen EnTT::EnTT imgui-headers
   PRIVATE nlohmann_json::nlohmann_json
 )
-set(CANDLEWICK_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets)
-set(CANDLEWICK_SHADERS_DIR ${CANDLEWICK_ASSETS_DIR}/shaders)
 target_compile_definitions(
   candlewick_core
-  PUBLIC CANDLEWICK_SHADER_BIN_DIR="${CANDLEWICK_SHADERS_DIR}/compiled"
+  PUBLIC
+    $<BUILD_INTERFACE:CANDLEWICK_SHADER_BIN_DIR="${CANDLEWICK_SHADERS_DIR}/compiled">
+    $<INSTALL_INTERFACE:CANDLEWICK_SHADER_BIN_DIR="${CANDLEWICK_SHADER_INSTALL_DIR}/compiled">
 )
 target_include_directories(candlewick_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_precompile_headers(candlewick_core PRIVATE <format>)

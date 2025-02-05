@@ -6,6 +6,12 @@
 
 namespace candlewick {
 
+extern const char *g_default_shader_dir;
+static const char *g_shader_dir = g_default_shader_dir;
+
+inline void setShadersDirectory(const char *path) { g_shader_dir = path; }
+inline const char *currentShaderDirectory() { return g_shader_dir; }
+
 SDL_GPUShaderStage detect_shader_stage(const char *filename);
 
 const char *shader_format_name(SDL_GPUShaderFormat shader_format);

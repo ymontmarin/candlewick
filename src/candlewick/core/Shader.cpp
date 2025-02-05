@@ -3,7 +3,6 @@
 #include "errors.h"
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_log.h>
-#include <SDL3/SDL_filesystem.h>
 
 #include <format>
 #define JSON_NO_IO
@@ -11,6 +10,9 @@
 #include <nlohmann/json.hpp>
 
 namespace candlewick {
+
+const char *g_default_shader_dir = CANDLEWICK_SHADER_BIN_DIR;
+
 SDL_GPUShaderStage detect_shader_stage(const char *filename) {
   SDL_GPUShaderStage stage;
   if (SDL_strstr(filename, ".vert"))
@@ -37,8 +39,9 @@ struct ShaderCode {
 
 ShaderCode loadShaderFile(const char *filename, const char *shader_ext) {
   char shader_path[256];
-  SDL_snprintf(shader_path, sizeof(shader_path), "%s/%s.%s",
-               CANDLEWICK_SHADER_BIN_DIR, filename, shader_ext);
+  SDL_snprintf(shader_path, sizeof(shader_path), "%s/%s.%s", g_shader_dir,
+               filename, shader_ext);
+  SDL_Log("Loading shader file %s", shader_path);
 
   size_t code_size;
   void *code = SDL_LoadFile(shader_path, &code_size);
@@ -71,7 +74,6 @@ Shader::Shader(const Device &device, const char *filename, const Config &config)
         "Failed to load shader: no available supported shader format.");
   }
 
-  SDL_Log("Loading shader file %s.%s", filename, shader_ext);
   ShaderCode shader_code = loadShaderFile(filename, shader_ext);
 
   SDL_GPUShaderCreateInfo info{
@@ -103,10 +105,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Shader::Config, uniform_buffers, samplers,
                                    storage_textures, storage_buffers);
 
 Shader::Config loadShaderMetadata(const char *filename) {
-  char metadata_path[256];
-  SDL_snprintf(metadata_path, sizeof(metadata_path), "%s/%s.json",
-               CANDLEWICK_SHADER_BIN_DIR, filename);
-
   auto data = loadShaderFile(filename, "json");
   auto meta = nlohmann::json::parse(data.data, data.data + data.size);
   return meta.get<Shader::Config>();

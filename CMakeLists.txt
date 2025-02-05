@@ -59,6 +59,13 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 find_package(SDL3 3.2.0 REQUIRED)
+set(CANDLEWICK_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets)
+set(CANDLEWICK_SHADERS_DIR ${PROJECT_SOURCE_DIR}/shaders)
+set(
+  CANDLEWICK_SHADER_INSTALL_DIR
+  ${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}/shaders
+)
+message(STATUS "Shader install dir: ${CANDLEWICK_SHADER_INSTALL_DIR}")
 
 add_subdirectory(external)
 add_subdirectory(src)
@@ -66,3 +73,13 @@ add_subdirectory(tests)
 if(BUILD_PYTHON_BINDINGS)
   add_subdirectory(python)
 endif()
+
+# install shaders
+install(
+  DIRECTORY "${CANDLEWICK_SHADERS_DIR}/compiled"
+  DESTINATION ${CANDLEWICK_SHADER_INSTALL_DIR}
+  FILES_MATCHING
+  PATTERN "*.json"
+  PATTERN "*.spv"
+  PATTERN "*.msl"
+)
