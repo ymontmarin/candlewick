@@ -57,15 +57,27 @@ entt::entity RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
                                               PipelineType pipe_type) {
   Mesh mesh = createMesh(_device, data);
   uploadMeshToDevice(_device, mesh, data);
-  auto entity = _registry.create();
+  entt::entity entity = _registry.create();
   _registry.emplace<TransformComponent>(entity, placement);
   if (pipe_type != PIPELINE_POINTCLOUD)
     _registry.emplace<Opaque>(entity);
   _registry.emplace<VisibilityComponent>(entity, true);
+  // add tag type
+  _registry.emplace<EnvironmentTag>(entity);
   _registry.emplace<MeshMaterialComponent>(
       entity, std::move(mesh), std::vector{std::move(data.material)},
       pipe_type);
   return entity;
+}
+
+void RobotScene::clearEnvironment() {
+  auto view = _registry.view<EnvironmentTag>();
+  _registry.destroy(view.begin(), view.end());
+}
+
+void RobotScene::clearRobotGeometries() {
+  auto view = _registry.view<PinGeomObjComponent>();
+  _registry.destroy(view.begin(), view.end());
 }
 
 RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
@@ -109,7 +121,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     const auto layout = mesh.layout;
 
     // add entity for this geometry
-    auto entity = registry.create();
+    entt::entity entity = registry.create();
     registry.emplace<PinGeomObjComponent>(entity, geom_id);
     registry.emplace<TransformComponent>(entity);
     if (pipeline_type != PIPELINE_POINTCLOUD)

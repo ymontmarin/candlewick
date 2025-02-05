@@ -24,6 +24,9 @@ namespace multibody {
     operator bool() const { return status; }
   };
 
+  // Tag environment entities
+  struct EnvironmentTag {};
+
   struct TransformComponent {
     Mat4f transform;
   };
@@ -111,6 +114,9 @@ namespace multibody {
     entt::entity
     addEnvironmentObject(MeshData &&data, Mat4f placement,
                          PipelineType pipe_type = PIPELINE_TRIANGLEMESH);
+
+    void clearEnvironment();
+    void clearRobotGeometries();
 
     [[nodiscard]] SDL_GPUGraphicsPipeline *createPipeline(
         const MeshLayout &layout, SDL_GPUTextureFormat render_target_format,
