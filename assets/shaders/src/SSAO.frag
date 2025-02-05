@@ -27,8 +27,9 @@ vec3 getViewPos(float depth, vec2 uv) {
     return viewPos.xyz / viewPos.w;
 }
 
-vec3 getRandom(vec2 uv) {
-    vec2 noiseScale = vec2(1680, 1050) / 4.0;
+vec3 sampleNoiseTexture(vec2 uv) {
+    vec2 viewport = textureSize(depthTex, 0).xy;
+    vec2 noiseScale = viewport / 4.0;
     uv = uv * noiseScale;
     return vec3(texture(ssaoNoise, uv).rg, 0);
 }
@@ -40,7 +41,7 @@ float calculatePixelAO(vec2 uv) {
     viewNormal.xy = texture(normalMap, uv).xy;
     viewNormal.z = sqrt(1 - dot(viewNormal.xy, viewNormal.xy));
 
-    vec3 randVec = getRandom(uv);
+    vec3 randVec = sampleNoiseTexture(uv);
 
     // tbn matrix for rotating samples
     vec3 tangent = normalize(randVec - viewNormal * dot(randVec, viewNormal));
