@@ -6,7 +6,10 @@ using namespace candlewick;
 
 void exposeVisualizer();
 void exposeRenderer() {
-  bp::class_<Renderer, boost::noncopyable>("Renderer", bp::no_init);
+  bp::class_<Device, boost::noncopyable>("Device", bp::no_init)
+      .def("driverName", &Device::driverName, ("self"_a));
+  bp::class_<Renderer, boost::noncopyable>("Renderer", bp::no_init)
+      .def_readonly("device", &Renderer::device);
 }
 
 BOOST_PYTHON_MODULE(pycandlewick) {

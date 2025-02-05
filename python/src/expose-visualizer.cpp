@@ -18,5 +18,6 @@ void exposeVisualizer() {
       .def(bp::init<Visualizer::Config, const pin::Model &,
                     const pin::GeometryModel &>(
           ("self"_a, "config", "model", "geomModel")))
-      .def(pinocchio_visualizers::VisualizerVisitor<Visualizer>{});
+      .def(pinocchio_visualizers::VisualizerVisitor<Visualizer>{})
+      .def_readonly("renderer", &Visualizer::renderer);
 }
