@@ -42,6 +42,10 @@ struct Device {
   void destroy() noexcept;
   ~Device() noexcept { destroy(); }
 
+  bool operator==(const Device &other) const {
+    return _device && (_device == other._device);
+  }
+
 private:
   SDL_GPUDevice *_device;
   const char *driver;
