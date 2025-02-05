@@ -82,19 +82,23 @@ public:
 
   void setCameraPose(const Eigen::Ref<const Matrix4s> &pose) override;
 
+  void enableCameraControl(bool v) override { m_cameraControl = v; }
+
   void eventLoop();
 
-  bool shouldExit() const noexcept { return _shouldExit; }
+  bool shouldExit() const noexcept { return m_shouldExit; }
 
   /// \brief Clear objects (for now, only environment entities).
   /// \todo Allow cleaning up the robot.
   void clearEnvironment() {
-    registry.destroy(_environmentEntities.begin(), _environmentEntities.end());
+    registry.destroy(m_environmentEntities.begin(),
+                     m_environmentEntities.end());
   }
 
 private:
-  bool _shouldExit = false;
-  std::vector<entt::entity> _environmentEntities;
+  bool m_cameraControl = true;
+  bool m_shouldExit = false;
+  std::vector<entt::entity> m_environmentEntities;
 };
 
 inline Renderer Visualizer::createRenderer(const Config &config) {

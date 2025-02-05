@@ -40,7 +40,7 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
   Uint32 prepeat = 25;
   auto plane_obj = robotScene.addEnvironmentObject(
       loadPlaneTiled(0.5f, prepeat, prepeat), Mat4f::Identity());
-  _environmentEntities.push_back(plane_obj);
+  m_environmentEntities.push_back(plane_obj);
 }
 
 void Visualizer::loadViewerModel() {}

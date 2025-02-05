@@ -80,7 +80,7 @@ void Visualizer::eventLoop() {
 
     if (event.type == SDL_EVENT_QUIT) {
       SDL_Log("Exiting application...");
-      _shouldExit = true;
+      m_shouldExit = true;
     }
 
     if (io.WantCaptureMouse | io.WantCaptureKeyboard)
@@ -89,7 +89,8 @@ void Visualizer::eventLoop() {
     switch (event.type) {
     case SDL_EVENT_MOUSE_MOTION: {
       // camera mouse control
-      mouse_motion_handler(cam_control, cameraParams, event.motion);
+      if (m_cameraControl)
+        mouse_motion_handler(cam_control, cameraParams, event.motion);
     }
     }
   }
