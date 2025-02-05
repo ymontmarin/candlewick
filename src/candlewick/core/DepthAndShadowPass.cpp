@@ -172,8 +172,8 @@ void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
   const Float3 eye = frustumCenter - radius * dirLight.direction.normalized();
   AABB bounds{Float3::Constant(-radius), Float3::Constant(+radius)};
   lightView = lookAt(eye, frustumCenter);
-  lightProj = orthographicMatrix({bounds.width(), bounds.height()}, 0.f,
-                                 bounds.depth());
+  lightProj = shadowOrthographicMatrix({bounds.width(), bounds.height()},
+                                       bounds.min.z(), bounds.max.z());
 
   Mat4f viewProj = passInfo.cam.viewProj();
   renderDepthOnlyPass(renderer, passInfo, viewProj, castables);

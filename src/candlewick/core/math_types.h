@@ -15,9 +15,7 @@ using Vec4u8 = Eigen::Matrix<Uint8, 4, 1>;
 using FrustumCornersType = std::array<Float3, 8ul>;
 
 using GpuVec2 = Eigen::Matrix<float, 2, 1, Eigen::DontAlign>;
-struct GpuVec3 : public Eigen::Matrix<float, 3, 1, Eigen::DontAlign> {
-  using Matrix::Matrix;
-};
+using GpuVec3 = Eigen::Matrix<float, 3, 1, Eigen::DontAlign>;
 using GpuVec4 = Eigen::Matrix<float, 4, 1, Eigen::DontAlign>;
 // adapter type instead of typedef, to fit GLSL layout
 struct GpuMat3 {

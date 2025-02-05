@@ -1,0 +1,145 @@
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+// Returns the determinant of a 2x2 matrix.
+static inline __attribute__((always_inline))
+float spvDet2x2(float a1, float a2, float b1, float b2)
+{
+    return a1 * b2 - b1 * a2;
+}
+
+// Returns the determinant of a 3x3 matrix.
+static inline __attribute__((always_inline))
+float spvDet3x3(float a1, float a2, float a3, float b1, float b2, float b3, float c1, float c2, float c3)
+{
+    return a1 * spvDet2x2(b2, b3, c2, c3) - b1 * spvDet2x2(a2, a3, c2, c3) + c1 * spvDet2x2(a2, a3, b2, b3);
+}
+
+// Returns the inverse of a matrix, by using the algorithm of calculating the classical
+// adjoint and dividing by the determinant. The contents of the matrix are changed.
+static inline __attribute__((always_inline))
+float4x4 spvInverse4x4(float4x4 m)
+{
+    float4x4 adj;   // The adjoint matrix (inverse after dividing by determinant)
+
+    // Create the transpose of the cofactors, as the classical adjoint of the matrix.
+    adj[0][0] =  spvDet3x3(m[1][1], m[1][2], m[1][3], m[2][1], m[2][2], m[2][3], m[3][1], m[3][2], m[3][3]);
+    adj[0][1] = -spvDet3x3(m[0][1], m[0][2], m[0][3], m[2][1], m[2][2], m[2][3], m[3][1], m[3][2], m[3][3]);
+    adj[0][2] =  spvDet3x3(m[0][1], m[0][2], m[0][3], m[1][1], m[1][2], m[1][3], m[3][1], m[3][2], m[3][3]);
+    adj[0][3] = -spvDet3x3(m[0][1], m[0][2], m[0][3], m[1][1], m[1][2], m[1][3], m[2][1], m[2][2], m[2][3]);
+
+    adj[1][0] = -spvDet3x3(m[1][0], m[1][2], m[1][3], m[2][0], m[2][2], m[2][3], m[3][0], m[3][2], m[3][3]);
+    adj[1][1] =  spvDet3x3(m[0][0], m[0][2], m[0][3], m[2][0], m[2][2], m[2][3], m[3][0], m[3][2], m[3][3]);
+    adj[1][2] = -spvDet3x3(m[0][0], m[0][2], m[0][3], m[1][0], m[1][2], m[1][3], m[3][0], m[3][2], m[3][3]);
+    adj[1][3] =  spvDet3x3(m[0][0], m[0][2], m[0][3], m[1][0], m[1][2], m[1][3], m[2][0], m[2][2], m[2][3]);
+
+    adj[2][0] =  spvDet3x3(m[1][0], m[1][1], m[1][3], m[2][0], m[2][1], m[2][3], m[3][0], m[3][1], m[3][3]);
+    adj[2][1] = -spvDet3x3(m[0][0], m[0][1], m[0][3], m[2][0], m[2][1], m[2][3], m[3][0], m[3][1], m[3][3]);
+    adj[2][2] =  spvDet3x3(m[0][0], m[0][1], m[0][3], m[1][0], m[1][1], m[1][3], m[3][0], m[3][1], m[3][3]);
+    adj[2][3] = -spvDet3x3(m[0][0], m[0][1], m[0][3], m[1][0], m[1][1], m[1][3], m[2][0], m[2][1], m[2][3]);
+
+    adj[3][0] = -spvDet3x3(m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2], m[3][0], m[3][1], m[3][2]);
+    adj[3][1] =  spvDet3x3(m[0][0], m[0][1], m[0][2], m[2][0], m[2][1], m[2][2], m[3][0], m[3][1], m[3][2]);
+    adj[3][2] = -spvDet3x3(m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[3][0], m[3][1], m[3][2]);
+    adj[3][3] =  spvDet3x3(m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2]);
+
+    // Calculate the determinant as a combination of the cofactors of the first row.
+    float det = (adj[0][0] * m[0][0]) + (adj[0][1] * m[1][0]) + (adj[0][2] * m[2][0]) + (adj[0][3] * m[3][0]);
+
+    // Divide the classical adjoint matrix by the determinant.
+    // If determinant is zero, matrix is not invertable, so leave it unchanged.
+    return (det != 0.0f) ? (adj * (1.0f / det)) : m;
+}
+
+struct Camera
+{
+    float4x4 projection;
+};
+
+struct SSAOParams
+{
+    float4 samples[64];
+};
+
+struct main0_out
+{
+    float aoValue [[color(0)]];
+};
+
+struct main0_in
+{
+    float2 inUV [[user(locn0)]];
+};
+
+static inline __attribute__((always_inline))
+float3 getViewPos(thread const float& depth, thread const float2& uv, constant Camera& camera)
+{
+    float4 clipPos = float4((uv * 2.0) - float2(1.0), depth, 1.0);
+    float4 viewPos = spvInverse4x4(camera.projection) * clipPos;
+    return viewPos.xyz / float3(viewPos.w);
+}
+
+static inline __attribute__((always_inline))
+float3 sampleNoiseTexture(thread float2& uv, texture2d<float> depthTex, sampler depthTexSmplr, texture2d<float> ssaoNoise, sampler ssaoNoiseSmplr)
+{
+    float2 viewport = float2(int2(depthTex.get_width(), depthTex.get_height()));
+    float2 noiseScale = viewport / float2(4.0);
+    uv *= noiseScale;
+    return float3(ssaoNoise.sample(ssaoNoiseSmplr, uv).xy, 0.0);
+}
+
+static inline __attribute__((always_inline))
+float calculatePixelAO(thread const float2& uv, constant Camera& camera, texture2d<float> depthTex, sampler depthTexSmplr, texture2d<float> ssaoNoise, sampler ssaoNoiseSmplr, texture2d<float> normalMap, sampler normalMapSmplr, constant SSAOParams& kernel0)
+{
+    float depth = depthTex.sample(depthTexSmplr, uv).x;
+    float param = depth;
+    float2 param_1 = uv;
+    float3 viewPos = getViewPos(param, param_1, camera);
+    float2 _107 = normalMap.sample(normalMapSmplr, uv).xy;
+    float3 viewNormal;
+    viewNormal.x = _107.x;
+    viewNormal.y = _107.y;
+    viewNormal.z = sqrt(1.0 - dot(viewNormal.xy, viewNormal.xy));
+    float2 param_2 = uv;
+    float3 _125 = sampleNoiseTexture(param_2, depthTex, depthTexSmplr, ssaoNoise, ssaoNoiseSmplr);
+    float3 randVec = _125;
+    float3 tangent = fast::normalize(randVec - (viewNormal * dot(randVec, viewNormal)));
+    float3 bitangent = cross(tangent, viewNormal);
+    float3x3 TBN = float3x3(float3(tangent), float3(bitangent), float3(viewNormal));
+    float occlusion = 0.0;
+    for (int i = 0; i < 64; i++)
+    {
+        float3 samplePos = TBN * kernel0.samples[i].xyz;
+        samplePos = viewPos + (samplePos * 1.0);
+        float4 offset = camera.projection * float4(samplePos, 1.0);
+        float _197 = offset.w;
+        float4 _198 = offset;
+        float2 _201 = _198.xy / float2(_197);
+        offset.x = _201.x;
+        offset.y = _201.y;
+        float4 _206 = offset;
+        float2 _211 = (_206.xy * 0.5) + float2(0.5);
+        offset.x = _211.x;
+        offset.y = _211.y;
+        float sampleDepth = depthTex.sample(depthTexSmplr, offset.xy).x;
+        float param_3 = sampleDepth;
+        float2 param_4 = offset.xy;
+        float3 sampleViewPos = getViewPos(param_3, param_4, camera);
+        float rangeCheck = smoothstep(0.0, 1.0, 1.0 / abs((viewPos.z - sampleViewPos.z) - 0.00999999977648258209228515625));
+        occlusion += (float(sampleViewPos.z >= (samplePos.z + 0.00999999977648258209228515625)) * rangeCheck);
+    }
+    occlusion = 1.0 - ((occlusion / 64.0) * 1.5);
+    return occlusion;
+}
+
+fragment main0_out main0(main0_in in [[stage_in]], constant SSAOParams& kernel0 [[buffer(0)]], constant Camera& camera [[buffer(1)]], texture2d<float> depthTex [[texture(0)]], texture2d<float> normalMap [[texture(1)]], texture2d<float> ssaoNoise [[texture(2)]], sampler depthTexSmplr [[sampler(0)]], sampler normalMapSmplr [[sampler(1)]], sampler ssaoNoiseSmplr [[sampler(2)]])
+{
+    main0_out out = {};
+    float2 param = in.inUV;
+    out.aoValue = calculatePixelAO(param, camera, depthTex, depthTexSmplr, ssaoNoise, ssaoNoiseSmplr, normalMap, normalMapSmplr, kernel0);
+    return out;
+}

@@ -1,0 +1,38 @@
+#pragma once
+
+#include "../core/Core.h"
+#include "../core/Texture.h"
+#include <SDL3/SDL_gpu.h>
+
+namespace candlewick {
+namespace ssao {
+  struct SsaoPass {
+    SDL_GPUTexture *inDepthMap = nullptr;
+    SDL_GPUTexture *inNormalMap = nullptr;
+    SDL_GPUSampler *texSampler = nullptr;
+    SDL_GPUGraphicsPipeline *pipeline = nullptr;
+    Texture ssaoMap{NoInit};
+
+    struct SsaoNoise {
+      Texture tex{NoInit};
+      SDL_GPUSampler *sampler = nullptr;
+      // The texture will be N x N where N is this value.
+      Uint32 pixel_window_size;
+    } ssaoNoise;
+
+    SDL_GPUGraphicsPipeline *blurPipeline = nullptr;
+    // first blur pass target
+    Texture blurPass1Tex{NoInit};
+
+    SsaoPass(NoInitT) {}
+    SsaoPass(const Renderer &renderer, const MeshLayout &layout,
+             SDL_GPUTexture *normalMap);
+
+    void render(Renderer &renderer, const Camera &camera);
+
+    // cleanup function
+    void release();
+  };
+
+} // namespace ssao
+} // namespace candlewick

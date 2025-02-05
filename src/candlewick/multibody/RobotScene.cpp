@@ -93,6 +93,8 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     }
   }
 
+  // initialize render target for GBuffer
+  this->initGBuffer(renderer);
   const bool enable_shadows = _config.enable_shadows;
 
   for (pin::GeomIndex geom_id = 0; geom_id < geom_model.ngeoms; geom_id++) {
@@ -116,22 +118,45 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     registry.emplace<MeshMaterialComponent>(
         entity, std::move(mesh), extractMaterials(meshDatas), pipeline_type);
 
-    // configure shadow pass
-    if (enable_shadows && pipeline_type == PIPELINE_TRIANGLEMESH &&
-        !shadowPass.pipeline)
-      shadowPass =
-          ShadowPassInfo::create(renderer, layout, config.shadow_config);
+    if (pipeline_type == PIPELINE_TRIANGLEMESH) {
+      if (!ssaoPass.pipeline) {
+        ssaoPass = ssao::SsaoPass(renderer, layout, gBuffer.normalMap);
+      }
+      // configure shadow pass
+      if (enable_shadows && !shadowPass.pipeline) {
+        shadowPass =
+            ShadowPassInfo::create(renderer, layout, config.shadow_config);
+      }
+    }
 
     if (!renderPipelines[pipeline_type]) {
       SDL_Log("%s(): building pipeline for type %s", __FUNCTION__,
               magic_enum::enum_name(pipeline_type).data());
       SDL_GPUGraphicsPipeline *pipeline =
           createPipeline(layout, renderer.getSwapchainTextureFormat(),
-                         renderer.depth_format, pipeline_type);
+                         renderer.depthFormat(), pipeline_type);
       assert(pipeline);
       renderPipelines[pipeline_type] = pipeline;
     }
   }
+}
+
+void RobotScene::initGBuffer(const Renderer &renderer) {
+  int width, height;
+  SDL_GetWindowSize(renderer.window, &width, &height);
+  gBuffer.normalMap = Texture{renderer.device,
+                              SDL_GPUTextureCreateInfo{
+                                  .type = SDL_GPU_TEXTURETYPE_2D,
+                                  .format = SDL_GPU_TEXTUREFORMAT_R16G16_FLOAT,
+                                  .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
+                                           SDL_GPU_TEXTUREUSAGE_SAMPLER,
+                                  .width = Uint32(width),
+                                  .height = Uint32(height),
+                                  .layer_count_or_depth = 1,
+                                  .num_levels = 1,
+                                  .sample_count = SDL_GPU_SAMPLECOUNT_1,
+                              },
+                              "GBuffer normal"};
 }
 
 void updateRobotTransforms(entt::registry &registry,
@@ -154,7 +179,6 @@ void RobotScene::collectOpaqueCastables() {
                      const VisibilityComponent, const MeshMaterialComponent>();
 
   _castables.clear();
-  _castables.reserve(all_view.size_hint());
 
   // collect castable objects
   for (auto [ent, tr, vis, meshMaterial] : all_view.each()) {
@@ -168,6 +192,8 @@ void RobotScene::collectOpaqueCastables() {
 }
 
 void RobotScene::render(Renderer &renderer, const Camera &camera) {
+  ssaoPass.render(renderer, camera);
+
   // render geometry which participated in the prepass
   renderPBRTriangleGeometry(renderer, camera);
 
@@ -181,14 +207,16 @@ void RobotScene::render(Renderer &renderer, const Camera &camera) {
 /// depth targets.
 static SDL_GPURenderPass *getRenderPass(Renderer &renderer,
                                         SDL_GPULoadOp color_load_op,
-                                        SDL_GPULoadOp depth_load_op) {
-  SDL_GPUColorTargetInfo color_target;
-  SDL_zero(color_target);
-  color_target.texture = renderer.swapchain;
-  color_target.clear_color = SDL_FColor{0., 0., 0., 0.};
-  color_target.load_op = color_load_op;
-  color_target.store_op = SDL_GPU_STOREOP_STORE;
-  color_target.cycle = false;
+                                        SDL_GPULoadOp depth_load_op,
+                                        bool has_normals_target,
+                                        const RobotScene::GBuffer &gbuffer) {
+  SDL_GPUColorTargetInfo main_color_target;
+  SDL_zero(main_color_target);
+  main_color_target.texture = renderer.swapchain;
+  main_color_target.clear_color = SDL_FColor{0., 0., 0., 0.};
+  main_color_target.load_op = color_load_op;
+  main_color_target.store_op = SDL_GPU_STOREOP_STORE;
+  main_color_target.cycle = false;
 
   SDL_GPUDepthStencilTargetInfo depth_target;
   SDL_zero(depth_target);
@@ -198,13 +226,26 @@ static SDL_GPURenderPass *getRenderPass(Renderer &renderer,
   depth_target.store_op = SDL_GPU_STOREOP_STORE;
   depth_target.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
   depth_target.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
-  return SDL_BeginGPURenderPass(renderer.command_buffer, &color_target, 1,
-                                &depth_target);
+  if (!has_normals_target) {
+    return SDL_BeginGPURenderPass(renderer.command_buffer, &main_color_target,
+                                  1, &depth_target);
+  } else {
+    SDL_GPUColorTargetInfo color_targets[2];
+    SDL_zero(color_targets);
+    color_targets[0] = main_color_target;
+    color_targets[1].texture = gbuffer.normalMap;
+    color_targets[1].clear_color = SDL_FColor{};
+    color_targets[1].load_op = SDL_GPU_LOADOP_CLEAR;
+    color_targets[1].store_op = SDL_GPU_STOREOP_STORE;
+    color_targets[1].cycle = false;
+    return SDL_BeginGPURenderPass(renderer.command_buffer, color_targets,
+                                  SDL_arraysize(color_targets), &depth_target);
+  }
 }
 
 enum FragmentSamplerSlots {
   SHADOW_MAP_SLOT,
-  SCREEN_SPACE_SHADOW_SLOT,
+  SSAO_SLOT,
 };
 
 void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
@@ -232,7 +273,8 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
   SDL_GPULoadOp depth_load_op =
       _config.triangle_has_prepass ? SDL_GPU_LOADOP_LOAD : SDL_GPU_LOADOP_CLEAR;
   SDL_GPURenderPass *render_pass =
-      getRenderPass(renderer, SDL_GPU_LOADOP_CLEAR, depth_load_op);
+      getRenderPass(renderer, SDL_GPU_LOADOP_CLEAR, depth_load_op,
+                    _config.enable_normal_target, gBuffer);
 
   if (enable_shadows) {
     renderer.bindFragmentSampler(render_pass, SHADOW_MAP_SLOT,
@@ -241,8 +283,15 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
                                      .sampler = shadowPass.sampler,
                                  });
   }
+  renderer.bindFragmentSampler(render_pass, SSAO_SLOT,
+                               {
+                                   .texture = ssaoPass.ssaoMap,
+                                   .sampler = ssaoPass.texSampler,
+                               });
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                                sizeof(lightUbo));
+  int _useSsao = useSsao;
+  renderer.pushFragmentUniform(2, &_useSsao, sizeof(_useSsao));
 
   auto *pipeline = renderPipelines[PIPELINE_TRIANGLEMESH];
   assert(pipeline);
@@ -281,8 +330,8 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
 }
 
 void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
-  SDL_GPURenderPass *render_pass =
-      getRenderPass(renderer, SDL_GPU_LOADOP_LOAD, SDL_GPU_LOADOP_LOAD);
+  SDL_GPURenderPass *render_pass = getRenderPass(
+      renderer, SDL_GPU_LOADOP_LOAD, SDL_GPU_LOADOP_LOAD, false, gBuffer);
 
   const Mat4f viewProj = camera.viewProj();
 
@@ -328,21 +377,26 @@ void RobotScene::release() {
     pipeline = nullptr;
   }
 
+  gBuffer.normalMap.release();
+  ssaoPass.release();
   shadowPass.release();
 }
 
 SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
     const MeshLayout &layout, SDL_GPUTextureFormat render_target_format,
     SDL_GPUTextureFormat depth_stencil_format, PipelineType type) {
+
+  SDL_assert(validateMeshLayout(layout));
+
   const PipelineConfig &pipe_config = _config.pipeline_configs.at(type);
   auto vertexShader =
       Shader::fromMetadata(_device, pipe_config.vertex_shader_path);
   auto fragmentShader =
       Shader::fromMetadata(_device, pipe_config.fragment_shader_path);
 
-  SDL_GPUColorTargetDescription color_target;
-  SDL_zero(color_target);
-  color_target.format = render_target_format;
+  SDL_GPUColorTargetDescription color_targets[2];
+  SDL_zero(color_targets);
+  color_targets[0].format = render_target_format;
   bool had_prepass =
       (type == PIPELINE_TRIANGLEMESH) && _config.triangle_has_prepass;
   SDL_GPUCompareOp depth_compare_op =
@@ -350,7 +404,13 @@ SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
   SDL_Log("Pipeline type %s uses depth compare op %s",
           magic_enum::enum_name(type).data(),
           magic_enum::enum_name(depth_compare_op).data());
-  SDL_assert(validateMeshLayout(layout));
+
+  Uint32 num_color_targets = 1;
+  if (type == PIPELINE_TRIANGLEMESH && _config.enable_normal_target) {
+    num_color_targets = 2;
+    color_targets[1].format = gBuffer.normalMap.format();
+  }
+
   SDL_GPUGraphicsPipelineCreateInfo desc{
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
@@ -363,8 +423,8 @@ SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
           .enable_depth_write = !had_prepass,
       },
       .target_info{
-          .color_target_descriptions = &color_target,
-          .num_color_targets = 1,
+          .color_target_descriptions = color_targets,
+          .num_color_targets = num_color_targets,
           .depth_stencil_format = depth_stencil_format,
           .has_depth_stencil_target = true,
       },

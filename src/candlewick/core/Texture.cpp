@@ -58,4 +58,9 @@ SDL_GPUBlitRegion Texture::blitRegion(Uint32 x, Uint32 y,
   };
 }
 
+Uint32 Texture::textureSize() const {
+  return SDL_CalculateGPUTextureFormatSize(format(), width(), height(),
+                                           depth());
+}
+
 } // namespace candlewick

@@ -167,6 +167,7 @@ int main(int argc, char **argv) {
   bool performRecording{false};
   RobotScene::Config robot_scene_config;
   robot_scene_config.triangle_has_prepass = true;
+  robot_scene_config.enable_normal_target = true;
 
   argv = app.ensure_utf8(argv);
   app.add_flag("-r,--record", performRecording, "Record output");
@@ -281,6 +282,8 @@ int main(int argc, char **argv) {
     ImGui::Checkbox("Render grid", &grid.enable);
     ImGui::Checkbox("Render triad", &triad.enable);
     ImGui::Checkbox("Render frustum", &showFrustum);
+
+    ImGui::Checkbox("Ambient occlusion (SSAO)", &robot_scene.useSsao);
 
     ImGui::RadioButton("Full render mode", (int *)&showDebugViz, FULL_RENDER);
     ImGui::SameLine();

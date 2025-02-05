@@ -9,10 +9,11 @@ namespace candlewick {
 // │/ │
 // 2——0
 const DefaultVertex vertexData[]{
-    {{+1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, Float4::Zero()},
-    {{+1.0f, +1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, Float4::Zero()},
-    {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, Float4::Zero()},
-    {{-1.0f, +1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, Float4::Zero()}};
+    {{+1.f, -1.f, 0.f}, {0.f, 0.f, 1.f}, Float4::Zero(), {+1.f, 0.f, 0.f}},
+    {{+1.f, +1.f, 0.f}, {0.f, 0.f, 1.f}, Float4::Zero(), {0.f, +1.f, 0.f}},
+    {{-1.f, -1.f, 0.f}, {0.f, 0.f, 1.f}, Float4::Zero(), {-1.f, 0.f, 0.f}},
+    {{-1.f, +1.f, 0.f}, {0.f, 0.f, 1.f}, Float4::Zero(), {0.f, +1.f, 0.f}},
+};
 
 constexpr Uint32 indexData[] = {0, 1, 2, //
                                 2, 1, 3};
