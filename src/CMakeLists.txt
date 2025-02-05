@@ -40,11 +40,13 @@ add_library(
   candlewick/primitives/Heightfield.cpp
   candlewick/primitives/Plane.cpp
   candlewick/third-party/sbti_lib.cpp
+  # imgui sources
+  ${IMGUI_SRC}
 )
 
 target_link_libraries(
   candlewick_core
-  PUBLIC SDL3::SDL3-shared assimp::assimp Eigen3::Eigen EnTT::EnTT imgui
+  PUBLIC SDL3::SDL3-shared assimp::assimp Eigen3::Eigen EnTT::EnTT imgui-headers
   PRIVATE nlohmann_json::nlohmann_json
 )
 set(CANDLEWICK_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets)
@@ -65,6 +67,13 @@ if(FFmpeg_FOUND)
   )
   target_sources(candlewick_core PRIVATE candlewick/utils/VideoRecorder.cpp)
 endif()
+
+install(
+  TARGETS candlewick_core
+  EXPORT ${TARGETS_EXPORT_NAME}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_core)
@@ -91,4 +100,19 @@ if(BUILD_PINOCCHIO_VISUALIZER)
       pinocchio-visualizers::pinocchio-visualizers
   )
   target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_multibody)
+
+  install(
+    TARGETS candlewick_multibody
+    EXPORT ${TARGETS_EXPORT_NAME}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
 endif()
+
+# install headers
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING
+  PATTERN "*.h"
+)
