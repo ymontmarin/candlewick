@@ -14,6 +14,13 @@ config.width = 1280
 config.height = 720
 viz = Visualizer(config, model, visual_model)
 
+print(
+    "Visualizer has renderer:",
+    viz.renderer,
+    "driver name:",
+    viz.renderer.device.driverName(),
+)
+
 q0 = pin.neutral(model)
 q1 = pin.randomConfiguration(model)
 
