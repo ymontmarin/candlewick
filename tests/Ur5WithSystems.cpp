@@ -8,12 +8,12 @@
 #include "candlewick/core/DebugScene.h"
 #include "candlewick/core/DepthAndShadowPass.h"
 #include "candlewick/core/LightUniforms.h"
+#include "candlewick/core/CameraControls.h"
 
 #include "candlewick/multibody/RobotScene.h"
 #include "candlewick/multibody/RobotDebug.h"
 #include "candlewick/primitives/Plane.h"
 #include "candlewick/utils/WriteTextureToImage.h"
-#include "candlewick/core/Camera.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -120,16 +120,16 @@ void eventLoop(const Renderer &renderer) {
       const float step_size = 0.06f;
       switch (event.key.key) {
       case SDLK_LEFT:
-        cameraLocalTranslateX(camera, +step_size);
+        camera_util::localTranslateX(camera, +step_size);
         break;
       case SDLK_RIGHT:
-        cameraLocalTranslateX(camera, -step_size);
+        camera_util::localTranslateX(camera, -step_size);
         break;
       case SDLK_UP:
-        cameraWorldTranslateZ(camera, -step_size);
+        camera_util::worldTranslateZ(camera, -step_size);
         break;
       case SDLK_DOWN:
-        cameraWorldTranslateZ(camera, +step_size);
+        camera_util::worldTranslateZ(camera, +step_size);
         break;
       }
       break;
@@ -147,7 +147,7 @@ void eventLoop(const Renderer &renderer) {
       }
       if (mouseButton & SDL_BUTTON_RMASK) {
         float camXLocRotSpeed = 0.01f * pixelDensity;
-        cameraLocalRotateX(camera, camXLocRotSpeed * event.motion.yrel);
+        camera_util::localRotateX(camera, camXLocRotSpeed * event.motion.yrel);
       }
       break;
     }

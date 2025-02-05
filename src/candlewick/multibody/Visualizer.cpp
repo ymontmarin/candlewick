@@ -1,4 +1,5 @@
 #include "Visualizer.h"
+#include "../core/CameraControls.h"
 #include "../core/DepthAndShadowPass.h"
 #include "../primitives/Plane.h"
 
@@ -70,11 +71,11 @@ void Visualizer::displayImpl() {
 
 void Visualizer::setCameraTarget(const Eigen::Ref<const Vector3s> &target) {
   Float3 eye = this->camera.position();
-  camera.view = ::candlewick::lookAt(eye, target.cast<float>());
+  camera.view = lookAt(eye, target.cast<float>());
 }
 
 void Visualizer::setCameraPosition(const Eigen::Ref<const Vector3s> &position) {
-  ::candlewick::cameraSetWorldPosition(camera, position.cast<float>());
+  camera_util::setWorldPosition(camera, position.cast<float>());
 }
 
 void Visualizer::setCameraPose(const Eigen::Ref<const Matrix4s> &pose) {

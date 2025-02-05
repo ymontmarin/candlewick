@@ -21,6 +21,21 @@ namespace {
   using pinocchio_visualizers::VectorXs;
 } // namespace
 
+/// Camera control parameters: senstivities, key bindings, etc...
+/// \todo Move to some kind of "runtime" library, or back to core?
+struct CameraControlParams {
+  float rotSensitivity = 5e-3f;
+  float panSensitivity = 1e-2f;
+  float zoomSensitivity = 0.05f;
+  float localRotSensitivity = 0.01f;
+  bool yInvert = true;
+
+  // modifier key assignments
+  struct ModifierConfig {
+    SDL_Keymod zoomModifier = SDL_KMOD_LCTRL;
+  } modifiers;
+};
+
 /// \brief A synchronous renderer. The display() function will perform the draw
 /// calls.
 class Visualizer final : public BaseVisualizer {
@@ -32,6 +47,7 @@ public:
   RobotScene robotScene;
   DebugScene debugScene;
   Camera camera;
+  CameraControlParams cameraParams;
 
   struct Config {
     Uint32 width;

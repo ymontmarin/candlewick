@@ -4,7 +4,7 @@
 #include "candlewick/core/Shader.h"
 #include "candlewick/utils/MeshData.h"
 #include "candlewick/utils/LoadMesh.h"
-#include "candlewick/core/Camera.h"
+#include "candlewick/core/CameraControls.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -146,10 +146,10 @@ int main() {
         const float step_size = 0.06f;
         switch (event.key.key) {
         case SDLK_UP:
-          cameraWorldTranslateZ(camera, +step_size);
+          camera_util::worldTranslateZ(camera, +step_size);
           break;
         case SDLK_DOWN:
-          cameraWorldTranslateZ(camera, -step_size);
+          camera_util::worldTranslateZ(camera, -step_size);
           break;
         }
         break;
@@ -167,7 +167,8 @@ int main() {
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01f * pixelDensity;
-          cameraLocalRotateX(camera, camXLocRotSpeed * event.motion.yrel);
+          camera_util::localRotateX(camera,
+                                    camXLocRotSpeed * event.motion.yrel);
         }
         break;
       }
