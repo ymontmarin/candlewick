@@ -38,9 +38,8 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
   robotScene.worldSpaceBounds.grow({+1.f, +1.f, 1.f});
 
   Uint32 prepeat = 25;
-  auto plane_obj = robotScene.addEnvironmentObject(
-      loadPlaneTiled(0.5f, prepeat, prepeat), Mat4f::Identity());
-  m_environmentEntities.push_back(plane_obj);
+  robotScene.addEnvironmentObject(loadPlaneTiled(0.5f, prepeat, prepeat),
+                                  Mat4f::Identity());
 }
 
 void Visualizer::loadViewerModel() {}

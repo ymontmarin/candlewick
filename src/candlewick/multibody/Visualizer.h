@@ -88,17 +88,16 @@ public:
 
   bool shouldExit() const noexcept { return m_shouldExit; }
 
-  /// \brief Clear objects (for now, only environment entities).
-  /// \todo Allow cleaning up the robot.
-  void clearEnvironment() {
-    registry.destroy(m_environmentEntities.begin(),
-                     m_environmentEntities.end());
+  /// \brief Clear objects
+  void clean() override {
+    robotScene.clearEnvironment();
+    robotScene.clearRobotGeometries();
+    debugScene.registry().clear();
   }
 
 private:
   bool m_cameraControl = true;
   bool m_shouldExit = false;
-  std::vector<entt::entity> m_environmentEntities;
 };
 
 inline Renderer Visualizer::createRenderer(const Config &config) {
