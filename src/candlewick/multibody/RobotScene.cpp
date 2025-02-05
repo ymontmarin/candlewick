@@ -179,7 +179,6 @@ void RobotScene::collectOpaqueCastables() {
                      const VisibilityComponent, const MeshMaterialComponent>();
 
   _castables.clear();
-  _castables.reserve(all_view.size_hint());
 
   // collect castable objects
   for (auto [ent, tr, vis, meshMaterial] : all_view.each()) {
