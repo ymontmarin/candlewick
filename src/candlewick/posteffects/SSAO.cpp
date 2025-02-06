@@ -190,21 +190,13 @@ namespace ssao {
     SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
         renderer.command_buffer, &color_info, 1, nullptr);
 
-    rend::bindFragmentSampler(render_pass, 0,
-                              {
-                                  .texture = inDepthMap,
-                                  .sampler = texSampler,
-                              });
-    rend::bindFragmentSampler(render_pass, 1,
-                              {
-                                  .texture = inNormalMap,
-                                  .sampler = texSampler,
-                              });
-    rend::bindFragmentSampler(render_pass, 2,
-                              {
-                                  .texture = ssaoNoise.tex,
-                                  .sampler = ssaoNoise.sampler,
-                              });
+    rend::bindFragmentSamplers(
+        render_pass, 0,
+        {
+            {.texture = inDepthMap, .sampler = texSampler},
+            {.texture = inNormalMap, .sampler = texSampler},
+            {.texture = ssaoNoise.tex, .sampler = ssaoNoise.sampler},
+        });
     auto SAMPLES_PAYLOAD_BYTES =
         Uint32(KERNEL_SAMPLES.size() * sizeof(GpuVec4));
     renderer.pushFragmentUniform(0, KERNEL_SAMPLES.data(),

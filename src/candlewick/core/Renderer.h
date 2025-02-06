@@ -138,9 +138,12 @@ namespace rend {
                               Uint32(bindings.size()));
   }
 
-  template <Uint32 N>
-  void bindVertexSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
-                          SDL_GPUTextureSamplerBinding sampler_bindings[N]) {
+  /// \copybrief bindFragmentSamplers()
+  /// This overload exists to enable taking a brace-initialized array.
+  template <std::size_t N>
+  void bindVertexSamplers(
+      SDL_GPURenderPass *pass, Uint32 first_slot,
+      const SDL_GPUTextureSamplerBinding (&sampler_bindings)[N]) {
     SDL_BindGPUVertexSamplers(pass, first_slot, sampler_bindings, N);
   }
 
@@ -159,10 +162,12 @@ namespace rend {
                                 Uint32(bindings.size()));
   }
 
-  /// \sa bindFragmentSamplers()
-  template <Uint32 N>
-  void bindFragmentSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
-                            SDL_GPUTextureSamplerBinding sampler_bindings[N]) {
+  /// \copybrief bindFragmentSamplers()
+  /// This overload exists to enable taking a brace-initialized array.
+  template <std::size_t N>
+  void bindFragmentSamplers(
+      SDL_GPURenderPass *pass, Uint32 first_slot,
+      const SDL_GPUTextureSamplerBinding (&sampler_bindings)[N]) {
     SDL_BindGPUFragmentSamplers(pass, first_slot, sampler_bindings, N);
   }
 
