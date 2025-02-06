@@ -115,36 +115,6 @@ struct Renderer {
     SDL_PushGPUFragmentUniformData(command_buffer, slot_index, data, length);
   }
 
-  /// \brief Bind texture-sampler pair for vertex shader.
-  void bindVertexSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
-                         const SDL_GPUTextureSamplerBinding &binding);
-
-  void
-  bindVertexSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
-                     std::span<const SDL_GPUTextureSamplerBinding> bindings);
-
-  template <Uint32 N>
-  void bindVertexSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
-                          SDL_GPUTextureSamplerBinding sampler_bindings[N]) {
-    SDL_BindGPUVertexSamplers(pass, first_slot, sampler_bindings, N);
-  }
-
-  /// \brief Bind texture-sampler pair for fragment shader.
-  void bindFragmentSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
-                           const SDL_GPUTextureSamplerBinding &binding);
-
-  /// \brief Bind multiple samplers.
-  /// \sa bindFragmentSampler()
-  void
-  bindFragmentSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
-                       std::span<const SDL_GPUTextureSamplerBinding> bindings);
-
-  template <Uint32 N>
-  void bindFragmentSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
-                            SDL_GPUTextureSamplerBinding sampler_bindings[N]) {
-    SDL_BindGPUVertexSamplers(pass, first_slot, sampler_bindings, N);
-  }
-
   void destroy() {
     SDL_ReleaseWindowFromGPUDevice(device, window);
     depth_texture.release();
@@ -152,30 +122,49 @@ struct Renderer {
   }
 };
 
-inline void
-Renderer::bindVertexSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
-                            const SDL_GPUTextureSamplerBinding &binding) {
-  SDL_BindGPUVertexSamplers(pass, first_slot, &binding, 1);
-}
+namespace rend {
+  /// \brief Bind single texture-sampler pair for vertex shader.
+  inline void bindVertexSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
+                                const SDL_GPUTextureSamplerBinding &binding) {
+    SDL_BindGPUVertexSamplers(pass, first_slot, &binding, 1);
+  }
 
-inline void Renderer::bindVertexSamplers(
-    SDL_GPURenderPass *pass, Uint32 first_slot,
-    std::span<const SDL_GPUTextureSamplerBinding> bindings) {
-  SDL_BindGPUVertexSamplers(pass, first_slot, bindings.data(),
-                            Uint32(bindings.size()));
-}
-
-inline void
-Renderer::bindFragmentSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
-                              const SDL_GPUTextureSamplerBinding &binding) {
-  SDL_BindGPUFragmentSamplers(pass, first_slot, &binding, 1);
-}
-
-inline void Renderer::bindFragmentSamplers(
-    SDL_GPURenderPass *pass, Uint32 first_slot,
-    std::span<const SDL_GPUTextureSamplerBinding> bindings) {
-  SDL_BindGPUFragmentSamplers(pass, first_slot, bindings.data(),
+  /// \brief Bind multiple fragment shader samplers.
+  /// \sa bindVertexSampler()
+  inline void
+  bindVertexSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
+                     std::span<const SDL_GPUTextureSamplerBinding> bindings) {
+    SDL_BindGPUVertexSamplers(pass, first_slot, bindings.data(),
                               Uint32(bindings.size()));
-}
+  }
 
+  template <Uint32 N>
+  void bindVertexSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
+                          SDL_GPUTextureSamplerBinding sampler_bindings[N]) {
+    SDL_BindGPUVertexSamplers(pass, first_slot, sampler_bindings, N);
+  }
+
+  /// \brief Bind single texture-sampler pair for fragment shader.
+  inline void bindFragmentSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
+                                  const SDL_GPUTextureSamplerBinding &binding) {
+    SDL_BindGPUFragmentSamplers(pass, first_slot, &binding, 1);
+  }
+
+  /// \brief Bind multiple fragment shader samplers.
+  /// \sa bindFragmentSampler()
+  inline void
+  bindFragmentSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
+                       std::span<const SDL_GPUTextureSamplerBinding> bindings) {
+    SDL_BindGPUFragmentSamplers(pass, first_slot, bindings.data(),
+                                Uint32(bindings.size()));
+  }
+
+  /// \sa bindFragmentSamplers()
+  template <Uint32 N>
+  void bindFragmentSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
+                            SDL_GPUTextureSamplerBinding sampler_bindings[N]) {
+    SDL_BindGPUFragmentSamplers(pass, first_slot, sampler_bindings, N);
+  }
+
+} // namespace rend
 } // namespace candlewick
