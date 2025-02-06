@@ -3,9 +3,19 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlgpu3.h"
 
+#include <stdexcept>
+
 namespace candlewick {
 
+GuiSystem::GuiSystem(const Renderer &renderer, GuiBehavior behav)
+    : callback_(behav) {
+  if (!init(renderer)) {
+    throw std::runtime_error("Failed to initialize ImGui for SDLGPU3.");
+  }
+}
+
 bool GuiSystem::init(const Renderer &renderer) {
+  assert(!_initialized); // can't initialize twice
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
 
@@ -15,14 +25,17 @@ bool GuiSystem::init(const Renderer &renderer) {
   io.IniFilename = nullptr;
 
   ImGui::StyleColorsDark();
-  ImGui_ImplSDL3_InitForSDLGPU(renderer.window);
+  if (!ImGui_ImplSDL3_InitForSDLGPU(renderer.window)) {
+    return false;
+  }
   ImGui_ImplSDLGPU3_InitInfo imguiInfo{
       .Device = renderer.device,
       .ColorTargetFormat =
           SDL_GetGPUSwapchainTextureFormat(renderer.device, renderer.window),
       .MSAASamples = SDL_GPU_SAMPLECOUNT_1,
   };
-  return ImGui_ImplSDLGPU3_Init(&imguiInfo);
+  _initialized = ImGui_ImplSDLGPU3_Init(&imguiInfo);
+  return _initialized;
 }
 
 void GuiSystem::render(Renderer &renderer) {

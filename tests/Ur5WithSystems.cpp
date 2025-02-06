@@ -244,76 +244,76 @@ int main(int argc, char **argv) {
 
   FrustumBoundsDebugSystem frustumBoundsDebug{registry, renderer};
 
-  GuiSystem gui_system{[&](Renderer &r) {
-    static bool demo_window_open = true;
+  GuiSystem gui_system{
+      renderer, [&](Renderer &r) {
+        static bool demo_window_open = true;
 
-    ImGui::Begin("Renderer info & controls", nullptr,
-                 ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Device driver: %s", r.device.driverName());
-    ImGui::SeparatorText("Camera");
-    bool ortho_change, persp_change;
-    ortho_change = ImGui::RadioButton("Orthographic", (int *)&cam_type,
-                                      int(CameraProjection::ORTHOGRAPHIC));
-    ImGui::SameLine();
-    persp_change = ImGui::RadioButton("Perspective", (int *)&cam_type,
-                                      int(CameraProjection::PERSPECTIVE));
-    switch (cam_type) {
-    case CameraProjection::ORTHOGRAPHIC:
-      ortho_change |=
-          ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f, "%.3f",
-                           ImGuiSliderFlags_AlwaysClamp);
-      if (ortho_change)
-        updateOrtho(currentOrthoScale);
-      break;
-    case CameraProjection::PERSPECTIVE:
-      Degf newFov{currentFov};
-      persp_change |= ImGui::DragFloat("fov", newFov, 1.f, 15.f, 90.f, "%.3f",
-                                       ImGuiSliderFlags_AlwaysClamp);
-      persp_change |=
-          ImGui::SliderFloat("Near plane", &nearZ, 0.01f, 0.8f * farZ);
-      persp_change |= ImGui::SliderFloat("Far plane", &farZ, nearZ, 20.f);
-      if (persp_change)
-        updateFov(Radf(newFov));
-      break;
-    }
+        ImGui::Begin("Renderer info & controls", nullptr,
+                     ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Device driver: %s", r.device.driverName());
+        ImGui::SeparatorText("Camera");
+        bool ortho_change, persp_change;
+        ortho_change = ImGui::RadioButton("Orthographic", (int *)&cam_type,
+                                          int(CameraProjection::ORTHOGRAPHIC));
+        ImGui::SameLine();
+        persp_change = ImGui::RadioButton("Perspective", (int *)&cam_type,
+                                          int(CameraProjection::PERSPECTIVE));
+        switch (cam_type) {
+        case CameraProjection::ORTHOGRAPHIC:
+          ortho_change |=
+              ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f,
+                               "%.3f", ImGuiSliderFlags_AlwaysClamp);
+          if (ortho_change)
+            updateOrtho(currentOrthoScale);
+          break;
+        case CameraProjection::PERSPECTIVE:
+          Degf newFov{currentFov};
+          persp_change |=
+              ImGui::DragFloat("fov", newFov, 1.f, 15.f, 90.f, "%.3f",
+                               ImGuiSliderFlags_AlwaysClamp);
+          persp_change |=
+              ImGui::SliderFloat("Near plane", &nearZ, 0.01f, 0.8f * farZ);
+          persp_change |= ImGui::SliderFloat("Far plane", &farZ, nearZ, 20.f);
+          if (persp_change)
+            updateFov(Radf(newFov));
+          break;
+        }
 
-    ImGui::SeparatorText("Env. status");
-    ImGui::Checkbox("Render plane", &plane_vis.status);
-    ImGui::Checkbox("Render grid", &grid.enable);
-    ImGui::Checkbox("Render triad", &triad.enable);
-    ImGui::Checkbox("Render frustum", &showFrustum);
+        ImGui::SeparatorText("Env. status");
+        ImGui::Checkbox("Render plane", &plane_vis.status);
+        ImGui::Checkbox("Render grid", &grid.enable);
+        ImGui::Checkbox("Render triad", &triad.enable);
+        ImGui::Checkbox("Render frustum", &showFrustum);
 
-    ImGui::Checkbox("Ambient occlusion (SSAO)", &robot_scene.useSsao);
+        ImGui::Checkbox("Ambient occlusion (SSAO)", &robot_scene.useSsao);
 
-    ImGui::RadioButton("Full render mode", (int *)&showDebugViz, FULL_RENDER);
-    ImGui::SameLine();
-    ImGui::RadioButton("Depth debug", (int *)&showDebugViz, DEPTH_DEBUG);
-    ImGui::SameLine();
-    ImGui::RadioButton("Light mode", (int *)&showDebugViz, LIGHT_DEBUG);
+        ImGui::RadioButton("Full render mode", (int *)&showDebugViz,
+                           FULL_RENDER);
+        ImGui::SameLine();
+        ImGui::RadioButton("Depth debug", (int *)&showDebugViz, DEPTH_DEBUG);
+        ImGui::SameLine();
+        ImGui::RadioButton("Light mode", (int *)&showDebugViz, LIGHT_DEBUG);
 
-    if (showDebugViz & (DEPTH_DEBUG | LIGHT_DEBUG)) {
-      ImGui::RadioButton("Grayscale", (int *)&depth_mode, 0);
-      ImGui::SameLine();
-      ImGui::RadioButton("Heatmap", (int *)&depth_mode, 1);
-    }
+        if (showDebugViz & (DEPTH_DEBUG | LIGHT_DEBUG)) {
+          ImGui::RadioButton("Grayscale", (int *)&depth_mode, 0);
+          ImGui::SameLine();
+          ImGui::RadioButton("Heatmap", (int *)&depth_mode, 1);
+        }
 
-    ImGui::SeparatorText("Lights");
-    ImGui::SliderFloat("intens.", &sceneLight.intensity, 0.1f, 10.0f);
-    ImGui::DragFloat3("direction", sceneLight.direction.data(), 0.0f, -1.f,
-                      1.f);
-    ImGui::ColorEdit3("color", sceneLight.color.data());
-    ImGui::Separator();
-    ImGui::ColorEdit4("grid color", grid.colors[0].data(),
-                      ImGuiColorEditFlags_AlphaPreview);
-    ImGui::ColorEdit4("plane color", plane_obj.materials[0].baseColor.data());
-    ImGui::End();
-    ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
-    ImGui::ShowDemoWindow(&demo_window_open);
-  }};
-
-  if (!gui_system.init(renderer)) {
-    return 1;
-  }
+        ImGui::SeparatorText("Lights");
+        ImGui::SliderFloat("intens.", &sceneLight.intensity, 0.1f, 10.0f);
+        ImGui::DragFloat3("direction", sceneLight.direction.data(), 0.0f, -1.f,
+                          1.f);
+        ImGui::ColorEdit3("color", sceneLight.color.data());
+        ImGui::Separator();
+        ImGui::ColorEdit4("grid color", grid.colors[0].data(),
+                          ImGuiColorEditFlags_AlphaPreview);
+        ImGui::ColorEdit4("plane color",
+                          plane_obj.materials[0].baseColor.data());
+        ImGui::End();
+        ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+        ImGui::ShowDemoWindow(&demo_window_open);
+      }};
 
   // MAIN APPLICATION LOOP
 

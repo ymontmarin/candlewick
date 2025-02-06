@@ -9,7 +9,7 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
                        const pin::GeometryModel &visualModel,
                        GuiSystem::GuiBehavior gui_callback)
     : BaseVisualizer(model, visualModel), registry{},
-      renderer(createRenderer(config)), guiSys(std::move(gui_callback)),
+      renderer(createRenderer(config)), guiSys(NoInit, std::move(gui_callback)),
       robotScene(registry, renderer, visualModel, visualData,
                  {.enable_shadows = true}),
       debugScene(renderer) {
@@ -20,26 +20,28 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
   };
   guiSys.init(renderer);
 
-  {
-    const float radius = 2.5f;
-    const auto angle = 45.0_degf;
-    Float3 eye{std::cos(angle), std::sin(angle), 0.5f};
-    eye *= radius;
-    const Radf defaultFov{55.0_degf};
-    int w, h;
-    SDL_GetWindowSize(renderer.window, &w, &h);
-    float aspectRatio = float(w) / float(h);
-    camera.view = lookAt(eye, {0., 0., 0.});
-    camera.projection =
-        perspectiveFromFov(defaultFov, aspectRatio, 0.01f, 100.f);
-  }
-
   robotScene.worldSpaceBounds.grow({-1.f, -1.f, 0.f});
   robotScene.worldSpaceBounds.grow({+1.f, +1.f, 1.f});
 
   Uint32 prepeat = 25;
   robotScene.addEnvironmentObject(loadPlaneTiled(0.5f, prepeat, prepeat),
                                   Mat4f::Identity());
+
+  this->resetCamera();
+}
+
+void Visualizer::resetCamera() {
+  const float radius = 2.5f;
+  const Degf xy_plane_view_angle = 45.0_degf;
+  Float3 eye{std::cos(xy_plane_view_angle), std::sin(xy_plane_view_angle),
+             0.5f};
+  eye *= radius;
+  int w, h;
+  SDL_GetWindowSize(renderer.window, &w, &h);
+  float aspectRatio = float(w) / float(h);
+  camera.view = lookAt(eye, {0., 0., 0.});
+  camera.projection =
+      perspectiveFromFov(DEFAULT_FOV, aspectRatio, 0.01f, 100.f);
 }
 
 void Visualizer::loadViewerModel() {}
@@ -62,7 +64,6 @@ void Visualizer::displayImpl() {
     robotScene.render(renderer, camera);
     debugScene.render(renderer, camera);
     guiSys.render(renderer);
-  } else {
   }
 
   renderer.endFrame();

@@ -49,6 +49,8 @@ public:
   Camera camera;
   CameraControlParams cameraParams;
 
+  static constexpr Radf DEFAULT_FOV = 55.0_radf;
+
   struct Config {
     Uint32 width;
     Uint32 height;
@@ -61,6 +63,7 @@ public:
   /// to the Visualizer constructor to change this behaviour.
   static void default_gui_exec(Visualizer &viz);
 
+  void resetCamera();
   void loadViewerModel() override;
 
   Visualizer(const Config &config, const pin::Model &model,
@@ -101,7 +104,7 @@ private:
 };
 
 inline Renderer Visualizer::createRenderer(const Config &config) {
-  bool ret = SDL_Init(SDL_INIT_VIDEO);
+  [[maybe_unused]] bool ret = SDL_Init(SDL_INIT_VIDEO);
   assert(ret);
   Device dev{auto_detect_shader_format_subset()};
   SDL_Window *window =
