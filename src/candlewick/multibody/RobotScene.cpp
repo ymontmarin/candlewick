@@ -157,7 +157,7 @@ void RobotScene::initGBuffer(const Renderer &renderer) {
   int width, height;
   SDL_GetWindowSize(renderer.window, &width, &height);
   gBuffer.normalMap = Texture{renderer.device,
-                              SDL_GPUTextureCreateInfo{
+                              {
                                   .type = SDL_GPU_TEXTURETYPE_2D,
                                   .format = SDL_GPU_TEXTUREFORMAT_R16G16_FLOAT,
                                   .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
@@ -167,6 +167,7 @@ void RobotScene::initGBuffer(const Renderer &renderer) {
                                   .layer_count_or_depth = 1,
                                   .num_levels = 1,
                                   .sample_count = SDL_GPU_SAMPLECOUNT_1,
+                                  .props = 0,
                               },
                               "GBuffer normal"};
 }
@@ -204,7 +205,9 @@ void RobotScene::collectOpaqueCastables() {
 }
 
 void RobotScene::render(Renderer &renderer, const Camera &camera) {
-  ssaoPass.render(renderer, camera);
+  if (_config.enable_ssao) {
+    ssaoPass.render(renderer, camera);
+  }
 
   // render geometry which participated in the prepass
   renderPBRTriangleGeometry(renderer, camera);
@@ -302,7 +305,7 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
                             });
   renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                                sizeof(lightUbo));
-  int _useSsao = useSsao;
+  int _useSsao = _config.enable_ssao;
   renderer.pushFragmentUniform(2, &_useSsao, sizeof(_useSsao));
 
   auto *pipeline = renderPipelines[PIPELINE_TRIANGLEMESH];
