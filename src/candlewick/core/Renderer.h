@@ -17,14 +17,17 @@ namespace candlewick {
 /// \sa Mesh
 struct Renderer {
   Device device;
-  SDL_Window *window = nullptr;
+  SDL_Window *window;
   SDL_GPUTexture *swapchain;
   Texture depth_texture{NoInit};
-  SDL_GPUCommandBuffer *command_buffer;
+  SDL_GPUCommandBuffer *command_buffer = nullptr;
 
+  Renderer(NoInitT) : device(NoInit), window(nullptr), swapchain(nullptr) {}
   Renderer(Device &&device, SDL_Window *window);
   Renderer(Device &&device, SDL_Window *window,
            SDL_GPUTextureFormat suggested_depth_format);
+
+  bool initialized() { return bool(device); }
 
   /// Acquire the command buffer, starting a frame.
   void beginFrame() { command_buffer = SDL_AcquireGPUCommandBuffer(device); }

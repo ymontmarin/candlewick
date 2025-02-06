@@ -5,7 +5,7 @@
 
 namespace candlewick {
 Renderer::Renderer(Device &&device, SDL_Window *window)
-    : device(std::move(device)), window(window) {
+    : device(std::move(device)), window(window), swapchain(nullptr) {
   if (!SDL_ClaimWindowForGPUDevice(this->device, this->window))
     throw RAIIException(SDL_GetError());
 }
