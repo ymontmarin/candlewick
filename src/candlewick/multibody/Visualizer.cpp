@@ -3,6 +3,8 @@
 #include "../core/DepthAndShadowPass.h"
 #include "../primitives/Plane.h"
 
+#include <mutex>
+
 namespace candlewick::multibody {
 
 Visualizer::Visualizer(const Config &config, const pin::Model &model,
@@ -10,27 +12,7 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
                        GuiSystem::GuiBehavior gui_callback)
     : BaseVisualizer(model, visualModel), registry{}, renderer(NoInit),
       guiSystem(NoInit, std::move(gui_callback)) {
-
-  renderer = createRenderer(config);
-  robotScene.emplace(registry, renderer, visualModel, visualData,
-                     RobotScene::Config{.enable_shadows = true});
-  debugScene.emplace(renderer);
-
-  robotScene->directionalLight = {
-      .direction = {0., -1., -1.},
-      .color = {1.0, 1.0, 1.0},
-      .intensity = 8.0,
-  };
-  guiSystem.init(renderer);
-
-  robotScene->worldSpaceBounds.grow({-1.f, -1.f, 0.f});
-  robotScene->worldSpaceBounds.grow({+1.f, +1.f, 1.f});
-
-  Uint32 prepeat = 25;
-  robotScene->addEnvironmentObject(loadPlaneTiled(0.5f, prepeat, prepeat),
-                                   Mat4f::Identity());
-
-  this->resetCamera();
+  m_render_thread = std::thread(&Visualizer::renderThreadMain, this, config);
 }
 
 void Visualizer::resetCamera() {
@@ -49,32 +31,6 @@ void Visualizer::resetCamera() {
 
 void Visualizer::loadViewerModel() {}
 
-void Visualizer::displayImpl() {
-
-  this->eventLoop();
-
-  debugScene->update();
-  {
-    std::scoped_lock lock{vis_mutex};
-    updateRobotTransforms(registry, visualData);
-  }
-
-  renderer.beginFrame();
-  if (renderer.waitAndAcquireSwapchain()) {
-    robotScene->collectOpaqueCastables();
-    std::span castables = robotScene->castables();
-    renderShadowPassFromAABB(renderer, robotScene->shadowPass,
-                             robotScene->directionalLight, castables,
-                             robotScene->worldSpaceBounds);
-
-    robotScene->render(renderer, camera);
-    debugScene->render(renderer, camera);
-    guiSystem.render(renderer);
-  }
-
-  renderer.endFrame();
-}
-
 void Visualizer::setCameraTarget(const Eigen::Ref<const Vector3s> &target) {
   Float3 eye = this->camera.position();
   camera.view = lookAt(eye, target.cast<float>());
@@ -89,6 +45,8 @@ void Visualizer::setCameraPose(const Eigen::Ref<const Matrix4s> &pose) {
 }
 
 Visualizer::~Visualizer() noexcept {
+  m_render_thread.join();
+
   robotScene->release();
   debugScene->release();
   guiSystem.release();
@@ -96,4 +54,54 @@ Visualizer::~Visualizer() noexcept {
   SDL_DestroyWindow(renderer.window);
   SDL_Quit();
 }
+
+void Visualizer::renderThreadMain(const Config &config) {
+
+  renderer = createRenderer(config);
+  robotScene.emplace(registry, renderer, *m_visualModel, visualData,
+                     RobotScene::Config{.enable_shadows = true});
+  debugScene.emplace(renderer);
+
+  robotScene->directionalLight = {
+      .direction = {0., -1., -1.},
+      .color = {1.0, 1.0, 1.0},
+      .intensity = 8.0,
+  };
+  guiSystem.init(renderer);
+
+  robotScene->worldSpaceBounds.grow({-1.f, -1.f, 0.f});
+  robotScene->worldSpaceBounds.grow({+1.f, +1.f, 1.f});
+
+  Uint32 prepeat = 25;
+  robotScene->addEnvironmentObject(loadPlaneTiled(0.5f, prepeat, prepeat),
+                                   Mat4f::Identity());
+
+  this->resetCamera();
+
+  while (!m_shouldExit) {
+    this->eventLoop();
+
+    debugScene->update();
+    {
+      std::scoped_lock lock{m_mutex};
+      updateRobotTransforms(registry, visualData);
+    }
+
+    renderer.beginFrame();
+    if (renderer.waitAndAcquireSwapchain()) {
+      robotScene->collectOpaqueCastables();
+      std::span castables = robotScene->castables();
+      renderShadowPassFromAABB(renderer, robotScene->shadowPass,
+                               robotScene->directionalLight, castables,
+                               robotScene->worldSpaceBounds);
+
+      robotScene->render(renderer, camera);
+      debugScene->render(renderer, camera);
+      guiSystem.render(renderer);
+    }
+
+    renderer.endFrame();
+  }
+}
+
 } // namespace candlewick::multibody

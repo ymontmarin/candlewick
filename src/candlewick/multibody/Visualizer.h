@@ -38,6 +38,10 @@ struct CameraControlParams {
 
 /// \brief A Pinocchio robot visualizer. The display() function will perform the
 /// draw calls.
+///
+/// This visualizer is asynchronous. It will create its render context
+/// (Renderer) in a separate thread along with the GPU device and window, and
+/// run until shouldExit() returns true.
 class Visualizer final : public BaseVisualizer {
 public:
   using BaseVisualizer::setCameraPose;
@@ -48,7 +52,6 @@ public:
   std::optional<DebugScene> debugScene;
   Camera camera;
   CameraControlParams cameraParams;
-  std::mutex vis_mutex;
 
   static constexpr Radf DEFAULT_FOV = 55.0_radf;
 
@@ -78,7 +81,8 @@ public:
 
   ~Visualizer() noexcept;
 
-  void displayImpl() override;
+  void displayPrecall() override { m_mutex.lock(); }
+  void displayImpl() override { m_mutex.unlock(); }
 
   void setCameraTarget(const Eigen::Ref<const Vector3s> &target) override;
 
@@ -102,6 +106,11 @@ public:
 private:
   bool m_cameraControl = true;
   bool m_shouldExit = false;
+  // mutex to lock in precall
+  std::mutex m_mutex;
+  std::thread m_render_thread;
+
+  void renderThreadMain(const Config &config);
 };
 
 inline Renderer Visualizer::createRenderer(const Config &config) {

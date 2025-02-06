@@ -32,7 +32,7 @@ void camera_params_gui(CameraControlParams &params) {
 
 void Visualizer::default_gui_exec(Visualizer &viz) {
   auto &render = viz.renderer;
-  auto &light = viz.robotScene.directionalLight;
+  auto &light = viz.robotScene->directionalLight;
   ImGui::Begin("Renderer info & controls", nullptr,
                ImGuiWindowFlags_AlwaysAutoResize);
   ImGui::Text("Device driver: %s", render.device.driverName());
