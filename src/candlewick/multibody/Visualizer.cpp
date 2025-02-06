@@ -8,24 +8,27 @@ namespace candlewick::multibody {
 Visualizer::Visualizer(const Config &config, const pin::Model &model,
                        const pin::GeometryModel &visualModel,
                        GuiSystem::GuiBehavior gui_callback)
-    : BaseVisualizer(model, visualModel), registry{},
-      renderer(createRenderer(config)), guiSys(NoInit, std::move(gui_callback)),
-      robotScene(registry, renderer, visualModel, visualData,
-                 {.enable_shadows = true}),
-      debugScene(renderer) {
-  robotScene.directionalLight = {
+    : BaseVisualizer(model, visualModel), registry{}, renderer(NoInit),
+      guiSystem(NoInit, std::move(gui_callback)) {
+
+  renderer = createRenderer(config);
+  robotScene.emplace(registry, renderer, visualModel, visualData,
+                     RobotScene::Config{.enable_shadows = true});
+  debugScene.emplace(renderer);
+
+  robotScene->directionalLight = {
       .direction = {0., -1., -1.},
       .color = {1.0, 1.0, 1.0},
       .intensity = 8.0,
   };
-  guiSys.init(renderer);
+  guiSystem.init(renderer);
 
-  robotScene.worldSpaceBounds.grow({-1.f, -1.f, 0.f});
-  robotScene.worldSpaceBounds.grow({+1.f, +1.f, 1.f});
+  robotScene->worldSpaceBounds.grow({-1.f, -1.f, 0.f});
+  robotScene->worldSpaceBounds.grow({+1.f, +1.f, 1.f});
 
   Uint32 prepeat = 25;
-  robotScene.addEnvironmentObject(loadPlaneTiled(0.5f, prepeat, prepeat),
-                                  Mat4f::Identity());
+  robotScene->addEnvironmentObject(loadPlaneTiled(0.5f, prepeat, prepeat),
+                                   Mat4f::Identity());
 
   this->resetCamera();
 }
@@ -50,20 +53,23 @@ void Visualizer::displayImpl() {
 
   this->eventLoop();
 
-  debugScene.update();
+  debugScene->update();
+  {
+    std::scoped_lock lock{vis_mutex};
+    updateRobotTransforms(registry, visualData);
+  }
 
   renderer.beginFrame();
   if (renderer.waitAndAcquireSwapchain()) {
-    updateRobotTransforms(registry, visualData);
-    robotScene.collectOpaqueCastables();
-    std::span castables = robotScene.castables();
-    renderShadowPassFromAABB(renderer, robotScene.shadowPass,
-                             robotScene.directionalLight, castables,
-                             robotScene.worldSpaceBounds);
+    robotScene->collectOpaqueCastables();
+    std::span castables = robotScene->castables();
+    renderShadowPassFromAABB(renderer, robotScene->shadowPass,
+                             robotScene->directionalLight, castables,
+                             robotScene->worldSpaceBounds);
 
-    robotScene.render(renderer, camera);
-    debugScene.render(renderer, camera);
-    guiSys.render(renderer);
+    robotScene->render(renderer, camera);
+    debugScene->render(renderer, camera);
+    guiSystem.render(renderer);
   }
 
   renderer.endFrame();
@@ -83,9 +89,9 @@ void Visualizer::setCameraPose(const Eigen::Ref<const Matrix4s> &pose) {
 }
 
 Visualizer::~Visualizer() noexcept {
-  robotScene.release();
-  debugScene.release();
-  guiSys.release();
+  robotScene->release();
+  debugScene->release();
+  guiSystem.release();
   renderer.destroy();
   SDL_DestroyWindow(renderer.window);
   SDL_Quit();

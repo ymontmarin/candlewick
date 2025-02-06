@@ -36,18 +36,19 @@ struct CameraControlParams {
   } modifiers;
 };
 
-/// \brief A synchronous renderer. The display() function will perform the draw
-/// calls.
+/// \brief A Pinocchio robot visualizer. The display() function will perform the
+/// draw calls.
 class Visualizer final : public BaseVisualizer {
 public:
   using BaseVisualizer::setCameraPose;
   entt::registry registry;
   Renderer renderer;
-  GuiSystem guiSys;
-  RobotScene robotScene;
-  DebugScene debugScene;
+  GuiSystem guiSystem;
+  std::optional<RobotScene> robotScene;
+  std::optional<DebugScene> debugScene;
   Camera camera;
   CameraControlParams cameraParams;
+  std::mutex vis_mutex;
 
   static constexpr Radf DEFAULT_FOV = 55.0_radf;
 
@@ -93,9 +94,9 @@ public:
 
   /// \brief Clear objects
   void clean() override {
-    robotScene.clearEnvironment();
-    robotScene.clearRobotGeometries();
-    debugScene.registry().clear();
+    robotScene->clearEnvironment();
+    robotScene->clearRobotGeometries();
+    debugScene->registry().clear();
   }
 
 private:
