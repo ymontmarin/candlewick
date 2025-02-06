@@ -4,9 +4,9 @@
 
 namespace candlewick {
 
-MeshData loadHeightfield(const Eigen::MatrixXf &heights,
-                         const Eigen::VectorXf &xgrid,
-                         const Eigen::VectorXf &ygrid) {
+MeshData loadHeightfield(const Eigen::Ref<const Eigen::MatrixXf> &heights,
+                         const Eigen::Ref<const Eigen::VectorXf> &xgrid,
+                         const Eigen::Ref<const Eigen::VectorXf> &ygrid) {
   SDL_assert(heights.rows() == xgrid.size());
   SDL_assert(heights.cols() == ygrid.size());
   const auto nx = (Sint32)heights.rows();

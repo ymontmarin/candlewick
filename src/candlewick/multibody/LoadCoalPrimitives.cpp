@@ -16,9 +16,9 @@ namespace candlewick {
 
 constexpr float kPlaneScale = 10.f;
 
-void getPlaneOrHalfspaceNormalOffset(
-    const hpp::fcl::CollisionGeometry &geometry, Float3 &n, float &d) {
-  using namespace hpp::fcl;
+void getPlaneOrHalfspaceNormalOffset(const coal::CollisionGeometry &geometry,
+                                     Float3 &n, float &d) {
+  using namespace coal;
   switch (geometry.getNodeType()) {
   case GEOM_PLANE: {
     const Plane &g = static_cast<const Plane &>(geometry);
@@ -38,9 +38,9 @@ void getPlaneOrHalfspaceNormalOffset(
   }
 }
 
-MeshData loadCoalPrimitive(const hpp::fcl::CollisionGeometry &geometry,
+MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
                            const Float4 &meshColor, const Float3 &meshScale) {
-  using namespace hpp::fcl;
+  using namespace coal;
   SDL_assert_always(geometry.getObjectType() == OT_GEOM);
   MeshData meshData{NoInit};
   Eigen::Affine3f transform = Eigen::Affine3f::Identity();

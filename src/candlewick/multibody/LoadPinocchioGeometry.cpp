@@ -6,14 +6,12 @@
 #include <pinocchio/multibody/geometry.hpp>
 
 namespace candlewick::multibody {
-using hpp::fcl::CollisionGeometry;
 
 void loadGeometryObject(const pin::GeometryObject &gobj,
                         std::vector<MeshData> &meshData) {
-  using hpp::fcl::OBJECT_TYPE;
-  using enum OBJECT_TYPE;
+  using namespace coal;
 
-  const CollisionGeometry &collgom = *gobj.geometry.get();
+  const coal::CollisionGeometry &collgom = *gobj.geometry.get();
   const OBJECT_TYPE objType = collgom.getObjectType();
 
   Float4 meshColor = gobj.meshColor.cast<float>();
