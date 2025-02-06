@@ -19,5 +19,6 @@ void exposeVisualizer() {
                     const pin::GeometryModel &>(
           ("self"_a, "config", "model", "geomModel")))
       .def(pinocchio_visualizers::VisualizerVisitor<Visualizer>{})
-      .def_readonly("renderer", &Visualizer::renderer);
+      .def_readonly("renderer", &Visualizer::renderer)
+      .add_property("shouldExit", &Visualizer::shouldExit);
 }
