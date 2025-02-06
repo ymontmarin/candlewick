@@ -32,6 +32,8 @@ struct Renderer {
   /// Submit the command buffer, ending the frame.
   void endFrame() { SDL_SubmitGPUCommandBuffer(command_buffer); }
 
+  void cancelFrame() { SDL_CancelGPUCommandBuffer(command_buffer); }
+
   bool waitAndAcquireSwapchain() {
     return SDL_WaitAndAcquireGPUSwapchainTexture(command_buffer, window,
                                                  &swapchain, NULL, NULL);
@@ -41,6 +43,8 @@ struct Renderer {
     return SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain,
                                           NULL, NULL);
   }
+
+  bool waitForSwapchain() { return SDL_WaitForGPUSwapchain(device, window); }
 
   SDL_GPUTextureFormat getSwapchainTextureFormat() const {
     return SDL_GetGPUSwapchainTextureFormat(device, window);
