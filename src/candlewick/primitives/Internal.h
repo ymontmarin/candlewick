@@ -43,6 +43,7 @@ namespace detail {
     Float3 previousPos(std::size_t offset) const;
     Float3 previousNormal(std::size_t offset) const;
 
+    void addDisk(Uint32 segments, float radius, float z);
     void addCone(Uint32 segments, float radius, float zBottom, float length);
 
     std::vector<Float3> positions;
