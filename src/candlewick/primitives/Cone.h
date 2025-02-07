@@ -4,6 +4,6 @@
 
 namespace candlewick {
 
-MeshData loadCone(Uint32 segments, float length);
+MeshData loadCone(Uint32 segments, float radius, float length);
 
 } // namespace candlewick

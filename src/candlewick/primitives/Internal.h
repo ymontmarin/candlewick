@@ -35,14 +35,15 @@ template <> struct VertexTraits<PosNormalVertex> {
 };
 
 namespace detail {
-  using Vec3u = Eigen::Matrix<Uint32, 3, 1>;
 
   struct ConeCylinderBuilder {
     size_t currentVertices() const { return positions.size(); }
     void add(const Float3 &pos, const Float3 &normal);
-    void addFace(const Vec3u &face);
+    void addFace(const Uint32 (&face)[3]);
     Float3 previousPos(std::size_t offset) const;
     Float3 previousNormal(std::size_t offset) const;
+
+    void addCone(Uint32 segments, float radius, float zBottom, float length);
 
     std::vector<Float3> positions;
     std::vector<Float3> normals;
@@ -55,7 +56,7 @@ namespace detail {
     normals.push_back(normal.normalized());
   }
 
-  inline void ConeCylinderBuilder::addFace(const Vec3u &face) {
+  inline void ConeCylinderBuilder::addFace(const Uint32 (&face)[3]) {
     indices.push_back(face[0]);
     indices.push_back(face[1]);
     indices.push_back(face[2]);
@@ -68,9 +69,6 @@ namespace detail {
   inline Float3 ConeCylinderBuilder::previousNormal(std::size_t offset) const {
     return normals[normals.size() - offset];
   }
-
-  void builderAddCone(ConeCylinderBuilder &builder, Uint32 segments,
-                      float length);
 
 } // namespace detail
 } // namespace candlewick

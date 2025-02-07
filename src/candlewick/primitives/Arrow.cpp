@@ -37,32 +37,7 @@ namespace detail {
     }
 
     // Generate head (cone)
-    auto head_start = Uint32(mesh.positions.size());
-
-    // Base circle
-    for (Uint32 i = 0; i <= segments; ++i) {
-      float angle = float(i) * angleIncrement;
-      float x = std::cos(angle);
-      float y = std::sin(angle);
-
-      mesh.positions.push_back(
-          {x * head_radius, y * head_radius, shaft_length});
-
-      // Compute normal for cone surface
-      Float3 normal{x * head_length, y * head_length, head_radius};
-      normal.normalize();
-      mesh.normals.push_back(normal);
-    }
-
-    // Tip vertex
-    mesh.positions.push_back({0, 0, shaft_length + head_length});
-    mesh.normals.push_back({0, 0, 1});
-
-    // Head indices (triangles)
-    auto tip_idx = Uint32(mesh.positions.size() - 1);
-    for (Uint32 i = head_start; i < tip_idx - 1; ++i) {
-      mesh.addFace({i, i + 1, tip_idx});
-    }
+    mesh.addCone(segments, head_radius, shaft_length, head_length);
 
     return mesh;
   }

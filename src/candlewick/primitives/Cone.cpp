@@ -4,9 +4,10 @@
 
 namespace candlewick {
 
-MeshData loadCone(Uint32 segments, float length) {
+MeshData loadCone(Uint32 segments, float radius, float length) {
   detail::ConeCylinderBuilder builder;
-  detail::builderAddCone(builder, segments, length);
+  const float halfLength = 0.5f * length;
+  builder.addCone(segments, radius, -halfLength, length);
 
   std::vector<DefaultVertex> vertices;
   vertices.resize(builder.currentVertices());
