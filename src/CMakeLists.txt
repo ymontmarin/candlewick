@@ -37,6 +37,7 @@ add_library(
   candlewick/primitives/Arrow.cpp
   candlewick/primitives/Cone.cpp
   candlewick/primitives/Cube.cpp
+  candlewick/primitives/Cylinder.cpp
   candlewick/primitives/Grid.cpp
   candlewick/primitives/Heightfield.cpp
   candlewick/primitives/Internal.cpp

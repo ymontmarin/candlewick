@@ -43,7 +43,10 @@ namespace detail {
     Float3 previousPos(std::size_t offset) const;
     Float3 previousNormal(std::size_t offset) const;
 
+    /// \todo generate multiple caps for the disk center, to get smooth normals
     void addDisk(Uint32 segments, float radius, float z);
+    /// \todo merge with previous somehow
+    void addTopDisk(Uint32 segments, float radius, float z);
     void addCone(Uint32 segments, float radius, float zBottom, float length);
     Uint32 addCylinderFloors(Uint32 numFloors, Uint32 segments,
                              Float2 basePoint, Float2 upDir, Uint32 startIdx);

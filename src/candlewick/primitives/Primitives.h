@@ -3,6 +3,7 @@
 #include "Arrow.h"
 #include "Cone.h"
 #include "Cube.h"
+#include "Cylinder.h"
 #include "Grid.h"
 #include "Heightfield.h"
 #include "Plane.h"

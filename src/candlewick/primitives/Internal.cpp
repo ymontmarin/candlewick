@@ -26,6 +26,33 @@ namespace detail {
     }
   }
 
+  void ConeCylinderBuilder::addTopDisk(Uint32 segments, float radius, float z) {
+    const float angleIncrement = 2.f * constants::Pif / float(segments);
+
+    for (Uint32 i = 0; i < segments; i++) {
+      float a = float(i) * angleIncrement;
+      float x = cosf(a) * radius;
+      float y = sinf(a) * radius;
+      add({x, y, z}, {0.f, 0.f, +1.f});
+    }
+
+    add({0, 0, z}, {0.f, 0.f, +1.f});
+
+    Uint32 currentCount = Uint32(currentVertices());
+
+    // lace up the top disk
+    Uint32 startIdx = currentCount - segments - 1u;
+    for (Uint32 i = 0; i < segments; ++i) {
+      const Uint32 j = startIdx + i;
+      addFace({
+          j,
+          (i != segments - 1) ? j + 1 : startIdx,
+          // top vertex
+          currentCount - 1,
+      });
+    }
+  }
+
   Uint32 ConeCylinderBuilder::addCylinderFloors(Uint32 numFloors,
                                                 Uint32 segments,
                                                 Float2 basePoint, Float2 upDir,
