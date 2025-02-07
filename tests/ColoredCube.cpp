@@ -201,7 +201,7 @@ int main() {
   SDL_GPUTexture *depthTexture = createDepthTexture(
       device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
 
-  const auto fov_rad = 45.0_radf;
+  const Radf fov_rad = 45.0_degf;
   Mat4f perp = perspectiveFromFov(fov_rad, aspectRatio, 0.1f, 10.f);
   Mat4f modelMat = Mat4f::Identity();
   modelMat.col(3).head<3>() << -0.5f, -0.5f, -0.5f;

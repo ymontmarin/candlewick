@@ -128,7 +128,7 @@ int main() {
   SDL_GPUCommandBuffer *command_buffer;
   SDL_GPUTexture *swapchain;
 
-  Rad<float> fov = 55.0_radf;
+  Rad<float> fov = 55.0_degf;
   Camera camera{
       .projection = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f),
       .view = Eigen::Isometry3f{lookAt({6.0, 0, 3.}, Float3::Zero())},
@@ -156,7 +156,7 @@ int main() {
         float wy = event.wheel.y;
         const float scaleFac = std::exp(kScrollZoom * wy);
         // recreate
-        fov = std::min(fov * scaleFac, 170.0_radf);
+        fov = std::min(fov * scaleFac, Radf{170.0_degf});
         SDL_Log("Change fov to %f", rad2deg(fov));
         camera.projection = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
       }

@@ -52,7 +52,7 @@ public:
   Camera camera;
   CameraControlParams cameraParams;
 
-  static constexpr Radf DEFAULT_FOV = 55.0_radf;
+  static constexpr Radf DEFAULT_FOV = 55.0_degf;
 
   struct Config {
     Uint32 width;

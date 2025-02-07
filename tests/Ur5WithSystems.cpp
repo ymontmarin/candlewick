@@ -52,7 +52,7 @@ constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 /// Application state
 
-static Radf currentFov = 55.0_radf;
+static Radf currentFov = 55.0_degf;
 static float nearZ = 0.01f;
 static float farZ = 10.f;
 static float currentOrthoScale = 1.f;
@@ -112,7 +112,7 @@ void eventLoop(const Renderer &renderer) {
         updateOrtho(std::clamp(scaleFac * currentOrthoScale, 0.1f, 2.f));
         break;
       case CameraProjection::PERSPECTIVE:
-        updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
+        updateFov(Radf(std::min(currentFov * scaleFac, Radf{170.0_degf})));
         break;
       }
       break;

@@ -113,7 +113,7 @@ int main() {
   SDL_GPUCommandBuffer *command_buffer;
   SDL_GPUTexture *swapchain;
 
-  Radf fov = 70._radf;
+  Radf fov = 70.0_degf;
   Mat4f projectionMat = perspectiveFromFov(fov, aspectRatio, 0.1f, 40.0f);
 
   Uint32 frameNo = 0;
