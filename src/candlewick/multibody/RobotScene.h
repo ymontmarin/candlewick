@@ -116,6 +116,12 @@ namespace multibody {
     addEnvironmentObject(MeshData &&data, Mat4f placement,
                          PipelineType pipe_type = PIPELINE_TRIANGLEMESH);
 
+    entt::entity
+    addEnvironmentObject(MeshData &&data, const Eigen::Affine3f &T,
+                         PipelineType pipe_type = PIPELINE_TRIANGLEMESH) {
+      return addEnvironmentObject(std::move(data), T.matrix(), pipe_type);
+    }
+
     void clearEnvironment();
     void clearRobotGeometries();
 
