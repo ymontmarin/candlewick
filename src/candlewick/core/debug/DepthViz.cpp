@@ -73,11 +73,11 @@ void renderDepthDebug(Renderer &renderer, const DepthDebugPass &pass,
 
   SDL_BindGPUGraphicsPipeline(render_pass, pass.pipeline);
 
-  renderer.bindFragmentSampler(render_pass, 0,
-                               {
-                                   .texture = pass.depthTexture,
-                                   .sampler = pass.sampler,
-                               });
+  rend::bindFragmentSampler(render_pass, 0,
+                            {
+                                .texture = pass.depthTexture,
+                                .sampler = pass.sampler,
+                            });
 
   cam_param_ubo_t cam_ubo{opts.mode, opts.near, opts.far,
                           opts.cam_proj == CameraProjection::ORTHOGRAPHIC};

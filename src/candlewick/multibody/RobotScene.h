@@ -98,6 +98,7 @@ namespace multibody {
       };
       bool enable_msaa = false;
       bool enable_shadows = true;
+      bool enable_ssao = true;
       bool triangle_has_prepass = false;
       bool enable_normal_target = false;
       SDL_GPUSampleCount msaa_samples = SDL_GPU_SAMPLECOUNT_1;
@@ -131,12 +132,15 @@ namespace multibody {
     void renderOtherGeometry(Renderer &renderer, const Camera &camera);
     void release();
 
+    Config &config() { return _config; }
     const Config &config() const { return _config; }
     inline bool pbrHasPrepass() const { return _config.triangle_has_prepass; }
     inline bool shadowsEnabled() const { return _config.enable_shadows; }
 
     /// \brief Getter for the referenced pinocchio GeometryData object.
     const pin::GeometryData &geomData() const { return *_geomData; }
+
+    const entt::registry &registry() const { return _registry; }
 
     void initGBuffer(const Renderer &renderer);
 
@@ -148,7 +152,6 @@ namespace multibody {
     } gBuffer;
     ShadowPassInfo shadowPass;
     AABB worldSpaceBounds;
-    bool useSsao = true;
 
   private:
     entt::registry &_registry;

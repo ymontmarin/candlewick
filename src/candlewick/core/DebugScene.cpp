@@ -99,6 +99,7 @@ void DebugScene::setupPipelines(const MeshLayout &layout) {
                    .num_color_targets = 1,
                    .depth_stencil_format = _depthFormat,
                    .has_depth_stencil_target = true},
+      .props = 0,
   };
   if (!_trianglePipeline)
     _trianglePipeline = SDL_CreateGPUGraphicsPipeline(_device, &info);

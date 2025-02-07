@@ -25,7 +25,7 @@ q0 = pin.neutral(model)
 q1 = pin.randomConfiguration(model)
 
 t = 0.0
-dt = 0.04
+dt = 0.02
 M = pin.SE3.Identity()
 ee_name = "ee_link"
 ee_id = model.getFrameId(ee_name)
@@ -35,8 +35,8 @@ for i in range(1000):
     q = pin.interpolate(model, q0, q1, alpha)
     pin.framesForwardKinematics(model, data, q)
     M = data.oMf[ee_id]
-    viz.setCameraPose(M)
-    viz.setCameraTarget(np.zeros(3))
+    if viz.shouldExit:
+        break
     viz.display(q)
     time.sleep(dt)
     t += dt

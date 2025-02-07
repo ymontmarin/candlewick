@@ -201,51 +201,48 @@ int main(int argc, char **argv) {
     triad_meshes.push_back(std::move(arrow_mesh));
   }
 
-  GuiSystem guiSys{[&plane_data](Renderer &r) {
-    static bool demo_window_open = true;
+  GuiSystem guiSys{
+      renderer, [&plane_data](Renderer &r) {
+        static bool demo_window_open = true;
 
-    ImGui::Begin("Renderer info & controls", nullptr,
-                 ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Device driver: %s", r.device.driverName());
-    ImGui::SeparatorText("Camera");
-    ImGui::RadioButton("Orthographic", (int *)&cam_type,
-                       int(CameraProjection::ORTHOGRAPHIC));
-    ImGui::SameLine();
-    ImGui::RadioButton("Perspective", (int *)&cam_type,
-                       int(CameraProjection::PERSPECTIVE));
-    switch (cam_type) {
-    case CameraProjection::ORTHOGRAPHIC:
-      if (ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f, "%.3f",
-                           ImGuiSliderFlags_AlwaysClamp))
-        updateOrtho(currentOrthoScale);
-      break;
-    case CameraProjection::PERSPECTIVE:
-      Degf newFov{currentFov};
-      if (ImGui::DragFloat("fov", newFov, 1.f, 15.f, 90.f, "%.3f",
-                           ImGuiSliderFlags_AlwaysClamp))
-        updateFov(Radf(newFov));
-      break;
-    }
+        ImGui::Begin("Renderer info & controls", nullptr,
+                     ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Device driver: %s", r.device.driverName());
+        ImGui::SeparatorText("Camera");
+        ImGui::RadioButton("Orthographic", (int *)&cam_type,
+                           int(CameraProjection::ORTHOGRAPHIC));
+        ImGui::SameLine();
+        ImGui::RadioButton("Perspective", (int *)&cam_type,
+                           int(CameraProjection::PERSPECTIVE));
+        switch (cam_type) {
+        case CameraProjection::ORTHOGRAPHIC:
+          if (ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f,
+                               "%.3f", ImGuiSliderFlags_AlwaysClamp))
+            updateOrtho(currentOrthoScale);
+          break;
+        case CameraProjection::PERSPECTIVE:
+          Degf newFov{currentFov};
+          if (ImGui::DragFloat("fov", newFov, 1.f, 15.f, 90.f, "%.3f",
+                               ImGuiSliderFlags_AlwaysClamp))
+            updateFov(Radf(newFov));
+          break;
+        }
 
-    ImGui::SeparatorText("Env. status");
-    ImGui::Checkbox("Render plane", &renderPlane);
-    ImGui::Checkbox("Render grid", &renderGrid);
+        ImGui::SeparatorText("Env. status");
+        ImGui::Checkbox("Render plane", &renderPlane);
+        ImGui::Checkbox("Render grid", &renderGrid);
 
-    ImGui::SeparatorText("Lights");
-    ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
-    ImGui::ColorEdit3("color", myLight.color.data());
-    ImGui::Separator();
-    ImGui::ColorEdit4("grid color", gridColor.data(),
-                      ImGuiColorEditFlags_AlphaPreview);
-    ImGui::ColorEdit4("plane color", plane_data.material.baseColor.data());
-    ImGui::End();
-    ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
-    ImGui::ShowDemoWindow(&demo_window_open);
-  }};
-
-  if (!guiSys.init(renderer)) {
-    return 1;
-  }
+        ImGui::SeparatorText("Lights");
+        ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
+        ImGui::ColorEdit3("color", myLight.color.data());
+        ImGui::Separator();
+        ImGui::ColorEdit4("grid color", gridColor.data(),
+                          ImGuiColorEditFlags_AlphaPreview);
+        ImGui::ColorEdit4("plane color", plane_data.material.baseColor.data());
+        ImGui::End();
+        ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+        ImGui::ShowDemoWindow(&demo_window_open);
+      }};
 
   // Load robot
   pin::Model model;
