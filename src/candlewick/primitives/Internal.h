@@ -45,6 +45,8 @@ namespace detail {
 
     void addDisk(Uint32 segments, float radius, float z);
     void addCone(Uint32 segments, float radius, float zBottom, float length);
+    Uint32 addCylinderFloors(Uint32 numFloors, Uint32 segments,
+                             Float2 basePoint, Float2 upDir, Uint32 startIdx);
 
     std::vector<Float3> positions;
     std::vector<Float3> normals;
