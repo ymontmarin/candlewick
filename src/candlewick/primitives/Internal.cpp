@@ -40,7 +40,7 @@ namespace detail {
     Uint32 current_floor_start_idx = base_centre_idx + 1;
     Float2 base_point{radius, zBottom};
     const Float2 updir{-radius, length};
-    Float2 base_normal = Float2{length, radius}.normalized();
+    const Float2 base_normal = Float2{length, radius}.normalized();
 
     for (size_t i = 0; i < 2; i++) {
 
