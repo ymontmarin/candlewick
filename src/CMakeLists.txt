@@ -35,9 +35,11 @@ add_library(
   candlewick/utils/VideoRecorder.cpp
   candlewick/utils/WriteTextureToImage.cpp
   candlewick/primitives/Arrow.cpp
+  candlewick/primitives/Cone.cpp
   candlewick/primitives/Cube.cpp
   candlewick/primitives/Grid.cpp
   candlewick/primitives/Heightfield.cpp
+  candlewick/primitives/Internal.cpp
   candlewick/primitives/Plane.cpp
   candlewick/third-party/sbti_lib.cpp
   # imgui sources
