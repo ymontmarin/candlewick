@@ -34,7 +34,7 @@ namespace constants {
   inline constexpr double Pi = 3.1415926535897932;
   inline constexpr float Pif = 3.141592654f;
   inline constexpr double Pi_2 = 1.5707963267948966;
-  inline constexpr double Pi_2f = 1.5707963267f;
+  inline constexpr float Pi_2f = 1.5707963267f;
 } // namespace constants
 
 inline constexpr double deg2rad(double t) { return t * constants::Pi / 180.0; }
