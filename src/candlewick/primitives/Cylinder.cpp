@@ -24,8 +24,8 @@ MeshData loadCylinder(Uint32 rings, Uint32 segments, float radius,
   }
   return MeshData{
       SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-      vertices,
-      builder.indices,
+      std::move(vertices),
+      std::move(builder.indices),
   };
 }
 

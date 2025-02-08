@@ -37,7 +37,7 @@ template <> struct VertexTraits<PosNormalVertex> {
 namespace detail {
 
   struct ConeCylinderBuilder {
-    size_t currentVertices() const { return positions.size(); }
+    Uint32 currentVertices() const { return Uint32(positions.size()); }
     void add(const Float3 &pos, const Float3 &normal);
     void addFace(const Uint32 (&face)[3]);
     Float3 previousPos(std::size_t offset) const;
@@ -48,8 +48,11 @@ namespace detail {
     /// \todo merge with previous somehow
     void addTopDisk(Uint32 segments, float radius, float z);
     void addCone(Uint32 segments, float radius, float zBottom, float length);
-    Uint32 addCylinderFloors(Uint32 numFloors, Uint32 segments,
-                             Float2 basePoint, Float2 upDir, Uint32 startIdx);
+    void addCylinderFloors(Uint32 numFloors, Uint32 segments, Float2 basePoint,
+                           Float2 upDir, Uint32 startIdx);
+    void addHemisphereVertices(Uint32 count, Uint32 segments, float zCenter,
+                               Radf ringStart, float ringIncrement,
+                               Uint32 startIdx);
 
     std::vector<Float3> positions;
     std::vector<Float3> normals;

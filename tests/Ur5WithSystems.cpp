@@ -222,7 +222,12 @@ int main(int argc, char **argv) {
       Eigen::Affine3f{Eigen::Translation3f{-0.5f, 0.2f, 0.3f}});
   robot_scene.addEnvironmentObject(
       loadCylinder(5, 8u, 0.1f, 1.f),
-      Eigen::Affine3f{Eigen::Translation3f{0.5f, -0.3f, 0.5f}});
+      Eigen::Affine3f{Eigen::Translation3f{-0.5f, -0.3f, 0.5f}});
+  {
+    Eigen::Affine3f sphereTr{Eigen::Translation3f{0.3f, 0.3f, 0.8f}};
+    sphereTr.scale(0.1f);
+    robot_scene.addEnvironmentObject(loadUvSphereSolid(8u, 16u), sphereTr);
+  }
 
   const size_t numRobotShapes =
       registry.view<const multibody::PinGeomObjComponent>().size();

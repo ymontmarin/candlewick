@@ -42,6 +42,7 @@ add_library(
   candlewick/primitives/Heightfield.cpp
   candlewick/primitives/Internal.cpp
   candlewick/primitives/Plane.cpp
+  candlewick/primitives/Sphere.cpp
   candlewick/third-party/sbti_lib.cpp
   # imgui sources
   ${IMGUI_SRC}
