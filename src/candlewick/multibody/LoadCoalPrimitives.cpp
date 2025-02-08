@@ -2,9 +2,7 @@
 
 #include "../core/errors.h"
 
-#include "../primitives/Plane.h"
-#include "../primitives/Cube.h"
-#include "../primitives/Heightfield.h"
+#include "../primitives/Primitives.h"
 #include "../utils/MeshTransforms.h"
 
 #include <coal/shape/geometric_shapes.h>
@@ -16,18 +14,24 @@ namespace candlewick {
 
 constexpr float kPlaneScale = 10.f;
 
+// helper
+template <typename T>
+decltype(auto) castGeom(const coal::CollisionGeometry &geometry) {
+  return static_cast<const T &>(geometry);
+}
+
 void getPlaneOrHalfspaceNormalOffset(const coal::CollisionGeometry &geometry,
                                      Float3 &n, float &d) {
   using namespace coal;
   switch (geometry.getNodeType()) {
   case GEOM_PLANE: {
-    const Plane &g = static_cast<const Plane &>(geometry);
+    auto &g = castGeom<Plane>(geometry);
     n = g.n.cast<float>();
     d = float(g.d);
     return;
   }
   case GEOM_HALFSPACE: {
-    const Halfspace &g = static_cast<const Halfspace &>(geometry);
+    auto &g = castGeom<Halfspace>(geometry);
     n = g.n.cast<float>();
     d = float(g.d);
     return;
@@ -47,9 +51,28 @@ MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
   const NODE_TYPE nodeType = geometry.getNodeType();
   switch (nodeType) {
   case GEOM_BOX: {
-    const Box &g = static_cast<const Box &>(geometry);
+    auto &g = castGeom<Box>(geometry);
     transform.scale(2 * g.halfSide.cast<float>());
     meshData = toOwningMeshData(loadCube());
+    break;
+  }
+  case GEOM_SPHERE: {
+    auto &g = castGeom<Sphere>(geometry);
+    // sphere loader doesn't have a radius argument, so apply scaling
+    transform.scale(float(g.radius));
+    meshData = loadUvSphereSolid(8u, 16u);
+    break;
+  }
+  case GEOM_CONE: {
+    auto &g = castGeom<Cone>(geometry);
+    float length = 2 * float(g.halfLength);
+    meshData = loadCone(16u, float(g.radius), length);
+    break;
+  }
+  case GEOM_CYLINDER: {
+    auto &g = castGeom<Cylinder>(geometry);
+    float height = 2.f * float(g.halfLength);
+    meshData = loadCylinder(6u, 16u, float(g.radius), height);
     break;
   }
   case GEOM_HALFSPACE:
@@ -89,12 +112,12 @@ MeshData loadCoalHeightField(const coal::CollisionGeometry &collGeom) {
   switch (nodeType) {
   case coal::HF_AABB:
   case coal::BV_AABB: {
-    auto &geom = static_cast<const coal::HeightField<coal::AABB> &>(collGeom);
+    auto &geom = castGeom<coal::HeightField<coal::AABB>>(collGeom);
     return detail::load_coal_heightfield_impl(geom);
   }
   case coal::HF_OBBRSS:
   case coal::BV_OBBRSS: {
-    auto &geom = static_cast<const coal::HeightField<coal::OBBRSS> &>(collGeom);
+    auto &geom = castGeom<coal::HeightField<coal::OBBRSS>>(collGeom);
     return detail::load_coal_heightfield_impl(geom);
   }
   default:

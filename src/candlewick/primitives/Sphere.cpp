@@ -35,13 +35,11 @@ MeshData loadUvSphereSolid(Uint32 rings, Uint32 segments) {
   for (Uint32 j = 0; j < builder.currentVertices(); j++) {
     vertices.push_back({builder.positions[j], builder.normals[j]});
   }
-  MeshData out{
+  return MeshData{
       SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
       std::move(vertices),
       std::move(builder.indices),
   };
-  out.material.baseColor = 0xFFDA61ff_rgbaf;
-  return out;
 }
 
 } // namespace candlewick
