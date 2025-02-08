@@ -55,6 +55,8 @@ Candlewick depends mainly on:
 
 * [SDL3](https://github.com/libsdl-org/SDL/) for windowing, processing input events, and of course SDL GPU.
 * [EnTT](https://github.com/skypjack/entt/) for the entity-component system (ECS)
+* the [Eigen](https://gitlab.com/libeigen/eigen/) linear algebra template library
+* [Open Asset Importer Library (assimp)](https://assimp-docs.readthedocs.io/en/latest/) for loading meshes
 
 #### Optional dependencies
 
@@ -63,3 +65,13 @@ Candlewick depends mainly on:
 * For loading and visualizing robots:
   * the Pinocchio rigid-body dynamics library (required for the `candlewick::multibody` classes and functions).
   * [robot_descriptions_cpp](https://github.com/ManifoldFR/robot_descriptions_cpp), a suite of loaders for robots (required for some examples)
+
+## Credits
+
+Many of the design choices of this library are heavily inspired by other, more mature work in the open-source 3D graphics middleware space.
+
+Here are some of the resources I've looked at:
+
+* the [Magnum](https://magnum.graphics/) graphics middleware (the design ideas around mesh layouts, how to load geometry primitives, and the type-erased `MeshData` type)
+* [bgfx](https://github.com/bkaradzic/bgfx/)
+* Sascha Willems' Vulkan examples: https://github.com/SaschaWillems/Vulkan/
