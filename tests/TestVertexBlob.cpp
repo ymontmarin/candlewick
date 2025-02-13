@@ -40,6 +40,7 @@ struct alignas(16) CustomVertex {
 };
 static_assert(IsVertexType<CustomVertex>, "Invalid vertex type.");
 
+namespace candlewick {
 template <> struct VertexTraits<CustomVertex> {
   static auto layout() {
     return MeshLayout{}
@@ -52,6 +53,7 @@ template <> struct VertexTraits<CustomVertex> {
                       offsetof(CustomVertex, uv));
   }
 };
+} // namespace candlewick
 
 bool operator==(const CustomVertex &lhs, const CustomVertex &rhs) {
   return (lhs.pos == rhs.pos) && (lhs.color == rhs.color) && (lhs.uv == rhs.uv);
