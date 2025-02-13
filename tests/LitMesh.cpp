@@ -131,7 +131,7 @@ int main() {
   Rad<float> fov = 55.0_radf;
   Camera camera{
       .projection = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f),
-      .view{lookAt({6.0, 0, 3.}, Float3::Zero())},
+      .view = Eigen::Isometry3f{lookAt({6.0, 0, 3.}, Float3::Zero())},
   };
 
   Uint32 frameNo = 0;
