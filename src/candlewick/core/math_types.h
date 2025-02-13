@@ -57,7 +57,7 @@ template <std::floating_point T> struct Deg;
 /// \sa Deg
 template <std::floating_point T> struct Rad {
   constexpr Rad(T value) : _value(value) {}
-  explicit constexpr Rad(Deg<T> value) : _value(deg2rad(value)) {}
+  constexpr Rad(Deg<T> value) : _value(deg2rad(T(value))) {}
   constexpr operator T &() { return _value; }
   constexpr operator T() const { return _value; }
   /* implicit */ constexpr operator T *() { return &_value; }
@@ -78,7 +78,7 @@ template <std::floating_point T> Rad(T) -> Rad<T>;
 /// \sa Rad
 template <std::floating_point T> struct Deg {
   constexpr Deg(T value) : _value(value) {}
-  explicit constexpr Deg(Rad<T> value) : _value(rad2deg(value)) {}
+  constexpr Deg(Rad<T> value) : _value(rad2deg(T(value))) {}
   constexpr operator T &() { return _value; }
   constexpr operator T() const { return _value; }
   /* implicit */ constexpr operator T *() { return &_value; }

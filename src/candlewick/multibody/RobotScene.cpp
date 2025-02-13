@@ -323,7 +323,7 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
     const Mesh &mesh = obj.mesh;
     TransformUniformData data{
         .modelView = modelView,
-        .mvp{viewProj * tr.transform},
+        .mvp = GpuMat4{viewProj * tr.transform},
         .normalMatrix = math::computeNormalMatrix(modelView),
     };
     renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
