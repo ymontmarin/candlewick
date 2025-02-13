@@ -35,6 +35,7 @@ add_library(
   candlewick/utils/VideoRecorder.cpp
   candlewick/utils/WriteTextureToImage.cpp
   candlewick/primitives/Arrow.cpp
+  candlewick/primitives/Capsule.cpp
   candlewick/primitives/Cone.cpp
   candlewick/primitives/Cube.cpp
   candlewick/primitives/Cylinder.cpp
