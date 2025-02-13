@@ -58,7 +58,7 @@ static float currentOrthoScale = 1.f;
 static CameraProjection cam_type = CameraProjection::PERSPECTIVE;
 static Camera camera{
     .projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ),
-    .view{lookAt({2.0, 0, 2.}, Float3::Zero())},
+    .view = Eigen::Isometry3f{lookAt({2.0, 0, 2.}, Float3::Zero())},
 };
 static bool quitRequested = false;
 static bool showFrustum = false;
