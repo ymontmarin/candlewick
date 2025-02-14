@@ -1,6 +1,5 @@
 #pragma once
 
-#include <pinocchio-visualizers/base-visualizer.hpp>
 #include "RobotScene.h"
 #include "../core/Device.h"
 #include "../core/Camera.h"
@@ -8,17 +7,17 @@
 #include "../core/DebugScene.h"
 #include "../core/Renderer.h"
 
+#include <pinocchio/visualizers/base-visualizer.hpp>
 #include <SDL3/SDL_init.h>
 #include <entt/entity/registry.hpp>
 
 namespace candlewick::multibody {
 
 namespace {
-  using pinocchio_visualizers::BaseVisualizer;
-  using pinocchio_visualizers::ConstVectorRef;
-  using pinocchio_visualizers::Matrix4s;
-  using pinocchio_visualizers::Vector3s;
-  using pinocchio_visualizers::VectorXs;
+  using pinocchio::visualizers::BaseVisualizer;
+  using pinocchio::visualizers::ConstVectorRef;
+  using pinocchio::visualizers::Vector3;
+  using pinocchio::visualizers::VectorXs;
 } // namespace
 
 /// Camera control parameters: senstivities, key bindings, etc...
@@ -79,16 +78,16 @@ public:
       : Visualizer(config, model, visualModel,
                    [this](auto &) { default_gui_exec(*this); }) {}
 
-  ~Visualizer() noexcept;
+  ~Visualizer() override;
 
   void displayPrecall() override { m_mutex.lock(); }
   void displayImpl() override { m_mutex.unlock(); }
 
-  void setCameraTarget(const Eigen::Ref<const Vector3s> &target) override;
+  void setCameraTarget(const Eigen::Ref<const Vector3> &target) override;
 
-  void setCameraPosition(const Eigen::Ref<const Vector3s> &position) override;
+  void setCameraPosition(const Eigen::Ref<const Vector3> &position) override;
 
-  void setCameraPose(const Eigen::Ref<const Matrix4s> &pose) override;
+  void setCameraPose(const Eigen::Ref<const Matrix4> &pose) override;
 
   void enableCameraControl(bool v) override { m_cameraControl = v; }
 

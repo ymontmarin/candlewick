@@ -19,6 +19,7 @@ int main() {
                                          &geom_model, NULL);
 
   Visualizer visualizer{{1920, 1280}, model, geom_model};
+  assert(!visualizer.hasExternalData());
 
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
