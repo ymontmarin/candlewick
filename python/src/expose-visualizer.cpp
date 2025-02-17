@@ -2,7 +2,7 @@
 #include <eigenpy/optional.hpp>
 
 #include "candlewick/multibody/Visualizer.h"
-#include <pinocchio-visualizers/python/visitor.hpp>
+#include <pinocchio/bindings/python/visualizers/visualizer-visitor.hpp>
 
 #include <pinocchio/multibody/model.hpp>
 #include <pinocchio/multibody/geometry.hpp>
@@ -18,7 +18,7 @@ void exposeVisualizer() {
       .def(bp::init<Visualizer::Config, const pin::Model &,
                     const pin::GeometryModel &>(
           ("self"_a, "config", "model", "geomModel")))
-      .def(pinocchio_visualizers::VisualizerVisitor<Visualizer>{})
+      .def(pinocchio::python::VisualizerPythonVisitor<Visualizer>{})
       .def_readonly("renderer", &Visualizer::renderer)
       .add_property("shouldExit", &Visualizer::shouldExit);
 }

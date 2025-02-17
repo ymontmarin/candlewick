@@ -31,20 +31,20 @@ void Visualizer::resetCamera() {
 
 void Visualizer::loadViewerModel() {}
 
-void Visualizer::setCameraTarget(const Eigen::Ref<const Vector3s> &target) {
+void Visualizer::setCameraTarget(const Eigen::Ref<const Vector3> &target) {
   Float3 eye = this->camera.position();
   camera.view = lookAt(eye, target.cast<float>());
 }
 
-void Visualizer::setCameraPosition(const Eigen::Ref<const Vector3s> &position) {
+void Visualizer::setCameraPosition(const Eigen::Ref<const Vector3> &position) {
   camera_util::setWorldPosition(camera, position.cast<float>());
 }
 
-void Visualizer::setCameraPose(const Eigen::Ref<const Matrix4s> &pose) {
+void Visualizer::setCameraPose(const Eigen::Ref<const Matrix4> &pose) {
   camera.view = pose.cast<float>().inverse();
 }
 
-Visualizer::~Visualizer() noexcept {
+Visualizer::~Visualizer() {
   m_render_thread.join();
 
   robotScene->release();
@@ -58,7 +58,7 @@ Visualizer::~Visualizer() noexcept {
 void Visualizer::renderThreadMain(const Config &config) {
 
   renderer = createRenderer(config);
-  robotScene.emplace(registry, renderer, *m_visualModel, visualData,
+  robotScene.emplace(registry, renderer, visualModel(), visualData(),
                      RobotScene::Config{.enable_shadows = true});
   debugScene.emplace(renderer);
 
@@ -84,7 +84,7 @@ void Visualizer::renderThreadMain(const Config &config) {
     debugScene->update();
     {
       std::scoped_lock lock{m_mutex};
-      updateRobotTransforms(registry, visualData);
+      updateRobotTransforms(registry, visualData());
     }
 
     renderer.beginFrame();

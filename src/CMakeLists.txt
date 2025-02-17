@@ -81,7 +81,6 @@ target_include_directories(${PROJECT_NAME} INTERFACE candlewick)
 
 if(BUILD_PINOCCHIO_VISUALIZER)
   find_package(pinocchio REQUIRED)
-  find_package(pinocchio-visualizers REQUIRED)
   find_package(robot_descriptions_cpp REQUIRED)
 
   file(
@@ -97,7 +96,7 @@ if(BUILD_PINOCCHIO_VISUALIZER)
       candlewick_core
       robot_descriptions_cpp::robot_descriptions_cpp
       pinocchio::pinocchio_default
-      pinocchio-visualizers::pinocchio-visualizers
+      pinocchio::pinocchio_visualizers
   )
   target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_multibody)
 

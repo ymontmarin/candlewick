@@ -20,6 +20,7 @@
 
 #include <robot_descriptions_cpp/robot_load.hpp>
 
+#include <pinocchio/multibody/model.hpp>
 #include <pinocchio/multibody/data.hpp>
 #include <pinocchio/multibody/geometry.hpp>
 #include <pinocchio/algorithm/frames.hpp>
