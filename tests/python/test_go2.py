@@ -1,26 +1,28 @@
-import pinocchio as pin
 import candlewick as cdw
 from candlewick.multibody import Visualizer, VisualizerConfig
 
-import go2_description as go2d
-import os.path as osp
+try:
+    import go2_description as go2d
+except ImportError:
+    import warnings
+
+    warnings.warn(
+        "This example requires the go2_description package, which was not found. Download it at: https://github.com/inria-paris-robotics-lab/go2_description"
+    )
+    raise
+import time
+import tqdm
 
 
 print(f"Current shader directory: {cdw.currentShaderDirectory()}")
 
-builder = pin.RobotWrapper.BuildFromURDF
-package_dir = osp.realpath(osp.join(go2d.GO2_DESCRIPTION_PACKAGE_DIR, ".."))
-print(package_dir)
-
-robot = builder(go2d.GO2_DESCRIPTION_URDF_PATH, [package_dir])
-print("Load q0:")
-pin.loadReferenceConfigurations(robot.model, go2d.GO2_DESCRIPTION_SRDF_PATH)
+robot = go2d.loadGo2()
 
 rmodel = robot.model
 visual_model = robot.visual_model
 
-print(rmodel)
-print(visual_model)
+q0 = rmodel.referenceConfigurations["standing"]
+dt = 0.01
 
 config = VisualizerConfig()
 config.width = 1600
@@ -34,6 +36,6 @@ print(
     viz.renderer.device.driverName(),
 )
 
-q0 = rmodel.referenceConfigurations["standing"]
-pin.framesForwardKinematics(rmodel, robot.data, q0)
-viz.display(q0)
+for i in tqdm.tqdm(range(1000)):
+    viz.display(q0)
+    time.sleep(dt)
