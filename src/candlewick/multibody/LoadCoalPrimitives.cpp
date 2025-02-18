@@ -43,7 +43,7 @@ void getPlaneOrHalfspaceNormalOffset(const coal::CollisionGeometry &geometry,
 }
 
 MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
-                           const Float4 &meshColor, const Float3 &meshScale) {
+                           const Float4 &meshColor) {
   using namespace coal;
   SDL_assert_always(geometry.getObjectType() == OT_GEOM);
   MeshData meshData{NoInit};
@@ -90,7 +90,6 @@ MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
     break;
   }
   meshData.material.baseColor = meshColor;
-  transform.scale(meshScale);
   apply3DTransformInPlace(meshData, transform);
   return meshData;
 }
