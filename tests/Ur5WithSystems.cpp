@@ -376,7 +376,7 @@ int main(int argc, char **argv) {
 
     if (renderer.waitAndAcquireSwapchain()) {
       const GpuMat4 viewProj = camera.viewProj();
-      multibody::updateRobotTransforms(registry, robot_scene.geomData());
+      robot_scene.updateTransforms();
       robot_scene.collectOpaqueCastables();
       auto &castables = robot_scene.castables();
       renderShadowPassFromAABB(renderer, shadowPassInfo, sceneLight, castables,

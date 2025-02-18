@@ -109,6 +109,8 @@ namespace multibody {
                const pin::GeometryModel &geom_model,
                const pin::GeometryData &geom_data, Config config);
 
+    void updateTransforms();
+
     void collectOpaqueCastables();
     const std::vector<OpaqueCastable> &castables() const { return _castables; }
 
@@ -143,8 +145,11 @@ namespace multibody {
     inline bool pbrHasPrepass() const { return _config.triangle_has_prepass; }
     inline bool shadowsEnabled() const { return _config.enable_shadows; }
 
+    /// \brief Getter for the referenced pinocchio GeometryModel object.
+    const pin::GeometryModel &geomModel() const { return _geomModel; }
+
     /// \brief Getter for the referenced pinocchio GeometryData object.
-    const pin::GeometryData &geomData() const { return *_geomData; }
+    const pin::GeometryData &geomData() const { return _geomData; }
 
     const entt::registry &registry() const { return _registry; }
 
@@ -163,7 +168,8 @@ namespace multibody {
     entt::registry &_registry;
     Config _config;
     const Device &_device;
-    pin::GeometryData const *_geomData;
+    std::reference_wrapper<pin::GeometryModel const> _geomModel;
+    std::reference_wrapper<pin::GeometryData const> _geomData;
     std::vector<OpaqueCastable> _castables;
   };
   static_assert(Scene<RobotScene>);

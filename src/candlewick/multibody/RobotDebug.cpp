@@ -33,8 +33,6 @@ void RobotDebugSystem::updateFrames(entt::registry &reg) {
 }
 
 void RobotDebugSystem::updateFrameVelocities(entt::registry &reg) {
-  using Motionf = pin::MotionTpl<float>;
-  using SE3f = pin::SE3Tpl<float>;
   constexpr float vel_scale = 0.5f;
 
   auto view = reg.view<const PinFrameVelocityComponent, DebugMeshComponent>();
