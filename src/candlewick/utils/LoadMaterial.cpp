@@ -17,7 +17,6 @@ std::string_view assimpShadingModeName(aiShadingMode shading_mode) {
 enum class material_load_retc {
   INVALID,
   PHONG_MISSING_DIFFUSE,
-  PHONG_MISSING_SHININESS,
   PBR_MISSING_BASE_COLOR,
   PBR_MISSING_METALNESS,
   PBR_MISSING_ROUGHNESS,
@@ -35,9 +34,7 @@ material_load_retc loadPhongMaterial(aiMaterial *material, PhongMaterial &out) {
   material->Get(AI_MATKEY_COLOR_AMBIENT, _col(out.ambient));
   material->Get(AI_MATKEY_COLOR_SPECULAR, _col(out.specular));
   material->Get(AI_MATKEY_COLOR_EMISSIVE, _col(out.emissive));
-  if (material->Get(AI_MATKEY_SHININESS, out.shininess) != aiReturn_SUCCESS) {
-    return material_load_retc::PHONG_MISSING_SHININESS;
-  }
+  material->Get(AI_MATKEY_SHININESS, out.shininess);
   material->Get(AI_MATKEY_REFLECTIVITY, out.reflectivity);
   return material_load_retc::OK;
 }
