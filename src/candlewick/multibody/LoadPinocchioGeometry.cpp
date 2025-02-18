@@ -2,6 +2,7 @@
 #include "LoadCoalPrimitives.h"
 #include "../core/errors.h"
 #include "../utils/LoadMesh.h"
+#include "../utils/MeshTransforms.h"
 
 #include <pinocchio/multibody/geometry.hpp>
 
@@ -20,6 +21,12 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
   switch (objType) {
   case OT_BVH: {
     loadSceneMeshes(gobj.meshPath.c_str(), meshData);
+    Eigen::Affine3f T;
+    T.setIdentity();
+    T.scale(meshScale);
+    for (auto &d : meshData) {
+      apply3DTransformInPlace(d, T);
+    }
     break;
   }
   case OT_GEOM: {
