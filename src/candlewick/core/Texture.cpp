@@ -4,6 +4,7 @@
 #include "../third-party/magic_enum.hpp"
 
 #include <cassert>
+#include <format>
 
 namespace candlewick {
 
