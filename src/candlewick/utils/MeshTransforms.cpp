@@ -18,11 +18,18 @@ void apply3DTransformInPlace(MeshData &meshData, const Eigen::Affine3f &tr) {
     }
   }
 
+  Eigen::Matrix3f normalMatrix = tr.linear().inverse().transpose();
   if (auto normAttr = layout.lookupAttributeByName("normal")) {
-    Eigen::Matrix3f normalMatrix = tr.linear().inverse().transpose();
     for (Uint64 i = 0; i < meshData.numVertices(); i++) {
       Float3 &normal = vertexData.getAttribute<Float3>(i, *normAttr);
-      normal = normalMatrix * normal;
+      normal.applyOnTheLeft(normalMatrix);
+    }
+  }
+
+  if (auto tangAttr = layout.lookupAttributeByName("tangent")) {
+    for (Uint64 i = 0; i < meshData.numVertices(); i++) {
+      Float3 &tang = vertexData.getAttribute<Float3>(i, *tangAttr);
+      tang.applyOnTheLeft(normalMatrix);
     }
   }
 }
