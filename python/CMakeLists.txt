@@ -1,4 +1,7 @@
 include(${PROJECT_SOURCE_DIR}/cmake/python.cmake)
+if(GENERATE_PYTHON_STUBS)
+  include(${PROJECT_SOURCE_DIR}/cmake/stubs.cmake)
+endif(GENERATE_PYTHON_STUBS)
 
 find_package(eigenpy 3.2.0 REQUIRED)
 
@@ -34,6 +37,22 @@ install(
   EXPORT ${TARGETS_EXPORT_NAME}
   LIBRARY DESTINATION ${PYLIB_INSTALL_DIR}
 )
+
+if(GENERATE_PYTHON_STUBS)
+  LOAD_STUBGEN()
+  # generate_stubs(
+  #   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}
+  #   pycandlewick
+  #   ${PYTHON_SITELIB}/${PROJECT_NAME}/pycandlewick
+  #   pycandlewick
+  # )
+  GENERATE_STUBS(
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${PROJECT_NAME}
+    ${PYTHON_SITELIB}
+    pycandlewick
+  )
+endif(GENERATE_PYTHON_STUBS)
 
 set(PYTHON_FILES __init__.py)
 
