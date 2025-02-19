@@ -47,7 +47,7 @@ ShaderCode loadShaderFile(const char *filename, const char *shader_ext) {
   void *code = SDL_LoadFile(shader_path, &code_size);
   if (!code) {
     throw RAIIException(
-        std::format("Failed to load shader file: %s", SDL_GetError()));
+        std::format("Failed to load shader file: {}", SDL_GetError()));
   }
   return ShaderCode{reinterpret_cast<Uint8 *>(code), code_size};
 }
@@ -90,7 +90,7 @@ Shader::Shader(const Device &device, const char *filename, const Config &config)
   };
   if (!(_shader = SDL_CreateGPUShader(device, &info))) {
     throw RAIIException(
-        std::format("Failed to load shader: %s", SDL_GetError()));
+        std::format("Failed to load shader: {}", SDL_GetError()));
   }
 }
 

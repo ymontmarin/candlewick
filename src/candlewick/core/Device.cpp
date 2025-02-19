@@ -11,7 +11,7 @@ Device::Device(SDL_GPUShaderFormat format_flags, bool debug_mode)
   _device = SDL_CreateGPUDevice(format_flags, debug_mode, nullptr);
   if (!_device) {
     throw RAIIException(
-        std::format("Failed to create GPU device: %s", SDL_GetError()));
+        std::format("Failed to create GPU device: {}", SDL_GetError()));
   }
   driver = SDL_GetGPUDeviceDriver(_device);
   SDL_Log("Device driver: %s", driver);
