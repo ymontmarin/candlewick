@@ -2,7 +2,8 @@
 
 namespace candlewick {
 namespace detail {
-  void ConeCylinderBuilder::addDisk(Uint32 segments, float radius, float z) {
+  void ConeCylinderBuilder::addBottomDisk(Uint32 segments, float radius,
+                                          float z) {
     const float angleIncrement = 2.f * constants::Pif / float(segments);
 
     Uint32 cap_idx = currentVertices();
@@ -97,7 +98,7 @@ namespace detail {
     const Uint32 base_centre_idx = Uint32(currentVertices());
 
     // BOTTOM
-    addDisk(segments, radius, zBottom);
+    addBottomDisk(segments, radius, zBottom);
 
     // CONE TIP
     // direction from (radius, 0) in the xz-plane to the tip at (0, length).

@@ -10,7 +10,7 @@ MeshData loadCylinder(Uint32 rings, Uint32 segments, float radius,
   const float halfLength = 0.5f * height;
   const float z = -halfLength;
 
-  builder.addDisk(segments, radius, z);
+  builder.addBottomDisk(segments, radius, z);
   assert(rings >= 1);
   const Float2 upDir{0., height};
   builder.addCylinderFloors(rings, segments, {radius, z}, upDir, 1);
