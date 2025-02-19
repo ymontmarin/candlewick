@@ -116,8 +116,6 @@ private:
 };
 
 inline Renderer Visualizer::createRenderer(const Config &config) {
-  [[maybe_unused]] bool ret = SDL_Init(SDL_INIT_VIDEO);
-  assert(ret);
   Device dev{auto_detect_shader_format_subset()};
   SDL_Window *window =
       SDL_CreateWindow("Candlewick Pinocchio visualizer", int(config.width),

@@ -12,6 +12,10 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
                        GuiSystem::GuiBehavior gui_callback)
     : BaseVisualizer(model, visualModel), registry{}, renderer(NoInit),
       guiSystem(NoInit, std::move(gui_callback)) {
+  if (!SDL_Init(SDL_INIT_VIDEO)) {
+    throw std::runtime_error(
+        std::format("Failed to init video: {}", SDL_GetError()));
+  }
   m_render_thread = std::thread(&Visualizer::renderThreadMain, this, config);
 }
 
