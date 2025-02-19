@@ -93,13 +93,25 @@ struct CylinderCameraControl {
     return dolly(ystep).orbit(Rad{rotStep});
   }
 
-  auto &moveInOut(float scale, float offset) {
-    const float alpha = 1.f - (offset > 0 ? 1.f / scale : scale);
-    const float curDist = camera.view.translation().norm();
-    camera_util::localTranslateZ(camera, curDist * alpha);
-    return *this;
-  }
+  CylinderCameraControl &pan(Float2 step, float sensitivity);
+
+  CylinderCameraControl &moveInOut(float scale, float offset);
 };
+
+inline CylinderCameraControl &CylinderCameraControl::pan(Float2 step,
+                                                         float sensitivity) {
+  step = sensitivity * step;
+  camera_util::localTranslate(camera, {step.x(), -step.y(), 0.f});
+  return *this;
+}
+
+inline CylinderCameraControl &CylinderCameraControl::moveInOut(float scale,
+                                                               float offset) {
+  const float alpha = 1.f - (offset > 0 ? 1.f / scale : scale);
+  const float curDist = camera.view.translation().norm();
+  camera_util::localTranslateZ(camera, curDist * alpha);
+  return *this;
+}
 
 static_assert(CameraController<CylinderCameraControl>);
 
