@@ -101,7 +101,7 @@ struct CylinderCameraControl {
 inline CylinderCameraControl &CylinderCameraControl::pan(Float2 step,
                                                          float sensitivity) {
   step = sensitivity * step;
-  camera_util::localTranslate(camera, {step.x(), step.y(), 0.f});
+  camera_util::localTranslate(camera, {step.x(), -step.y(), 0.f});
   return *this;
 }
 
