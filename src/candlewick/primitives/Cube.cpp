@@ -43,7 +43,7 @@ const DefaultVertex vertexData[]{
     {{-1.0f, 1.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}}, /* -X */
     {{-1.0f, 1.0f, -1.0f}, {-1.0f, 0.0f, 0.0f}}};
 
-MeshDataView loadCube() {
+MeshDataView loadCubeSolid() {
   return {SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, vertexData, indexData};
 }
 

@@ -15,7 +15,7 @@ DebugScene::DebugScene(const Renderer &renderer)
 }
 
 std::tuple<entt::entity, DebugMeshComponent &> DebugScene::addTriad() {
-  auto triad_datas = createTriad();
+  auto triad_datas = loadTriadSolid();
   std::vector<GpuVec4> triad_colors(3);
   Mesh triad = createMeshFromBatch(_device, triad_datas, true);
   for (size_t i = 0; i < 3; i++) {

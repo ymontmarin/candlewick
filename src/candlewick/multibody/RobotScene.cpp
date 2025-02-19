@@ -85,7 +85,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
                        const pin::GeometryData &geom_data, Config config)
     : // screenSpaceShadows{.sampler = nullptr, .pass{NoInit}},
       _registry(registry), _config(config), _device(renderer.device),
-      _geomData(&geom_data) {
+      _geomModel(geom_model), _geomData(geom_data) {
 
   for (size_t i = 0; i < kNumPipelineTypes; i++) {
     renderPipelines[i] = NULL;
@@ -180,9 +180,13 @@ void updateRobotTransforms(entt::registry &registry,
   for (auto [ent, geom_id, visible, tr] : robot_view.each()) {
     if (!visible)
       continue;
-    auto pose = geom_data.oMg[geom_id].cast<float>();
+    SE3f pose = geom_data.oMg[geom_id].cast<float>();
     tr.transform = pose.toHomogeneousMatrix();
   }
+}
+
+void RobotScene::updateTransforms() {
+  ::candlewick::multibody::updateRobotTransforms(_registry, _geomData);
 }
 
 void RobotScene::collectOpaqueCastables() {

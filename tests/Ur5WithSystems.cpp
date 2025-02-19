@@ -12,7 +12,7 @@
 
 #include "candlewick/multibody/RobotScene.h"
 #include "candlewick/multibody/RobotDebug.h"
-#include "candlewick/primitives/Plane.h"
+#include "candlewick/primitives/Primitives.h"
 #include "candlewick/utils/WriteTextureToImage.h"
 
 #include <imgui.h>
@@ -52,7 +52,7 @@ constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 /// Application state
 
-static Radf currentFov = 55.0_radf;
+static Radf currentFov = 55.0_degf;
 static float nearZ = 0.01f;
 static float farZ = 10.f;
 static float currentOrthoScale = 1.f;
@@ -112,7 +112,7 @@ void eventLoop(const Renderer &renderer) {
         updateOrtho(std::clamp(scaleFac * currentOrthoScale, 0.1f, 2.f));
         break;
       case CameraProjection::PERSPECTIVE:
-        updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
+        updateFov(Radf(std::min(currentFov * scaleFac, Radf{170.0_degf})));
         break;
       }
       break;
@@ -217,6 +217,25 @@ int main(int argc, char **argv) {
 
   robot_scene.addEnvironmentObject(loadCube(.33f, {-0.55f, -0.7f}),
                                    Mat4f::Identity());
+  robot_scene.addEnvironmentObject(
+      loadConeSolid(5u, 0.2f, .5f),
+      Eigen::Affine3f{Eigen::Translation3f{-0.5f, 0.2f, 0.3f}});
+  robot_scene.addEnvironmentObject(
+      loadCylinderSolid(5, 8u, 0.1f, 1.f),
+      Eigen::Affine3f{Eigen::Translation3f{-0.5f, -0.3f, 0.5f}});
+  {
+    Eigen::Affine3f sphereTr{Eigen::Translation3f{0.3f, 0.3f, 0.8f}};
+    sphereTr.scale(0.1f);
+    robot_scene.addEnvironmentObject(loadUvSphereSolid(8u, 16u), sphereTr);
+  }
+  {
+    Eigen::Affine3f T = Eigen::Affine3f::Identity();
+    T.translate(Float3{-0.2f, -0.4f, 0.8f});
+    T.scale(0.1f);
+    T.rotate(Eigen::AngleAxisf{constants::Pi_2f, Float3{0., 1., 0.f}});
+    T.rotate(Eigen::AngleAxisf{Radf(45._degf), Float3{0., 0., 1.f}});
+    robot_scene.addEnvironmentObject(loadCapsuleSolid(6u, 16u, 1.5f), T);
+  }
 
   const size_t numRobotShapes =
       registry.view<const multibody::PinGeomObjComponent>().size();
@@ -365,7 +384,7 @@ int main(int argc, char **argv) {
 
     if (renderer.waitAndAcquireSwapchain()) {
       const GpuMat4 viewProj = camera.viewProj();
-      multibody::updateRobotTransforms(registry, robot_scene.geomData());
+      robot_scene.updateTransforms();
       robot_scene.collectOpaqueCastables();
       auto &castables = robot_scene.castables();
       renderShadowPassFromAABB(renderer, shadowPassInfo, sceneLight, castables,

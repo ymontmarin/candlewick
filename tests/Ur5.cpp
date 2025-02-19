@@ -53,7 +53,7 @@ static bool renderGrid = true;
 static Camera camera;
 static CameraProjection cam_type = CameraProjection::PERSPECTIVE;
 // Current perspective matrix fov
-static Radf currentFov = 55.0_radf;
+static Radf currentFov = 55.0_degf;
 // Current ortho matrix scale
 static float currentOrthoScale = 1.f;
 static bool quitRequested = false;
@@ -117,7 +117,7 @@ void eventLoop(const Renderer &renderer) {
         updateOrtho(std::clamp(scaleFac * currentOrthoScale, 0.1f, 2.f));
         break;
       case CameraProjection::PERSPECTIVE:
-        updateFov(Radf(std::min(currentFov * scaleFac, 170.0_radf)));
+        updateFov(Radf(std::min(currentFov * scaleFac, Radf{170.0_degf})));
         break;
       }
       break;
@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
   gridMesh = createMesh(device, grid_data);
   uploadMeshToDevice(device, gridMesh, grid_data);
 
-  std::array triad_data = createTriad();
+  std::array triad_data = loadTriadSolid();
   std::vector<Mesh> triad_meshes;
   for (auto &&arrow_data : std::move(triad_data)) {
     Mesh arrow_mesh = createMesh(device, arrow_data);

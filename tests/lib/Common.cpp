@@ -93,7 +93,7 @@ SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
 }
 
 MeshData loadCube(float size, const Float2 &loc) {
-  MeshData m = toOwningMeshData(loadCube());
+  MeshData m = toOwningMeshData(loadCubeSolid());
   m.material.metalness = 0.4f;
   m.material.baseColor = 0xaab023ff_rgbaf;
   Eigen::Affine3f tr;

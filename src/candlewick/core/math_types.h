@@ -34,7 +34,7 @@ namespace constants {
   inline constexpr double Pi = 3.1415926535897932;
   inline constexpr float Pif = 3.141592654f;
   inline constexpr double Pi_2 = 1.5707963267948966;
-  inline constexpr double Pi_2f = 1.5707963267f;
+  inline constexpr float Pi_2f = 1.5707963267f;
 } // namespace constants
 
 inline constexpr double deg2rad(double t) { return t * constants::Pi / 180.0; }
@@ -56,6 +56,7 @@ template <std::floating_point T> struct Deg;
 /// **radians**).
 /// \sa Deg
 template <std::floating_point T> struct Rad {
+  constexpr Rad() : _value(static_cast<T>(0.)) {}
   constexpr Rad(T value) : _value(value) {}
   constexpr Rad(Deg<T> value) : _value(deg2rad(T(value))) {}
   constexpr operator T &() { return _value; }
@@ -77,6 +78,7 @@ template <std::floating_point T> Rad(T) -> Rad<T>;
 /// **degrees**).
 /// \sa Rad
 template <std::floating_point T> struct Deg {
+  constexpr Deg() : _value(static_cast<T>(0.)) {}
   constexpr Deg(T value) : _value(value) {}
   constexpr Deg(Rad<T> value) : _value(rad2deg(T(value))) {}
   constexpr operator T &() { return _value; }
@@ -105,11 +107,15 @@ constexpr Rad<T> operator*(const T &left, const Rad<T> &right) {
 }
 
 inline constexpr auto operator""_radf(long double t) {
-  return Rad<float>(deg2rad(static_cast<float>(t)));
+  return Rad<float>(static_cast<float>(t));
 }
 
 inline constexpr auto operator""_rad(long double t) {
-  return Rad<double>(deg2rad(static_cast<double>(t)));
+  return Rad<double>(static_cast<double>(t));
+}
+
+inline constexpr auto operator""_deg(long double t) {
+  return Deg<double>{static_cast<double>(t)};
 }
 
 inline constexpr auto operator""_degf(long double t) {

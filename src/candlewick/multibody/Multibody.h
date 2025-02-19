@@ -13,5 +13,8 @@ namespace multibody {
   struct RobotDebugSystem;
   class RobotScene;
   class Visualizer;
+
+  using SE3f = pin::SE3Tpl<float>;
+  using Motionf = pin::MotionTpl<float>;
 } // namespace multibody
 } // namespace candlewick

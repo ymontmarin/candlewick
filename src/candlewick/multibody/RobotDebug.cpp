@@ -9,7 +9,7 @@ namespace candlewick::multibody {
 entt::entity RobotDebugSystem::addFrameVelocityArrow(DebugScene &scene,
                                                      pin::FrameIndex frame_id) {
   entt::registry &reg = scene.registry();
-  MeshData arrow_data = createArrow(false);
+  MeshData arrow_data = loadArrowSolid(false);
   Mesh mesh = createMesh(scene.device(), arrow_data, true);
   GpuVec4 color = 0xFF217Eff_rgbaf;
 
@@ -33,8 +33,6 @@ void RobotDebugSystem::updateFrames(entt::registry &reg) {
 }
 
 void RobotDebugSystem::updateFrameVelocities(entt::registry &reg) {
-  using Motionf = pin::MotionTpl<float>;
-  using SE3f = pin::SE3Tpl<float>;
   constexpr float vel_scale = 0.5f;
 
   auto view = reg.view<const PinFrameVelocityComponent, DebugMeshComponent>();

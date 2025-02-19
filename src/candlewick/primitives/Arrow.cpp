@@ -1,81 +1,49 @@
 #include "Arrow.h"
+#include "Internal.h"
 #include "../utils/MeshTransforms.h"
 
 namespace candlewick {
 
-struct ArrowMeshData {
-  std::vector<Float3> positions;
-  std::vector<Float3> normals;
-  std::vector<MeshData::IndexType> indices;
-};
+namespace detail {
 
-static ArrowMeshData gen_arrow_impl(float shaft_length, float shaft_radius,
-                                    float head_length, float head_radius,
-                                    Uint32 segments) {
-  ArrowMeshData mesh;
+  static ConeCylinderBuilder
+  gen_arrow_impl(float shaft_length, float shaft_radius, float head_length,
+                 float head_radius, Uint32 segments) {
+    ConeCylinderBuilder mesh;
 
-  // Generate shaft (cylinder)
-  const float angle_step = 2 * constants::Pif / float(segments);
+    // Generate shaft (cylinder)
+    const float angleIncrement = 2.f * constants::Pif / float(segments);
 
-  // Shaft vertices
-  for (Uint32 i = 0; i <= segments; ++i) {
-    float angle = float(i) * angle_step;
-    float x = std::cos(angle);
-    float y = std::sin(angle);
+    // Shaft vertices
+    for (Uint32 i = 0; i <= segments; ++i) {
+      float angle = float(i) * angleIncrement;
+      float x = std::cos(angle);
+      float y = std::sin(angle);
 
-    // Bottom circle
-    mesh.positions.push_back({x * shaft_radius, y * shaft_radius, 0});
-    mesh.normals.push_back({x, y, 0});
+      // Bottom circle
+      mesh.positions.push_back({x * shaft_radius, y * shaft_radius, 0});
+      mesh.normals.push_back({x, y, 0});
 
-    // Top circle
-    mesh.positions.push_back(
-        {x * shaft_radius, y * shaft_radius, shaft_length});
-    mesh.normals.push_back({x, y, 0});
+      // Top circle
+      mesh.positions.push_back(
+          {x * shaft_radius, y * shaft_radius, shaft_length});
+      mesh.normals.push_back({x, y, 0});
+    }
+
+    // Shaft indices (triangle strip)
+    for (Uint32 i = 0; i < segments * 2; i += 2) {
+      mesh.addFace({i, i + 1, i + 2});
+      mesh.addFace({i + 1, i + 3, i + 2});
+    }
+
+    // Generate head (cone)
+    mesh.addCone(segments, head_radius, shaft_length, head_length);
+
+    return mesh;
   }
+} // namespace detail
 
-  // Shaft indices (triangle strip)
-  for (Uint32 i = 0; i < segments * 2; i += 2) {
-    mesh.indices.push_back(i);
-    mesh.indices.push_back(i + 1);
-    mesh.indices.push_back(i + 2);
-    mesh.indices.push_back(i + 1);
-    mesh.indices.push_back(i + 3);
-    mesh.indices.push_back(i + 2);
-  }
-
-  // Generate head (cone)
-  auto head_start = Uint32(mesh.positions.size());
-
-  // Base circle
-  for (Uint32 i = 0; i <= segments; ++i) {
-    float angle = float(i) * angle_step;
-    float x = std::cos(angle);
-    float y = std::sin(angle);
-
-    mesh.positions.push_back({x * head_radius, y * head_radius, shaft_length});
-
-    // Compute normal for cone surface
-    Float3 normal{x * head_length, y * head_length, head_radius};
-    normal.normalize();
-    mesh.normals.push_back(normal);
-  }
-
-  // Tip vertex
-  mesh.positions.push_back({0, 0, shaft_length + head_length});
-  mesh.normals.push_back({0, 0, 1});
-
-  // Head indices (triangles)
-  auto tip_idx = Uint32(mesh.positions.size() - 1);
-  for (Uint32 i = head_start; i < tip_idx - 1; ++i) {
-    mesh.indices.push_back(i);
-    mesh.indices.push_back(i + 1);
-    mesh.indices.push_back(tip_idx);
-  }
-
-  return mesh;
-}
-
-std::vector<char> interleaveAttributes(const ArrowMeshData &arrow,
+std::vector<char> interleaveAttributes(const detail::ConeCylinderBuilder &arrow,
                                        bool include_normals) {
   Uint32 stride = include_normals ? 32u : 16u;
   Uint64 vertexCount = arrow.positions.size();
@@ -97,11 +65,11 @@ std::vector<char> interleaveAttributes(const ArrowMeshData &arrow,
   return vertex_data;
 }
 
-MeshData createArrow(bool include_normals, float shaft_length,
-                     float shaft_radius, float head_length, float head_radius,
-                     Uint32 segments) {
-  ArrowMeshData arrow_data = gen_arrow_impl(shaft_length, shaft_radius,
-                                            head_length, head_radius, segments);
+MeshData loadArrowSolid(bool include_normals, float shaft_length,
+                        float shaft_radius, float head_length,
+                        float head_radius, Uint32 segments) {
+  auto arrow_data = detail::gen_arrow_impl(shaft_length, shaft_radius,
+                                           head_length, head_radius, segments);
   std::vector<char> vertexData =
       interleaveAttributes(arrow_data, include_normals);
   MeshLayout layout;
@@ -114,11 +82,11 @@ MeshData createArrow(bool include_normals, float shaft_length,
                   std::move(vertexData), std::move(arrow_data.indices)};
 }
 
-std::array<MeshData, 3> createTriad(float shaft_length, float shaft_radius,
-                                    float head_length, float head_radius,
-                                    Uint32 segments) {
-  MeshData zAxis = createArrow(false, shaft_length, shaft_radius, head_length,
-                               head_radius, segments);
+std::array<MeshData, 3> loadTriadSolid(float shaft_length, float shaft_radius,
+                                       float head_length, float head_radius,
+                                       Uint32 segments) {
+  MeshData zAxis = loadArrowSolid(false, shaft_length, shaft_radius,
+                                  head_length, head_radius, segments);
   MeshData xAxis = MeshData::copy(zAxis);
   MeshData yAxis = MeshData::copy(zAxis);
   xAxis.material.baseColor << 1., 0., 0., 1.;

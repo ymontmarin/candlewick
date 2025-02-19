@@ -5,6 +5,6 @@
 namespace candlewick {
 
 /// \brief Load MeshDataView for a cube.
-MeshDataView loadCube();
+MeshDataView loadCubeSolid();
 
 } // namespace candlewick

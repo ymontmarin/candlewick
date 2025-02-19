@@ -84,7 +84,7 @@ void Visualizer::renderThreadMain(const Config &config) {
     debugScene->update();
     {
       std::scoped_lock lock{m_mutex};
-      updateRobotTransforms(registry, visualData());
+      robotScene->updateTransforms();
     }
 
     renderer.beginFrame();

@@ -2,6 +2,7 @@
 #include "LoadCoalPrimitives.h"
 #include "../core/errors.h"
 #include "../utils/LoadMesh.h"
+#include "../utils/MeshTransforms.h"
 
 #include <pinocchio/multibody/geometry.hpp>
 
@@ -17,13 +18,16 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
   Float4 meshColor = gobj.meshColor.cast<float>();
   Float3 meshScale = gobj.meshScale.cast<float>();
 
+  Eigen::Affine3f T;
+  T.setIdentity();
+  T.scale(meshScale);
   switch (objType) {
   case OT_BVH: {
     loadSceneMeshes(gobj.meshPath.c_str(), meshData);
     break;
   }
   case OT_GEOM: {
-    meshData.push_back(loadCoalPrimitive(collgom, meshColor, meshScale));
+    meshData.push_back(loadCoalPrimitive(collgom, meshColor));
     break;
   }
   case OT_HFIELD: {
@@ -34,6 +38,9 @@ void loadGeometryObject(const pin::GeometryObject &gobj,
   default:
     throw InvalidArgument("Unsupported object type.");
     break;
+  }
+  for (auto &data : meshData) {
+    apply3DTransformInPlace(data, T);
   }
 }
 

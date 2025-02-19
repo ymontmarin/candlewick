@@ -57,12 +57,12 @@ mesh_load_retc loadSceneMeshes(const char *path,
   // remove point primitives
   import.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE,
                             aiPrimitiveType_LINE | aiPrimitiveType_POINT);
-  unsigned int pFlags = aiProcess_CalcTangentSpace | aiProcess_Triangulate |
-                        aiProcess_GenSmoothNormals | aiProcess_SortByPType |
-                        aiProcess_JoinIdenticalVertices |
-                        aiProcess_GenUVCoords | aiProcess_RemoveComponent |
-                        aiProcess_FindDegenerates |
-                        aiProcess_ImproveCacheLocality;
+  Uint32 pFlags = aiProcess_CalcTangentSpace | aiProcess_Triangulate |
+                  aiProcess_GenSmoothNormals | aiProcess_SortByPType |
+                  aiProcess_JoinIdenticalVertices | aiProcess_GenUVCoords |
+                  aiProcess_RemoveComponent | aiProcess_FindDegenerates |
+                  aiProcess_PreTransformVertices |
+                  aiProcess_ImproveCacheLocality;
   import.SetPropertyBool(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, true);
   const aiScene *scene = import.ReadFile(path, pFlags);
   if (!scene) {

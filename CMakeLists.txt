@@ -37,8 +37,17 @@ set(CMAKE_VERBOSE_MAKEFILE False)
 
 set(AWESOME_CSS_DIR ${PROJECT_SOURCE_DIR}/doc/doxygen-awesome-css)
 
-option(BUILD_PYTHON_BINDINGS "Build Python bindings." OFF)
 option(BUILD_PINOCCHIO_VISUALIZER "Build the Pinocchio visualizer." ON)
+
+option(BUILD_PYTHON_BINDINGS "Build Python bindings." OFF)
+cmake_dependent_option(
+  GENERATE_PYTHON_STUBS
+  "Generate the Python stubs associated to the Python library"
+  OFF
+  BUILD_PYTHON_BINDINGS
+  OFF
+)
+
 set(INSTALL_DOCUMENTATION OFF CACHE BOOL "" FORCE)
 
 set(
