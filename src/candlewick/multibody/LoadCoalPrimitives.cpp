@@ -63,6 +63,13 @@ MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
     meshData = loadUvSphereSolid(8u, 16u);
     break;
   }
+  case GEOM_CAPSULE: {
+    auto &g = castGeom<Capsule>(geometry);
+    const float length = static_cast<float>(2 * g.halfLength);
+    transform.scale(float(g.radius));
+    meshData = loadCapsuleSolid(6u, 16u, length);
+    break;
+  }
   case GEOM_CONE: {
     auto &g = castGeom<Cone>(geometry);
     float length = 2 * float(g.halfLength);
