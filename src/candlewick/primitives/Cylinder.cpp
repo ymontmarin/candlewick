@@ -4,8 +4,8 @@
 
 namespace candlewick {
 
-MeshData loadCylinder(Uint32 rings, Uint32 segments, float radius,
-                      float height) {
+MeshData loadCylinderSolid(Uint32 rings, Uint32 segments, float radius,
+                           float height) {
   detail::ConeCylinderBuilder builder;
   const float halfLength = 0.5f * height;
   const float z = -halfLength;

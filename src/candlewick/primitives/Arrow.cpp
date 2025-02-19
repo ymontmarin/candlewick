@@ -65,9 +65,9 @@ std::vector<char> interleaveAttributes(const detail::ConeCylinderBuilder &arrow,
   return vertex_data;
 }
 
-MeshData createArrow(bool include_normals, float shaft_length,
-                     float shaft_radius, float head_length, float head_radius,
-                     Uint32 segments) {
+MeshData loadArrowSolid(bool include_normals, float shaft_length,
+                        float shaft_radius, float head_length,
+                        float head_radius, Uint32 segments) {
   auto arrow_data = detail::gen_arrow_impl(shaft_length, shaft_radius,
                                            head_length, head_radius, segments);
   std::vector<char> vertexData =
@@ -82,11 +82,11 @@ MeshData createArrow(bool include_normals, float shaft_length,
                   std::move(vertexData), std::move(arrow_data.indices)};
 }
 
-std::array<MeshData, 3> createTriad(float shaft_length, float shaft_radius,
-                                    float head_length, float head_radius,
-                                    Uint32 segments) {
-  MeshData zAxis = createArrow(false, shaft_length, shaft_radius, head_length,
-                               head_radius, segments);
+std::array<MeshData, 3> loadTriadSolid(float shaft_length, float shaft_radius,
+                                       float head_length, float head_radius,
+                                       Uint32 segments) {
+  MeshData zAxis = loadArrowSolid(false, shaft_length, shaft_radius,
+                                  head_length, head_radius, segments);
   MeshData xAxis = MeshData::copy(zAxis);
   MeshData yAxis = MeshData::copy(zAxis);
   xAxis.material.baseColor << 1., 0., 0., 1.;

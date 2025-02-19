@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
   gridMesh = createMesh(device, grid_data);
   uploadMeshToDevice(device, gridMesh, grid_data);
 
-  std::array triad_data = createTriad();
+  std::array triad_data = loadTriadSolid();
   std::vector<Mesh> triad_meshes;
   for (auto &&arrow_data : std::move(triad_data)) {
     Mesh arrow_mesh = createMesh(device, arrow_data);

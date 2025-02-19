@@ -53,7 +53,7 @@ MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
   case GEOM_BOX: {
     auto &g = castGeom<Box>(geometry);
     transform.scale(2 * g.halfSide.cast<float>());
-    meshData = toOwningMeshData(loadCube());
+    meshData = toOwningMeshData(loadCubeSolid());
     break;
   }
   case GEOM_SPHERE: {
@@ -73,13 +73,13 @@ MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
   case GEOM_CONE: {
     auto &g = castGeom<Cone>(geometry);
     float length = 2 * float(g.halfLength);
-    meshData = loadCone(16u, float(g.radius), length);
+    meshData = loadConeSolid(16u, float(g.radius), length);
     break;
   }
   case GEOM_CYLINDER: {
     auto &g = castGeom<Cylinder>(geometry);
     float height = 2.f * float(g.halfLength);
-    meshData = loadCylinder(6u, 16u, float(g.radius), height);
+    meshData = loadCylinderSolid(6u, 16u, float(g.radius), height);
     break;
   }
   case GEOM_HALFSPACE:
