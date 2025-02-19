@@ -21,12 +21,10 @@ public:
   void cancel() { SDL_CancelGPUCommandBuffer(_cmdBuf); }
 
   /// \brief Push uniform data to the vertex shader.
-  /// \warning Call this after beginFrame() but **before** endFrame().
   void pushVertexUniform(Uint32 slot_index, const void *data, Uint32 length) {
     SDL_PushGPUVertexUniformData(_cmdBuf, slot_index, data, length);
   }
   /// \brief Push uniform data to the fragment shader.
-  /// \warning Call this after beginFrame() but **before** endFrame().
   void pushFragmentUniform(Uint32 slot_index, const void *data, Uint32 length) {
     SDL_PushGPUFragmentUniformData(_cmdBuf, slot_index, data, length);
   }
