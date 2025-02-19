@@ -1,4 +1,5 @@
 #include "Visualizer.h"
+#include "../core/Device.h"
 #include "../core/CameraControls.h"
 #include "../core/DepthAndShadowPass.h"
 #include "../core/errors.h"

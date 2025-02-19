@@ -1,7 +1,6 @@
 #pragma once
 
 #include "RobotScene.h"
-#include "../core/Device.h"
 #include "../core/Camera.h"
 #include "../core/GuiSystem.h"
 #include "../core/DebugScene.h"
