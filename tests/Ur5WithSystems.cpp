@@ -228,6 +228,13 @@ int main(int argc, char **argv) {
     sphereTr.scale(0.1f);
     robot_scene.addEnvironmentObject(loadUvSphereSolid(8u, 16u), sphereTr);
   }
+  {
+    Eigen::Affine3f T;
+    T.setIdentity();
+    T.translate(Float3{0.8f, -0.1f, 0.8f});
+    T.scale(0.1f);
+    robot_scene.addEnvironmentObject(loadCapsuleSolid(4u, 10u, 1.5f), T);
+  }
 
   const size_t numRobotShapes =
       registry.view<const multibody::PinGeomObjComponent>().size();

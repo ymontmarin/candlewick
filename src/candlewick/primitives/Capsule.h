@@ -6,6 +6,7 @@ namespace candlewick {
 
 /// Load a capsule primitive.
 /// \note This will have a unit radius, for simplicity
-MeshData loadCapsuleSolid(Uint32 rings, Uint32 segments, float length);
+MeshData loadCapsuleSolid(Uint32 hemisphereRings, Uint32 segments,
+                          float length);
 
 } // namespace candlewick
