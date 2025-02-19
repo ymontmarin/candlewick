@@ -40,7 +40,11 @@ namespace camera_util {
   }
 
   inline void localTranslateX(Camera &camera, float step) {
-    localTranslate(camera, {step, 0, 0});
+    camera.view(0, 3) += step;
+  }
+
+  inline void localTranslateZ(Camera &camera, float step) {
+    camera.view(2, 3) += step;
   }
 
   inline void worldTranslate(Camera &camera, const Float3 &tr) {
@@ -92,7 +96,7 @@ struct CylinderCameraControl {
   auto &moveInOut(float scale, float offset) {
     const float alpha = 1.f - (offset > 0 ? 1.f / scale : scale);
     const float curDist = camera.view.translation().norm();
-    camera.view.matrix()(2, 3) += curDist * alpha;
+    camera_util::localTranslateZ(camera, curDist * alpha);
     return *this;
   }
 };

@@ -46,7 +46,13 @@ void Visualizer::default_gui_exec(Visualizer &viz) {
   ImGui::End();
 }
 
-void mouse_motion_handler(CylinderCameraControl &cam_control,
+void mouse_wheel_handler(CylinderCameraControl &controller,
+                         const CameraControlParams &params,
+                         SDL_MouseWheelEvent event) {
+  controller.moveInOut(1.f - params.zoomSensitivity, event.y);
+}
+
+void mouse_motion_handler(CylinderCameraControl &controller,
                           const CameraControlParams &params,
                           const SDL_MouseMotionEvent &event) {
   Float2 mvt{event.xrel, event.yrel};
@@ -56,17 +62,18 @@ void mouse_motion_handler(CylinderCameraControl &cam_control,
   if (mb & SDL_BUTTON_LMASK) {
     bool zooming = modState & params.modifiers.zoomModifier;
     if (zooming) {
-      cam_control.moveInOut(1.f - params.zoomSensitivity, mvt.y());
+      controller.moveInOut(1.f - params.zoomSensitivity, mvt.y());
     } else {
-      cam_control.viewportDrag(mvt, params.rotSensitivity,
-                               params.panSensitivity, params.yInvert);
+      controller.viewportDrag(mvt, params.rotSensitivity, params.panSensitivity,
+                              params.yInvert);
     }
   }
-  if (mb & SDL_BUTTON_MIDDLE) {
+  if (mb & params.mouseButtons.panButton) {
+    // TODO: implement panning
   }
   if (mb & SDL_BUTTON_RMASK) {
     Radf rot_angle = params.localRotSensitivity * mvt.y();
-    camera_util::localRotateX(cam_control.camera, rot_angle);
+    camera_util::localRotateX(controller.camera, rot_angle);
   }
 }
 
@@ -87,11 +94,15 @@ void Visualizer::eventLoop() {
       continue;
 
     switch (event.type) {
-    case SDL_EVENT_MOUSE_MOTION: {
+    case SDL_EVENT_MOUSE_MOTION:
       // camera mouse control
       if (m_cameraControl)
         mouse_motion_handler(cam_control, cameraParams, event.motion);
-    }
+      break;
+    case SDL_EVENT_MOUSE_WHEEL:
+      if (m_cameraControl)
+        mouse_wheel_handler(cam_control, cameraParams, event.wheel);
+      break;
     }
   }
 }

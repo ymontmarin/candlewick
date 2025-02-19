@@ -33,6 +33,9 @@ struct CameraControlParams {
   struct ModifierConfig {
     SDL_Keymod zoomModifier = SDL_KMOD_LCTRL;
   } modifiers;
+  struct MouseConfig {
+    SDL_MouseButtonFlags panButton = SDL_BUTTON_MMASK;
+  } mouseButtons;
 };
 
 /// \brief A Pinocchio robot visualizer. The display() function will perform the
