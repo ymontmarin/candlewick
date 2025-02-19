@@ -37,11 +37,15 @@ struct Renderer {
 
   void cancelFrame() { SDL_CancelGPUCommandBuffer(command_buffer); }
 
+  /// \sa acquireSwapchain()
   bool waitAndAcquireSwapchain() {
     return SDL_WaitAndAcquireGPUSwapchainTexture(command_buffer, window,
                                                  &swapchain, NULL, NULL);
   }
 
+  /// \brief Acquire GPU swapchain.
+  /// \warning This can only be called from the main thread (see SDL docs for
+  /// the meaning of "main thread").
   bool acquireSwapchain() {
     return SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain,
                                           NULL, NULL);

@@ -60,8 +60,6 @@ public:
     SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
   };
 
-  static Renderer createRenderer(const Config &config);
-
   /// \brief Default GUI callback for the Visualizer; provide your own callback
   /// to the Visualizer constructor to change this behaviour.
   static void default_gui_exec(Visualizer &viz);
@@ -70,18 +68,18 @@ public:
   void loadViewerModel() override;
 
   Visualizer(const Config &config, const pin::Model &model,
-             const pin::GeometryModel &visualModel,
+             const pin::GeometryModel &visual_model,
              GuiSystem::GuiBehavior gui_callback);
 
   Visualizer(const Config &config, const pin::Model &model,
-             const pin::GeometryModel &visualModel)
-      : Visualizer(config, model, visualModel,
+             const pin::GeometryModel &visual_model)
+      : Visualizer(config, model, visual_model,
                    [this](auto &) { default_gui_exec(*this); }) {}
 
   ~Visualizer() override;
 
-  void displayPrecall() override { m_mutex.lock(); }
-  void displayImpl() override { m_mutex.unlock(); }
+  void displayPrecall() override {}
+  void displayImpl() override;
 
   void setCameraTarget(const Eigen::Ref<const Vector3> &target) override;
 
@@ -105,19 +103,8 @@ public:
 private:
   bool m_cameraControl = true;
   bool m_shouldExit = false;
-  // mutex to lock in precall
-  std::mutex m_mutex;
-  std::thread m_render_thread;
 
-  void renderThreadMain(const Config &config);
+  void render();
 };
-
-inline Renderer Visualizer::createRenderer(const Config &config) {
-  Device dev{auto_detect_shader_format_subset()};
-  SDL_Window *window =
-      SDL_CreateWindow("Candlewick Pinocchio visualizer", int(config.width),
-                       int(config.height), 0);
-  return Renderer{std::move(dev), window, config.depth_stencil_format};
-}
 
 } // namespace candlewick::multibody
