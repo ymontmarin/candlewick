@@ -50,8 +50,8 @@ constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 static bool renderPlane = true;
 static bool renderGrid = true;
-static Camera camera;
-static CameraProjection cam_type = CameraProjection::PERSPECTIVE;
+static Camera g_camera;
+static CameraProjection g_cameraType = CameraProjection::PERSPECTIVE;
 // Current perspective matrix fov
 static Radf currentFov = 55.0_degf;
 // Current ortho matrix scale
@@ -64,7 +64,7 @@ static float displayScale;
 static GpuVec4 gridColor = 0xE0A236ff_rgbaf;
 static Mesh gridMesh{NoInit};
 
-static DirectionalLight myLight{
+static DirectionalLight g_myLight = {
     .direction = {0., -1., -1.},
     .color = {1.0, 1.0, 1.0},
     .intensity = 8.0,
@@ -77,20 +77,20 @@ struct alignas(16) light_ubo_t {
 };
 
 static void updateFov(Radf newFov) {
-  camera.projection = perspectiveFromFov(newFov, aspectRatio, 0.01f, 10.0f);
+  g_camera.projection = perspectiveFromFov(newFov, aspectRatio, 0.01f, 10.0f);
   currentFov = newFov;
 }
 
 static void updateOrtho(float zoom) {
   float iz = 1.f / zoom;
-  camera.projection = orthographicMatrix({iz * aspectRatio, iz}, 0.01f, 4.f);
+  g_camera.projection = orthographicMatrix({iz * aspectRatio, iz}, 0.01f, 4.f);
   currentOrthoScale = zoom;
-  auto pos = camera.position();
+  auto pos = g_camera.position();
   SDL_Log("Current ortho cam. pos: (%f, %f, %f)", pos.x(), pos.y(), pos.z());
 }
 
 void eventLoop(const Renderer &renderer) {
-  CylinderCameraControl camControl{camera};
+  CylinderCameraControl camControl{g_camera};
   // update pixel density and display scale
   pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
   displayScale = SDL_GetWindowDisplayScale(renderer.window);
@@ -112,7 +112,7 @@ void eventLoop(const Renderer &renderer) {
     switch (event.type) {
     case SDL_EVENT_MOUSE_WHEEL: {
       const float scaleFac = std::exp(kScrollZoom * event.wheel.y);
-      switch (cam_type) {
+      switch (g_cameraType) {
       case CameraProjection::ORTHOGRAPHIC:
         updateOrtho(std::clamp(scaleFac * currentOrthoScale, 0.1f, 2.f));
         break;
@@ -126,10 +126,10 @@ void eventLoop(const Renderer &renderer) {
       const float step_size = 0.06f;
       switch (event.key.key) {
       case SDLK_LEFT:
-        camera_util::localTranslate(camera, {+step_size, 0, 0});
+        camera_util::localTranslate(g_camera, {+step_size, 0, 0});
         break;
       case SDLK_RIGHT:
-        camera_util::localTranslate(camera, {-step_size, 0, 0});
+        camera_util::localTranslate(g_camera, {-step_size, 0, 0});
         break;
       case SDLK_UP:
         camControl.dolly(-step_size);
@@ -152,7 +152,8 @@ void eventLoop(const Renderer &renderer) {
       }
       if (mouseButton & SDL_BUTTON_RMASK) {
         float camXLocRotSpeed = 0.01f * pixelDensity;
-        camera_util::localRotateX(camera, camXLocRotSpeed * event.motion.yrel);
+        camera_util::localRotateX(g_camera,
+                                  camXLocRotSpeed * event.motion.yrel);
       }
       break;
     }
@@ -209,12 +210,12 @@ int main(int argc, char **argv) {
                      ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("Device driver: %s", r.device.driverName());
         ImGui::SeparatorText("Camera");
-        ImGui::RadioButton("Orthographic", (int *)&cam_type,
+        ImGui::RadioButton("Orthographic", (int *)&g_cameraType,
                            int(CameraProjection::ORTHOGRAPHIC));
         ImGui::SameLine();
-        ImGui::RadioButton("Perspective", (int *)&cam_type,
+        ImGui::RadioButton("Perspective", (int *)&g_cameraType,
                            int(CameraProjection::PERSPECTIVE));
-        switch (cam_type) {
+        switch (g_cameraType) {
         case CameraProjection::ORTHOGRAPHIC:
           if (ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f,
                                "%.3f", ImGuiSliderFlags_AlwaysClamp))
@@ -233,8 +234,8 @@ int main(int argc, char **argv) {
         ImGui::Checkbox("Render grid", &renderGrid);
 
         ImGui::SeparatorText("Lights");
-        ImGui::DragFloat("intens.", &myLight.intensity, 0.1f, 0.1f, 10.0f);
-        ImGui::ColorEdit3("color", myLight.color.data());
+        ImGui::DragFloat("intens.", &g_myLight.intensity, 0.1f, 0.1f, 10.0f);
+        ImGui::ColorEdit3("color", g_myLight.color.data());
         ImGui::Separator();
         ImGui::ColorEdit4("grid color", gridColor.data(),
                           ImGuiColorEditFlags_AlphaPreview);
@@ -322,7 +323,7 @@ int main(int argc, char **argv) {
 
   Uint32 frameNo = 0;
 
-  camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
+  g_camera.view = lookAt({2.0, 0, 2.}, Float3::Zero());
   updateFov(currentFov);
 
   Eigen::VectorXd q0 = pin::neutral(model);
@@ -380,9 +381,9 @@ int main(int argc, char **argv) {
       Mat4f mvp;
 
       const light_ubo_t lightUbo{
-          camera.transformVector(myLight.direction),
-          myLight.color,
-          myLight.intensity,
+          g_camera.transformVector(g_myLight.direction),
+          g_myLight.color,
+          g_myLight.intensity,
       };
       SDL_BindGPUGraphicsPipeline(render_pass, meshPipeline);
       renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
@@ -390,8 +391,8 @@ int main(int argc, char **argv) {
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
         const Mat4f placement{geom_data.oMg[i].cast<float>()};
-        modelView = camera.view * placement;
-        mvp = camera.projection * modelView;
+        modelView = g_camera.view * placement;
+        mvp = g_camera.projection * modelView;
         TransformUniformData cameraUniform{
             modelView,
             mvp,
@@ -412,8 +413,8 @@ int main(int argc, char **argv) {
       // RENDER PLANE
       if (renderPlane) {
         Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
-        modelView = camera.view * plane_transform.matrix();
-        mvp.noalias() = camera.projection * modelView;
+        modelView = g_camera.view * plane_transform.matrix();
+        mvp.noalias() = g_camera.projection * modelView;
         TransformUniformData cameraUniform{
             modelView,
             mvp,
@@ -428,7 +429,7 @@ int main(int argc, char **argv) {
 
       // render 3d hud elements
       if (renderGrid) {
-        const GpuMat4 cameraUniform = camera.viewProj();
+        const GpuMat4 cameraUniform = g_camera.viewProj();
         renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
         SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
         renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));

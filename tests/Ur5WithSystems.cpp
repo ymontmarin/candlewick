@@ -56,11 +56,11 @@ static Radf currentFov = 55.0_degf;
 static float nearZ = 0.01f;
 static float farZ = 10.f;
 static float currentOrthoScale = 1.f;
-static CameraProjection cam_type = CameraProjection::PERSPECTIVE;
-static Camera camera{
+static Camera g_camera = {
     .projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ),
     .view = Eigen::Isometry3f{lookAt({2.0, 0, 2.}, Float3::Zero())},
 };
+static CameraProjection g_cameraType = CameraProjection::PERSPECTIVE;
 static bool quitRequested = false;
 static bool showFrustum = false;
 enum VizMode {
@@ -68,24 +68,24 @@ enum VizMode {
   DEPTH_DEBUG,
   LIGHT_DEBUG,
 };
-static VizMode showDebugViz = FULL_RENDER;
+static VizMode g_showDebugViz = FULL_RENDER;
 
 static float pixelDensity;
 static float displayScale;
 
 static void updateFov(Radf newFov) {
-  camera.projection = perspectiveFromFov(newFov, aspectRatio, nearZ, farZ);
+  g_camera.projection = perspectiveFromFov(newFov, aspectRatio, nearZ, farZ);
   currentFov = newFov;
 }
 
 static void updateOrtho(float zoom) {
   float iz = 1.f / zoom;
-  camera.projection = orthographicMatrix({iz * aspectRatio, iz}, -8., 8.);
+  g_camera.projection = orthographicMatrix({iz * aspectRatio, iz}, -8., 8.);
   currentOrthoScale = zoom;
 }
 
 void eventLoop(const Renderer &renderer) {
-  CylinderCameraControl camControl{camera};
+  CylinderCameraControl camControl{g_camera};
   // update pixel density and display scale
   pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
   displayScale = SDL_GetWindowDisplayScale(renderer.window);
@@ -107,7 +107,7 @@ void eventLoop(const Renderer &renderer) {
     case SDL_EVENT_MOUSE_WHEEL: {
       float wy = event.wheel.y;
       const float scaleFac = std::exp(kScrollZoom * wy);
-      switch (cam_type) {
+      switch (g_cameraType) {
       case CameraProjection::ORTHOGRAPHIC:
         updateOrtho(std::clamp(scaleFac * currentOrthoScale, 0.1f, 2.f));
         break;
@@ -121,16 +121,16 @@ void eventLoop(const Renderer &renderer) {
       const float step_size = 0.06f;
       switch (event.key.key) {
       case SDLK_LEFT:
-        camera_util::localTranslateX(camera, +step_size);
+        camera_util::localTranslateX(g_camera, +step_size);
         break;
       case SDLK_RIGHT:
-        camera_util::localTranslateX(camera, -step_size);
+        camera_util::localTranslateX(g_camera, -step_size);
         break;
       case SDLK_UP:
-        camera_util::worldTranslateZ(camera, -step_size);
+        camera_util::worldTranslateZ(g_camera, -step_size);
         break;
       case SDLK_DOWN:
-        camera_util::worldTranslateZ(camera, +step_size);
+        camera_util::worldTranslateZ(g_camera, +step_size);
         break;
       }
       break;
@@ -148,7 +148,8 @@ void eventLoop(const Renderer &renderer) {
       }
       if (mouseButton & SDL_BUTTON_RMASK) {
         float camXLocRotSpeed = 0.01f * pixelDensity;
-        camera_util::localRotateX(camera, camXLocRotSpeed * event.motion.yrel);
+        camera_util::localRotateX(g_camera,
+                                  camXLocRotSpeed * event.motion.yrel);
       }
       break;
     }
@@ -273,12 +274,12 @@ int main(int argc, char **argv) {
         ImGui::Text("Device driver: %s", r.device.driverName());
         ImGui::SeparatorText("Camera");
         bool ortho_change, persp_change;
-        ortho_change = ImGui::RadioButton("Orthographic", (int *)&cam_type,
+        ortho_change = ImGui::RadioButton("Orthographic", (int *)&g_cameraType,
                                           int(CameraProjection::ORTHOGRAPHIC));
         ImGui::SameLine();
-        persp_change = ImGui::RadioButton("Perspective", (int *)&cam_type,
+        persp_change = ImGui::RadioButton("Perspective", (int *)&g_cameraType,
                                           int(CameraProjection::PERSPECTIVE));
-        switch (cam_type) {
+        switch (g_cameraType) {
         case CameraProjection::ORTHOGRAPHIC:
           ortho_change |=
               ImGui::DragFloat("zoom", &currentOrthoScale, 0.01f, 0.1f, 2.f,
@@ -308,14 +309,14 @@ int main(int argc, char **argv) {
         ImGui::Checkbox("Ambient occlusion (SSAO)",
                         &robot_scene.config().enable_ssao);
 
-        ImGui::RadioButton("Full render mode", (int *)&showDebugViz,
+        ImGui::RadioButton("Full render mode", (int *)&g_showDebugViz,
                            FULL_RENDER);
         ImGui::SameLine();
-        ImGui::RadioButton("Depth debug", (int *)&showDebugViz, DEPTH_DEBUG);
+        ImGui::RadioButton("Depth debug", (int *)&g_showDebugViz, DEPTH_DEBUG);
         ImGui::SameLine();
-        ImGui::RadioButton("Light mode", (int *)&showDebugViz, LIGHT_DEBUG);
+        ImGui::RadioButton("Light mode", (int *)&g_showDebugViz, LIGHT_DEBUG);
 
-        if (showDebugViz & (DEPTH_DEBUG | LIGHT_DEBUG)) {
+        if (g_showDebugViz & (DEPTH_DEBUG | LIGHT_DEBUG)) {
           ImGui::RadioButton("Grayscale", (int *)&depth_mode, 0);
           ImGui::SameLine();
           ImGui::RadioButton("Heatmap", (int *)&depth_mode, 1);
@@ -377,26 +378,26 @@ int main(int argc, char **argv) {
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
     debug_scene.update();
 
-    FrustumCornersType main_cam_frustum = frustumFromCamera(camera);
+    FrustumCornersType main_cam_frustum = frustumFromCamera(g_camera);
 
     // acquire command buffer and swapchain
     renderer.beginFrame();
 
     if (renderer.waitAndAcquireSwapchain()) {
-      const GpuMat4 viewProj = camera.viewProj();
+      const GpuMat4 viewProj = g_camera.viewProj();
       robot_scene.updateTransforms();
       robot_scene.collectOpaqueCastables();
       auto &castables = robot_scene.castables();
       renderShadowPassFromAABB(renderer, shadowPassInfo, sceneLight, castables,
                                worldSpaceBounds);
       renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
-      switch (showDebugViz) {
+      switch (g_showDebugViz) {
       case FULL_RENDER:
         renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
-        robot_scene.render(renderer, camera);
-        debug_scene.render(renderer, camera);
+        robot_scene.render(renderer, g_camera);
+        debug_scene.render(renderer, g_camera);
         if (showFrustum)
-          frustumBoundsDebug.render(renderer, camera);
+          frustumBoundsDebug.render(renderer, g_camera);
         break;
       case DEPTH_DEBUG:
         renderDepthDebug(renderer, depthDebugPass, {depth_mode, nearZ, farZ});

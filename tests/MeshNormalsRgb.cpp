@@ -22,6 +22,7 @@ const char *meshFilename = "assets/meshes/teapot.obj";
 const Uint32 wWidth = 1280;
 const Uint32 wHeight = 720;
 const float aspectRatio = float(wWidth) / wHeight;
+static Camera g_camera;
 
 Context ctx;
 
@@ -122,9 +123,8 @@ int main() {
   Eigen::Affine3f modelMat = Eigen::Affine3f{rot}.scale(0.1f);
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
 
-  Camera camera;
-  camera.view = lookAt({0.5, 1., 1.}, Float3::Zero(), {0., 0., 1.});
-  CylinderCameraControl camControl{camera};
+  g_camera.view = lookAt({0.5, 1., 1.}, Float3::Zero(), {0., 0., 1.});
+  CylinderCameraControl camControl{g_camera};
 
   while (frameNo < 500 && !quitRequested) {
     SDL_Event event;
@@ -146,10 +146,10 @@ int main() {
         const float step_size = 0.06f;
         switch (event.key.key) {
         case SDLK_UP:
-          camera_util::worldTranslateZ(camera, +step_size);
+          camera_util::worldTranslateZ(g_camera, +step_size);
           break;
         case SDLK_DOWN:
-          camera_util::worldTranslateZ(camera, -step_size);
+          camera_util::worldTranslateZ(g_camera, -step_size);
           break;
         }
         break;
@@ -167,7 +167,7 @@ int main() {
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01f * pixelDensity;
-          camera_util::localRotateX(camera,
+          camera_util::localRotateX(g_camera,
                                     camXLocRotSpeed * event.motion.yrel);
         }
         break;
@@ -175,7 +175,7 @@ int main() {
       }
     }
     // model-view matrix
-    const Mat4f modelView = camera.view * modelMat.matrix();
+    const Mat4f modelView = g_camera.view * modelMat.matrix();
     // MVP matrix
     const Mat4f projViewMat = projectionMat * modelView;
     const Mat3f normalMatrix =
