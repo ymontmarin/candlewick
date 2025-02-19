@@ -1,3 +1,13 @@
+// clang-format off
+/// \defgroup primitives1 Primitives
+/// \image html primitives.png "A scene containing some geometric primitives (cone, cylinder, capsule, box, and some arrows)."
+///
+/// \{
+/// \file Primitives.h
+/// \brief Omnibus header including all of the geometric primitives.
+/// \}
+///
+// clang-format on
 #pragma once
 
 #include "Arrow.h"

@@ -33,7 +33,10 @@ MeshData loadUvSphereSolid(Uint32 rings, Uint32 segments) {
 
   std::vector<DefaultVertex> vertices;
   for (Uint32 j = 0; j < builder.currentVertices(); j++) {
-    vertices.push_back({builder.positions[j], builder.normals[j]});
+    DefaultVertex v;
+    v.pos = builder.positions[j];
+    v.normal = builder.normals[j];
+    vertices.push_back(v);
   }
   return MeshData{
       SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,

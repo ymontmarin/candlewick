@@ -66,9 +66,9 @@ namespace detail {
 
       Uint32 next_floor_start_idx = currentVertices();
       for (Uint32 j = 0; j < segments; j++) {
-        float a = static_cast<float>(j) * angleIncrement;
-        float c = cosf(a);
-        float s = sinf(a);
+        const float a = static_cast<float>(j) * angleIncrement;
+        const float c = cosf(a);
+        const float s = sinf(a);
         Float3 pos{c * basePoint[0], s * basePoint[0], basePoint[1]};
         add(pos, {c * baseNormal[0], s * baseNormal[0], baseNormal[1]});
       }
@@ -122,18 +122,18 @@ namespace detail {
       const float y = x;
       const float z = sinf(ringAngle);
 
-      Uint32 next_floor_start_idx = currentVertices();
+      Uint32 nextFloorStartIdx = currentVertices();
       for (Uint32 j = 0; j < segments; j++) {
-        const float segAngle = float(j) * segmentIncrement;
+        const float segAngle = static_cast<float>(j) * segmentIncrement;
         const float c = cosf(segAngle);
-        const float s = -sinf(segAngle);
-        add({x * s, y * c, z + zCenter}, {x * s, y * c, z});
+        const float s = sinf(segAngle);
+        add({x * c, y * s, z + zCenter}, {x * c, y * s, z});
       }
       for (Uint32 j = 0; j < segments; j++) {
         Uint32 bl = j + startIdx;
         Uint32 br = (j != segments - 1) ? bl + 1 : startIdx;
-        Uint32 tl = j + next_floor_start_idx;
-        Uint32 tr = (j != segments - 1) ? tl + 1 : next_floor_start_idx;
+        Uint32 tl = j + nextFloorStartIdx;
+        Uint32 tr = (j != segments - 1) ? tl + 1 : nextFloorStartIdx;
         addFace({
             bl,
             br,
@@ -146,7 +146,7 @@ namespace detail {
         });
       }
 
-      startIdx = next_floor_start_idx;
+      startIdx = nextFloorStartIdx;
     }
   }
 } // namespace detail

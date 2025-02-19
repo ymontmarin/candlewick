@@ -229,11 +229,12 @@ int main(int argc, char **argv) {
     robot_scene.addEnvironmentObject(loadUvSphereSolid(8u, 16u), sphereTr);
   }
   {
-    Eigen::Affine3f T;
-    T.setIdentity();
-    T.translate(Float3{0.8f, -0.1f, 0.8f});
+    Eigen::Affine3f T = Eigen::Affine3f::Identity();
+    T.translate(Float3{-0.2f, -0.4f, 0.8f});
     T.scale(0.1f);
-    robot_scene.addEnvironmentObject(loadCapsuleSolid(4u, 10u, 1.5f), T);
+    T.rotate(Eigen::AngleAxisf{constants::Pi_2f, Float3{0., 1., 0.f}});
+    T.rotate(Eigen::AngleAxisf{Radf(45._degf), Float3{0., 0., 1.f}});
+    robot_scene.addEnvironmentObject(loadCapsuleSolid(6u, 16u, 1.5f), T);
   }
 
   const size_t numRobotShapes =
