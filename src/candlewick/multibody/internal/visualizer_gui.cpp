@@ -57,7 +57,6 @@ void mouse_motion_handler(CylinderCameraControl &controller,
                           const SDL_MouseMotionEvent &event) {
   Float2 mvt{event.xrel, event.yrel};
   SDL_MouseButtonFlags mb = event.state;
-  SDL_Keymod modState = SDL_GetModState();
   // check if left mouse pressed
   if (mb & SDL_BUTTON_LMASK) {
     controller.viewportDrag(mvt, params.rotSensitivity, params.panSensitivity,
