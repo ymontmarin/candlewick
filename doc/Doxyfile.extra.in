@@ -4,3 +4,4 @@ DISABLE_INDEX           = NO
 FULL_SIDEBAR            = NO
 EXCLUDE_PATTERNS        = @PROJECT_SOURCE_DIR@/src/candlewick/third-party/*
 IMAGE_PATH              = @PROJECT_SOURCE_DIR@/doc
+USE_MDFILE_AS_MAINPAGE  = @PROJECT_SOURCE_DIR@/README.md

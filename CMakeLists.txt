@@ -16,6 +16,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(DOXYGEN_USE_MATHJAX "YES")
 set(DOXYGEN_FILE_PATTERNS "*.h *.hh *.hpp *.hxx")
+set(
+  DOXYGEN_INPUT
+  "${CMAKE_CURRENT_LIST_DIR}/src ${CMAKE_CURRENT_LIST_DIR}/README.md"
+)
 
 # The following was copied over from https://github.com/Simple-Robotics/aligator:
 # Use BoostConfig module distributed by boost library instead of using FindBoost module distributed
