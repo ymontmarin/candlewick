@@ -21,18 +21,15 @@ namespace {
 } // namespace
 
 /// Camera control parameters: senstivities, key bindings, etc...
-/// \todo Move to some kind of "runtime" library, or back to core?
+/// \todo Move to some kind of "runtime" library?
 struct CameraControlParams {
   float rotSensitivity = 5e-3f;
-  float panSensitivity = 1e-2f;
+  float panSensitivity = 5e-3f;
   float zoomSensitivity = 0.05f;
   float localRotSensitivity = 0.01f;
   bool yInvert = true;
 
-  // modifier key assignments
-  struct ModifierConfig {
-    SDL_Keymod zoomModifier = SDL_KMOD_LCTRL;
-  } modifiers;
+  // Mouse button modifiers
   struct MouseConfig {
     SDL_MouseButtonFlags panButton = SDL_BUTTON_MMASK;
   } mouseButtons;

@@ -60,16 +60,11 @@ void mouse_motion_handler(CylinderCameraControl &controller,
   SDL_Keymod modState = SDL_GetModState();
   // check if left mouse pressed
   if (mb & SDL_BUTTON_LMASK) {
-    bool zooming = modState & params.modifiers.zoomModifier;
-    if (zooming) {
-      controller.moveInOut(1.f - params.zoomSensitivity, mvt.y());
-    } else {
-      controller.viewportDrag(mvt, params.rotSensitivity, params.panSensitivity,
-                              params.yInvert);
-    }
+    controller.viewportDrag(mvt, params.rotSensitivity, params.panSensitivity,
+                            params.yInvert);
   }
   if (mb & params.mouseButtons.panButton) {
-    // TODO: implement panning
+    controller.pan(mvt, params.panSensitivity);
   }
   if (mb & SDL_BUTTON_RMASK) {
     Radf rot_angle = params.localRotSensitivity * mvt.y();
