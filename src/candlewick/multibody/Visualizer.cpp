@@ -90,7 +90,7 @@ Visualizer::~Visualizer() {
 }
 
 void Visualizer::displayImpl() {
-  this->eventLoop();
+  this->processEvents();
 
   debugScene->update();
   {

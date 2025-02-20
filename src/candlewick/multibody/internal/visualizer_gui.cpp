@@ -73,7 +73,6 @@ void mouse_motion_handler(CylinderCameraControl &controller,
 
 void Visualizer::eventLoop() {
   ImGuiIO &io = ImGui::GetIO();
-  CylinderCameraControl cam_control{camera};
 
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
@@ -91,11 +90,11 @@ void Visualizer::eventLoop() {
     case SDL_EVENT_MOUSE_MOTION:
       // camera mouse control
       if (m_cameraControl)
-        mouse_motion_handler(cam_control, cameraParams, event.motion);
+        mouse_motion_handler(this->controller, cameraParams, event.motion);
       break;
     case SDL_EVENT_MOUSE_WHEEL:
       if (m_cameraControl)
-        mouse_wheel_handler(cam_control, cameraParams, event.wheel);
+        mouse_wheel_handler(this->controller, cameraParams, event.wheel);
       break;
     }
   }

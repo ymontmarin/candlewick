@@ -2,6 +2,7 @@
 
 #include "RobotScene.h"
 #include "../core/Camera.h"
+#include "../core/CameraControls.h"
 #include "../core/GuiSystem.h"
 #include "../core/DebugScene.h"
 #include "../core/Renderer.h"
@@ -49,6 +50,7 @@ public:
   std::optional<RobotScene> robotScene;
   std::optional<DebugScene> debugScene;
   Camera camera;
+  CylinderCameraControl controller{camera};
   CameraControlParams cameraParams;
 
   static constexpr Radf DEFAULT_FOV = 55.0_degf;
@@ -88,7 +90,7 @@ public:
 
   void enableCameraControl(bool v) override { m_cameraControl = v; }
 
-  void eventLoop();
+  void processEvents();
 
   bool shouldExit() const noexcept { return m_shouldExit; }
 
