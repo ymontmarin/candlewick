@@ -51,6 +51,7 @@ constexpr float aspectRatio = float(wWidth) / float(wHeight);
 static bool renderPlane = true;
 static bool renderGrid = true;
 static Camera g_camera;
+static CylinderCameraControl g_camControl{g_camera};
 static CameraProjection g_cameraType = CameraProjection::PERSPECTIVE;
 // Current perspective matrix fov
 static Radf currentFov = 55.0_degf;
@@ -90,7 +91,6 @@ static void updateOrtho(float zoom) {
 }
 
 void eventLoop(const Renderer &renderer) {
-  CylinderCameraControl camControl{g_camera};
   // update pixel density and display scale
   pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
   displayScale = SDL_GetWindowDisplayScale(renderer.window);
@@ -132,10 +132,10 @@ void eventLoop(const Renderer &renderer) {
         camera_util::localTranslate(g_camera, {-step_size, 0, 0});
         break;
       case SDLK_UP:
-        camControl.dolly(-step_size);
+        g_camControl.dolly(+step_size);
         break;
       case SDLK_DOWN:
-        camControl.dolly(+step_size);
+        g_camControl.dolly(-step_size);
         break;
       }
       break;
@@ -144,10 +144,11 @@ void eventLoop(const Renderer &renderer) {
       SDL_MouseButtonFlags mouseButton = event.motion.state;
       if (mouseButton & SDL_BUTTON_LMASK) {
         if (controlPressed) {
-          camControl.moveInOut(0.95f, event.motion.yrel);
+          g_camControl.moveInOut(0.95f, event.motion.yrel);
         } else {
-          camControl.viewportDrag(Float2{event.motion.xrel, event.motion.yrel},
-                                  rotSensitivity, panSensitivity);
+          g_camControl.viewportDrag(
+              Float2{event.motion.xrel, event.motion.yrel}, rotSensitivity,
+              panSensitivity);
         }
       }
       if (mouseButton & SDL_BUTTON_RMASK) {

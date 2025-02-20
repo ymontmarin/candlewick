@@ -49,7 +49,7 @@ namespace camera_util {
   }
 
   inline void worldTranslate(Camera &camera, const Float3 &tr) {
-    camera.view.translate(tr);
+    camera.view.translate(-tr);
   }
 
   inline void worldTranslateZ(Camera &camera, float step) {
@@ -67,7 +67,7 @@ struct CylinderCameraControl {
   Camera &camera;
   Float3 target{0.f, 0.f, 0.f};
 
-  static constexpr bool DEFAULT_Y_INVERT = true;
+  static constexpr bool DEFAULT_Y_INVERT = false;
 
   CylinderCameraControl(Camera &_camera) : camera(_camera) {}
 
