@@ -85,7 +85,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
                        const pin::GeometryData &geom_data, Config config)
     : // screenSpaceShadows{.sampler = nullptr, .pass{NoInit}},
       _registry(registry), _config(config), _device(renderer.device),
-      _geomModel(geom_model), _geomData(geom_data) {
+      _renderer(renderer), _geomModel(geom_model), _geomData(geom_data) {
 
   for (size_t i = 0; i < kNumPipelineTypes; i++) {
     renderPipelines[i] = NULL;
@@ -208,27 +208,26 @@ void RobotScene::collectOpaqueCastables() {
   }
 }
 
-void RobotScene::render(Renderer &renderer, const Camera &camera) {
+void RobotScene::render(CommandBuffer &command_buffer, const Camera &camera) {
   if (_config.enable_ssao) {
-    ssaoPass.render(renderer, camera);
+    ssaoPass.render(command_buffer, camera);
   }
 
   // render geometry which participated in the prepass
-  renderPBRTriangleGeometry(renderer, camera);
+  renderPBRTriangleGeometry(command_buffer, camera);
 
   // render geometry which was _not_ in the prepass
-  renderOtherGeometry(renderer, camera);
+  renderOtherGeometry(command_buffer, camera);
 }
 
 /// Function private to this translation unit.
 /// Utility function to provide a render pass handle
 /// with just two configuration options: whether to load or clear the color and
 /// depth targets.
-static SDL_GPURenderPass *getRenderPass(Renderer &renderer,
-                                        SDL_GPULoadOp color_load_op,
-                                        SDL_GPULoadOp depth_load_op,
-                                        bool has_normals_target,
-                                        const RobotScene::GBuffer &gbuffer) {
+static SDL_GPURenderPass *
+getRenderPass(const Renderer &renderer, CommandBuffer &command_buffer,
+              SDL_GPULoadOp color_load_op, SDL_GPULoadOp depth_load_op,
+              bool has_normals_target, const RobotScene::GBuffer &gbuffer) {
   SDL_GPUColorTargetInfo main_color_target;
   SDL_zero(main_color_target);
   main_color_target.texture = renderer.swapchain;
@@ -246,8 +245,8 @@ static SDL_GPURenderPass *getRenderPass(Renderer &renderer,
   depth_target.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
   depth_target.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
   if (!has_normals_target) {
-    return SDL_BeginGPURenderPass(renderer.command_buffer, &main_color_target,
-                                  1, &depth_target);
+    return SDL_BeginGPURenderPass(command_buffer, &main_color_target, 1,
+                                  &depth_target);
   } else {
     SDL_GPUColorTargetInfo color_targets[2];
     SDL_zero(color_targets);
@@ -257,7 +256,7 @@ static SDL_GPURenderPass *getRenderPass(Renderer &renderer,
     color_targets[1].load_op = SDL_GPU_LOADOP_CLEAR;
     color_targets[1].store_op = SDL_GPU_STOREOP_STORE;
     color_targets[1].cycle = false;
-    return SDL_BeginGPURenderPass(renderer.command_buffer, color_targets,
+    return SDL_BeginGPURenderPass(command_buffer, color_targets,
                                   SDL_arraysize(color_targets), &depth_target);
   }
 }
@@ -267,7 +266,7 @@ enum FragmentSamplerSlots {
   SSAO_SLOT,
 };
 
-void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
+void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
                                            const Camera &camera) {
 
   if (!renderPipelines[PIPELINE_TRIANGLEMESH]) {
@@ -292,8 +291,8 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
   SDL_GPULoadOp depth_load_op =
       _config.triangle_has_prepass ? SDL_GPU_LOADOP_LOAD : SDL_GPU_LOADOP_CLEAR;
   SDL_GPURenderPass *render_pass =
-      getRenderPass(renderer, SDL_GPU_LOADOP_CLEAR, depth_load_op,
-                    _config.enable_normal_target, gBuffer);
+      getRenderPass(_renderer, command_buffer, SDL_GPU_LOADOP_CLEAR,
+                    depth_load_op, _config.enable_normal_target, gBuffer);
 
   if (enable_shadows) {
     rend::bindFragmentSampler(render_pass, SHADOW_MAP_SLOT,
@@ -307,10 +306,11 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
                                 .texture = ssaoPass.ssaoMap,
                                 .sampler = ssaoPass.texSampler,
                             });
-  renderer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
-                               sizeof(lightUbo));
   int _useSsao = _config.enable_ssao;
-  renderer.pushFragmentUniform(2, &_useSsao, sizeof(_useSsao));
+  command_buffer
+      .pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
+                           sizeof(lightUbo))
+      .pushFragmentUniform(2, &_useSsao, sizeof(_useSsao));
 
   auto *pipeline = renderPipelines[PIPELINE_TRIANGLEMESH];
   assert(pipeline);
@@ -330,27 +330,29 @@ void RobotScene::renderPBRTriangleGeometry(Renderer &renderer,
         .mvp = GpuMat4{viewProj * tr.transform},
         .normalMatrix = math::computeNormalMatrix(modelView),
     };
-    renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
-                               sizeof(data));
+    command_buffer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
+                                     sizeof(data));
     if (enable_shadows) {
       Mat4f lightMvp = lightViewProj * tr.transform;
-      renderer.pushVertexUniform(1, &lightMvp, sizeof(lightMvp));
+      command_buffer.pushVertexUniform(1, &lightMvp, sizeof(lightMvp));
     }
-    renderer.bindMesh(render_pass, mesh);
+    rend::bindMesh(render_pass, mesh);
     for (size_t j = 0; j < mesh.numViews(); j++) {
       const auto material = obj.materials[j];
-      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &material,
-                                   sizeof(material));
-      renderer.drawView(render_pass, mesh.view(j));
+      command_buffer.pushFragmentUniform(FragmentUniformSlots::MATERIAL,
+                                         &material, sizeof(material));
+      rend::drawView(render_pass, mesh.view(j));
     }
   }
 
   SDL_EndGPURenderPass(render_pass);
 }
 
-void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
-  SDL_GPURenderPass *render_pass = getRenderPass(
-      renderer, SDL_GPU_LOADOP_LOAD, SDL_GPU_LOADOP_LOAD, false, gBuffer);
+void RobotScene::renderOtherGeometry(CommandBuffer &command_buffer,
+                                     const Camera &camera) {
+  SDL_GPURenderPass *render_pass =
+      getRenderPass(_renderer, command_buffer, SDL_GPU_LOADOP_LOAD,
+                    SDL_GPU_LOADOP_LOAD, false, gBuffer);
 
   const Mat4f viewProj = camera.viewProj();
 
@@ -374,12 +376,12 @@ void RobotScene::renderOtherGeometry(Renderer &renderer, const Camera &camera) {
       const Mesh &mesh = obj.mesh;
       const Mat4f mvp = viewProj * modelMat;
       const auto &color = obj.materials[0].baseColor;
-      renderer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &mvp,
-                                 sizeof(mvp));
-      renderer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &color,
-                                   sizeof(color));
-      renderer.bindMesh(render_pass, mesh);
-      renderer.draw(render_pass, mesh);
+      command_buffer
+          .pushVertexUniform(VertexUniformSlots::TRANSFORM, &mvp, sizeof(mvp))
+          .pushFragmentUniform(FragmentUniformSlots::MATERIAL, &color,
+                               sizeof(color));
+      rend::bindMesh(render_pass, mesh);
+      rend::draw(render_pass, mesh);
     }
   }
   SDL_EndGPURenderPass(render_pass);

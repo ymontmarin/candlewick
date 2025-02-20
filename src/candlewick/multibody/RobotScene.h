@@ -133,11 +133,13 @@ namespace multibody {
 
     /// \warning Call updateRobotTransforms() before rendering the objects with
     /// this function.
-    void render(Renderer &renderer, const Camera &camera);
+    void render(CommandBuffer &command_buffer, const Camera &camera);
     /// \brief PBR render pass for triangle meshes.
-    void renderPBRTriangleGeometry(Renderer &renderer, const Camera &camera);
+    void renderPBRTriangleGeometry(CommandBuffer &command_buffer,
+                                   const Camera &camera);
     /// \brief Render pass for other geometry.
-    void renderOtherGeometry(Renderer &renderer, const Camera &camera);
+    void renderOtherGeometry(CommandBuffer &command_buffer,
+                             const Camera &camera);
     void release();
 
     Config &config() { return _config; }
@@ -168,6 +170,7 @@ namespace multibody {
     entt::registry &_registry;
     Config _config;
     const Device &_device;
+    const Renderer &_renderer;
     std::reference_wrapper<pin::GeometryModel const> _geomModel;
     std::reference_wrapper<pin::GeometryData const> _geomData;
     std::vector<OpaqueCastable> _castables;

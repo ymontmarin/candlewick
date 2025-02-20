@@ -28,7 +28,7 @@ namespace ssao {
     SsaoPass(const Renderer &renderer, const MeshLayout &layout,
              SDL_GPUTexture *normalMap);
 
-    void render(Renderer &renderer, const Camera &camera);
+    void render(CommandBuffer &cmdBuf, const Camera &camera);
 
     // cleanup function
     void release();

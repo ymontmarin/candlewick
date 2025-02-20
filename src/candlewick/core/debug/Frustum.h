@@ -15,19 +15,19 @@ namespace frustum_debug {
 
   SDL_GPUGraphicsPipeline *createFrustumDebugPipeline(const Renderer &renderer);
 
-  void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
+  void renderFrustum(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                      const Camera &mainCamera, const Camera &otherCam,
                      const Float4 &color = 0x40FF00CC_rgbaf);
 
-  void renderAABB(Renderer &renderer, SDL_GPURenderPass *render_pass,
+  void renderAABB(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                   const Camera &camera, const AABB &aabb,
                   const Float4 &color = 0x00BFFFff_rgbaf);
 
-  void renderOBB(Renderer &renderer, SDL_GPURenderPass *render_pass,
+  void renderOBB(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                  const Camera &camera, const OBB &obb,
                  const Float4 &color = 0x00BFFFff_rgbaf);
 
-  void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
+  void renderFrustum(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                      const Mat4f &invProj, const Mat4f &mvp,
                      const Float3 eyePos, const Float4 &color);
 
@@ -44,6 +44,7 @@ struct DebugBoundsComponent {
 };
 
 class FrustumBoundsDebugSystem final {
+  const Renderer &renderer;
   const Device &device;
   SDL_GPUGraphicsPipeline *pipeline;
   entt::registry &_registry;
@@ -70,7 +71,7 @@ public:
     return {entity, item};
   }
 
-  void render(Renderer &renderer, const Camera &camera);
+  void render(CommandBuffer &cmdBuf, const Camera &camera);
 
   void release() noexcept {
     if (pipeline)

@@ -179,7 +179,7 @@ namespace ssao {
     pushSsaoNoiseData(ssaoNoise);
   }
 
-  void SsaoPass::render(Renderer &renderer, const Camera &camera) {
+  void SsaoPass::render(CommandBuffer &cmdBuf, const Camera &camera) {
     GpuMat4 proj = camera.projection;
     SDL_GPUColorTargetInfo color_info{
         .texture = ssaoMap,
@@ -187,8 +187,8 @@ namespace ssao {
         .load_op = SDL_GPU_LOADOP_CLEAR,
         .store_op = SDL_GPU_STOREOP_STORE,
     };
-    SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
-        renderer.command_buffer, &color_info, 1, nullptr);
+    SDL_GPURenderPass *render_pass =
+        SDL_BeginGPURenderPass(cmdBuf, &color_info, 1, nullptr);
 
     rend::bindFragmentSamplers(
         render_pass, 0,
@@ -199,9 +199,8 @@ namespace ssao {
         });
     auto SAMPLES_PAYLOAD_BYTES =
         Uint32(KERNEL_SAMPLES.size() * sizeof(GpuVec4));
-    renderer.pushFragmentUniform(0, KERNEL_SAMPLES.data(),
-                                 SAMPLES_PAYLOAD_BYTES);
-    renderer.pushFragmentUniform(1, &proj, sizeof(proj));
+    cmdBuf.pushFragmentUniform(0, KERNEL_SAMPLES.data(), SAMPLES_PAYLOAD_BYTES);
+    cmdBuf.pushFragmentUniform(1, &proj, sizeof(proj));
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
     SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
     SDL_EndGPURenderPass(render_pass);
@@ -212,11 +211,10 @@ namespace ssao {
       // if i = 0, render to pass 1 blur texture
       color_info.texture = (i == 0) ? blurPass1Tex : ssaoMap;
 
-      render_pass = SDL_BeginGPURenderPass(renderer.command_buffer, &color_info,
-                                           1, nullptr);
+      render_pass = SDL_BeginGPURenderPass(cmdBuf, &color_info, 1, nullptr);
       SDL_BindGPUGraphicsPipeline(render_pass, blurPipeline);
 
-      renderer.pushFragmentUniform(0, &blurDir, sizeof(blurDir));
+      cmdBuf.pushFragmentUniform(0, &blurDir, sizeof(blurDir));
       rend::bindFragmentSampler(
           render_pass, 0,
           {

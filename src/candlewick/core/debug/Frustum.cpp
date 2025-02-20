@@ -43,7 +43,8 @@ namespace frustum_debug {
 
   static constexpr Uint32 NUM_VERTICES = 36u;
 
-  SDL_GPURenderPass *getDefaultRenderPass(Renderer &renderer) {
+  SDL_GPURenderPass *getDefaultRenderPass(const Renderer &renderer,
+                                          CommandBuffer &cmdBuf) {
     SDL_GPUColorTargetInfo color_target;
     SDL_zero(color_target);
     color_target.texture = renderer.swapchain;
@@ -58,11 +59,10 @@ namespace frustum_debug {
     depth_target.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
     depth_target.cycle = false;
 
-    return SDL_BeginGPURenderPass(renderer.command_buffer, &color_target, 1,
-                                  &depth_target);
+    return SDL_BeginGPURenderPass(cmdBuf, &color_target, 1, &depth_target);
   }
 
-  void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
+  void renderFrustum(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                      const Mat4f &invProj, const Mat4f &mvp,
                      const Float3 eyePos, const Float4 &color) {
 
@@ -72,33 +72,33 @@ namespace frustum_debug {
         color,
         eyePos,
     };
-    renderer.pushVertexUniform(0, &ubo, sizeof(ubo));
+    cmdBuf.pushVertexUniform(0, &ubo, sizeof(ubo));
 
     SDL_DrawGPUPrimitives(render_pass, NUM_VERTICES, 1, 0, 0);
   }
 
-  void renderFrustum(Renderer &renderer, SDL_GPURenderPass *render_pass,
+  void renderFrustum(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                      const Camera &camera, const Camera &otherCam,
                      const Float4 &color) {
     Mat4f invProj = otherCam.projection.inverse();
     GpuMat4 mvp = camera.viewProj() * otherCam.pose().matrix();
-    renderFrustum(renderer, render_pass, invProj, mvp, otherCam.position(),
+    renderFrustum(cmdBuf, render_pass, invProj, mvp, otherCam.position(),
                   color);
   }
 
-  void renderOBB(Renderer &renderer, SDL_GPURenderPass *render_pass,
+  void renderOBB(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                  const Camera &camera, const OBB &obb, const Float4 &color) {
     Mat4f transform = obb.toTransformationMatrix();
     Mat4f mvp = camera.viewProj() * transform;
-    renderFrustum(renderer, render_pass, Mat4f::Identity(), mvp, obb.center,
+    renderFrustum(cmdBuf, render_pass, Mat4f::Identity(), mvp, obb.center,
                   color);
   }
 
-  void renderAABB(Renderer &renderer, SDL_GPURenderPass *render_pass,
+  void renderAABB(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                   const Camera &camera, const AABB &aabb, const Float4 &color) {
     Mat4f transform = aabb.toTransformationMatrix();
     Mat4f mvp = camera.viewProj() * transform;
-    renderFrustum(renderer, render_pass, Mat4f::Identity(), mvp, aabb.center(),
+    renderFrustum(cmdBuf, render_pass, Mat4f::Identity(), mvp, aabb.center(),
                   color);
   }
 
@@ -106,32 +106,33 @@ namespace frustum_debug {
 
 FrustumBoundsDebugSystem::FrustumBoundsDebugSystem(entt::registry &registry,
                                                    const Renderer &renderer)
-    : device(renderer.device), pipeline(nullptr), _registry(registry) {
+    : renderer(renderer), device(renderer.device), pipeline(nullptr),
+      _registry(registry) {
   pipeline = frustum_debug::createFrustumDebugPipeline(renderer);
 }
 
-void FrustumBoundsDebugSystem::render(Renderer &renderer,
+void FrustumBoundsDebugSystem::render(CommandBuffer &cmdBuf,
                                       const Camera &camera) {
   auto &reg = registry();
   SDL_GPURenderPass *render_pass =
-      frustum_debug::getDefaultRenderPass(renderer);
+      frustum_debug::getDefaultRenderPass(renderer, cmdBuf);
 
   SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
   for (auto [ent, item] : reg.view<const DebugFrustumComponent>().each()) {
-    frustum_debug::renderFrustum(renderer, render_pass, camera, *item.otherCam,
+    frustum_debug::renderFrustum(cmdBuf, render_pass, camera, *item.otherCam,
                                  item.color);
   }
 
   for (auto [ent, item] : reg.view<const DebugBoundsComponent>().each()) {
     std::visit(entt::overloaded{
                    [&](const AABB &bounds) {
-                     frustum_debug::renderAABB(renderer, render_pass, camera,
+                     frustum_debug::renderAABB(cmdBuf, render_pass, camera,
                                                bounds, item.color);
                    },
                    [&](const OBB &obb) {
-                     frustum_debug::renderOBB(renderer, render_pass, camera,
-                                              obb, item.color);
+                     frustum_debug::renderOBB(cmdBuf, render_pass, camera, obb,
+                                              item.color);
                    },
                },
                item.bounds);

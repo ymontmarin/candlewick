@@ -103,7 +103,7 @@ struct OpaqueCastable {
 
 /// \ingroup depth_pass
 /// \brief Render a depth-only pass, built from a set of OpaqueCastable.
-void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
+void renderDepthOnlyPass(CommandBuffer &cmdBuf, const DepthPassInfo &passInfo,
                          const Mat4f &viewProj,
                          std::span<const OpaqueCastable> castables);
 
@@ -124,7 +124,7 @@ struct AABB;
 /// \brief Render shadow pass, using provided scene bounds.
 ///
 /// The scene bounds are in world-space.
-void renderShadowPassFromAABB(Renderer &renderer, ShadowPassInfo &passInfo,
+void renderShadowPassFromAABB(CommandBuffer &cmdBuf, ShadowPassInfo &passInfo,
                               const DirectionalLight &dirLight,
                               std::span<const OpaqueCastable> castables,
                               const AABB &worldSceneBounds);
@@ -136,7 +136,8 @@ void renderShadowPassFromAABB(Renderer &renderer, ShadowPassInfo &passInfo,
 /// sphere within the light volume. The frustum can be obtained from the
 /// world-space camera.
 /// \sa frustumFromCameraProjection()
-void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
+void renderShadowPassFromFrustum(CommandBuffer &cmdBuf,
+                                 ShadowPassInfo &passInfo,
                                  const DirectionalLight &dirLight,
                                  std::span<const OpaqueCastable> castables,
                                  const FrustumCornersType &worldSpaceCorners);

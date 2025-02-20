@@ -60,7 +60,8 @@ struct alignas(16) cam_param_ubo_t {
   Uint32 is_ortho;
 };
 
-void renderDepthDebug(Renderer &renderer, const DepthDebugPass &pass,
+void renderDepthDebug(const Renderer &renderer, CommandBuffer &command_buffer,
+                      const DepthDebugPass &pass,
                       const DepthDebugPass::Options &opts) {
   SDL_GPUColorTargetInfo color_target;
   SDL_zero(color_target);
@@ -68,8 +69,8 @@ void renderDepthDebug(Renderer &renderer, const DepthDebugPass &pass,
   color_target.clear_color = {0., 0., 0., 1.};
   color_target.load_op = SDL_GPU_LOADOP_CLEAR;
   color_target.store_op = SDL_GPU_STOREOP_STORE;
-  SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
-      renderer.command_buffer, &color_target, 1, nullptr);
+  SDL_GPURenderPass *render_pass =
+      SDL_BeginGPURenderPass(command_buffer, &color_target, 1, nullptr);
 
   SDL_BindGPUGraphicsPipeline(render_pass, pass.pipeline);
 
@@ -82,7 +83,7 @@ void renderDepthDebug(Renderer &renderer, const DepthDebugPass &pass,
   cam_param_ubo_t cam_ubo{opts.mode, opts.near, opts.far,
                           opts.cam_proj == CameraProjection::ORTHOGRAPHIC};
 
-  renderer.pushFragmentUniform(0, &cam_ubo, sizeof(cam_ubo));
+  command_buffer.pushFragmentUniform(0, &cam_ubo, sizeof(cam_ubo));
   SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
 
   SDL_EndGPURenderPass(render_pass);

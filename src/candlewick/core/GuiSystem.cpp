@@ -8,13 +8,14 @@
 namespace candlewick {
 
 GuiSystem::GuiSystem(const Renderer &renderer, GuiBehavior behav)
-    : callback_(behav) {
+    : _renderer(&renderer), _callback(behav) {
   if (!init(renderer)) {
     throw std::runtime_error("Failed to initialize ImGui for SDLGPU3.");
   }
 }
 
 bool GuiSystem::init(const Renderer &renderer) {
+  _renderer = &renderer;
   assert(!_initialized); // can't initialize twice
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -38,27 +39,25 @@ bool GuiSystem::init(const Renderer &renderer) {
   return _initialized;
 }
 
-void GuiSystem::render(Renderer &renderer) {
+void GuiSystem::render(CommandBuffer &cmdBuf) {
   ImGui_ImplSDLGPU3_NewFrame();
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
 
-  this->callback_(renderer);
+  this->_callback(*_renderer);
 
   ImGui::Render();
   ImDrawData *draw_data = ImGui::GetDrawData();
-  Imgui_ImplSDLGPU3_PrepareDrawData(draw_data, renderer.command_buffer);
+  Imgui_ImplSDLGPU3_PrepareDrawData(draw_data, cmdBuf);
 
   SDL_GPUColorTargetInfo info{
-      .texture = renderer.swapchain,
+      .texture = _renderer->swapchain,
       .clear_color{},
       .load_op = SDL_GPU_LOADOP_LOAD,
       .store_op = SDL_GPU_STOREOP_STORE,
   };
-  auto render_pass =
-      SDL_BeginGPURenderPass(renderer.command_buffer, &info, 1, NULL);
-  ImGui_ImplSDLGPU3_RenderDrawData(draw_data, renderer.command_buffer,
-                                   render_pass);
+  auto render_pass = SDL_BeginGPURenderPass(cmdBuf, &info, 1, NULL);
+  ImGui_ImplSDLGPU3_RenderDrawData(draw_data, cmdBuf, render_pass);
 
   SDL_EndGPURenderPass(render_pass);
 }

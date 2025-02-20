@@ -49,70 +49,72 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
   SDL_SetGPUTextureName(device, depth_texture, "Main depth texture");
 }
 
-void Renderer::bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
-  const Uint32 num_buffers = Uint32(mesh.vertexBuffers.size());
-  std::vector<SDL_GPUBufferBinding> vertex_bindings;
-  vertex_bindings.reserve(num_buffers);
-  for (Uint32 j = 0; j < num_buffers; j++) {
-    vertex_bindings.push_back(mesh.getVertexBinding(j));
+namespace rend {
+  void bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
+    const Uint32 num_buffers = Uint32(mesh.vertexBuffers.size());
+    std::vector<SDL_GPUBufferBinding> vertex_bindings;
+    vertex_bindings.reserve(num_buffers);
+    for (Uint32 j = 0; j < num_buffers; j++) {
+      vertex_bindings.push_back(mesh.getVertexBinding(j));
+    }
+
+    SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(), num_buffers);
+    if (mesh.isIndexed()) {
+      SDL_GPUBufferBinding index_binding = mesh.getIndexBinding();
+      SDL_BindGPUIndexBuffer(pass, &index_binding,
+                             SDL_GPU_INDEXELEMENTSIZE_32BIT);
+    }
   }
 
-  SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(), num_buffers);
-  if (mesh.isIndexed()) {
-    SDL_GPUBufferBinding index_binding = mesh.getIndexBinding();
-    SDL_BindGPUIndexBuffer(pass, &index_binding,
-                           SDL_GPU_INDEXELEMENTSIZE_32BIT);
-  }
-}
+  void bindMeshView(SDL_GPURenderPass *pass, const MeshView &meshView) {
+    const Uint32 num_buffers = Uint32(meshView.vertexBuffers.size());
+    std::vector<SDL_GPUBufferBinding> vertex_bindings;
+    vertex_bindings.reserve(num_buffers);
+    for (Uint32 j = 0; j < num_buffers; j++) {
+      vertex_bindings.push_back({meshView.vertexBuffers[j], 0u});
+    }
 
-void Renderer::bindMeshView(SDL_GPURenderPass *pass, const MeshView &meshView) {
-  const Uint32 num_buffers = Uint32(meshView.vertexBuffers.size());
-  std::vector<SDL_GPUBufferBinding> vertex_bindings;
-  vertex_bindings.reserve(num_buffers);
-  for (Uint32 j = 0; j < num_buffers; j++) {
-    vertex_bindings.push_back({meshView.vertexBuffers[j], 0u});
+    SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(), num_buffers);
+    if (meshView.isIndexed()) {
+      SDL_GPUBufferBinding index_binding = {meshView.indexBuffer, 0u};
+      SDL_BindGPUIndexBuffer(pass, &index_binding,
+                             SDL_GPU_INDEXELEMENTSIZE_32BIT);
+    }
   }
 
-  SDL_BindGPUVertexBuffers(pass, 0, vertex_bindings.data(), num_buffers);
-  if (meshView.isIndexed()) {
-    SDL_GPUBufferBinding index_binding = {meshView.indexBuffer, 0u};
-    SDL_BindGPUIndexBuffer(pass, &index_binding,
-                           SDL_GPU_INDEXELEMENTSIZE_32BIT);
+  void drawView(SDL_GPURenderPass *pass, const MeshView &mesh,
+                Uint32 numInstances) {
+    assert(validateMeshView(mesh));
+    if (mesh.isIndexed()) {
+      SDL_DrawGPUIndexedPrimitives(pass, mesh.indexCount, numInstances,
+                                   mesh.indexOffset, Sint32(mesh.vertexOffset),
+                                   0);
+    } else {
+      SDL_DrawGPUPrimitives(pass, mesh.vertexCount, numInstances,
+                            mesh.vertexOffset, 0);
+    }
   }
-}
 
-void Renderer::drawView(SDL_GPURenderPass *pass, const MeshView &mesh,
-                        Uint32 numInstances) {
-  assert(validateMeshView(mesh));
-  if (mesh.isIndexed()) {
-    SDL_DrawGPUIndexedPrimitives(pass, mesh.indexCount, numInstances,
-                                 mesh.indexOffset, Sint32(mesh.vertexOffset),
-                                 0);
-  } else {
-    SDL_DrawGPUPrimitives(pass, mesh.vertexCount, numInstances,
-                          mesh.vertexOffset, 0);
-  }
-}
-
-void Renderer::drawViews(SDL_GPURenderPass *pass,
-                         std::span<const MeshView> meshViews,
-                         Uint32 numInstances) {
-  if (meshViews.empty())
-    return;
+  void drawViews(SDL_GPURenderPass *pass, std::span<const MeshView> meshViews,
+                 Uint32 numInstances) {
+    if (meshViews.empty())
+      return;
 
 #ifndef NDEBUG
-  const auto ib = meshViews[0].indexBuffer;
-  const auto &vbs = meshViews[0].vertexBuffers;
-  const auto n_vbs = vbs.size();
+    const auto ib = meshViews[0].indexBuffer;
+    const auto &vbs = meshViews[0].vertexBuffers;
+    const auto n_vbs = vbs.size();
 #endif
-  for (auto &view : meshViews) {
+    for (auto &view : meshViews) {
 #ifndef NDEBUG
-    SDL_assert(ib == view.indexBuffer);
-    for (size_t i = 0; i < n_vbs; i++)
-      SDL_assert(vbs[i] == view.vertexBuffers[i]);
+      SDL_assert(ib == view.indexBuffer);
+      for (size_t i = 0; i < n_vbs; i++)
+        SDL_assert(vbs[i] == view.vertexBuffers[i]);
 #endif
-    this->drawView(pass, view, numInstances);
+      drawView(pass, view, numInstances);
+    }
   }
-}
+
+} // namespace rend
 
 } // namespace candlewick
