@@ -124,7 +124,7 @@ void ShadowPassInfo::release() {
   }
 }
 
-void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
+void renderDepthOnlyPass(CommandBuffer &cmdBuf, const DepthPassInfo &passInfo,
                          const Mat4f &viewProj,
                          std::span<const OpaqueCastable> castables) {
   SDL_GPUDepthStencilTargetInfo depth_info;
@@ -139,7 +139,7 @@ void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
   depth_info.texture = passInfo.depthTexture;
 
   SDL_GPURenderPass *render_pass =
-      SDL_BeginGPURenderPass(renderer.command_buffer, nullptr, 0, &depth_info);
+      SDL_BeginGPURenderPass(cmdBuf, nullptr, 0, &depth_info);
 
   assert(passInfo.pipeline);
   SDL_BindGPUGraphicsPipeline(render_pass, passInfo.pipeline);
@@ -147,17 +147,17 @@ void renderDepthOnlyPass(Renderer &renderer, const DepthPassInfo &passInfo,
   GpuMat4 mvp;
   for (auto &cs : castables) {
     assert(validateMeshView(cs.mesh));
-    renderer.bindMeshView(render_pass, cs.mesh);
+    rend::bindMeshView(render_pass, cs.mesh);
     mvp.noalias() = viewProj * cs.transform;
-    renderer.pushVertexUniform(DepthPassInfo::TRANSFORM_SLOT, &mvp,
-                               sizeof(mvp));
-    renderer.drawView(render_pass, cs.mesh);
+    cmdBuf.pushVertexUniform(DepthPassInfo::TRANSFORM_SLOT, &mvp, sizeof(mvp));
+    rend::drawView(render_pass, cs.mesh);
   }
 
   SDL_EndGPURenderPass(render_pass);
 }
 
-void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
+void renderShadowPassFromFrustum(CommandBuffer &cmdBuf,
+                                 ShadowPassInfo &passInfo,
                                  const DirectionalLight &dirLight,
                                  std::span<const OpaqueCastable> castables,
                                  const FrustumCornersType &worldSpaceCorners) {
@@ -176,10 +176,10 @@ void renderShadowPassFromFrustum(Renderer &renderer, ShadowPassInfo &passInfo,
                                        bounds.min.z(), bounds.max.z());
 
   Mat4f viewProj = passInfo.cam.viewProj();
-  renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
+  renderDepthOnlyPass(cmdBuf, passInfo, viewProj, castables);
 }
 
-void renderShadowPassFromAABB(Renderer &renderer, ShadowPassInfo &passInfo,
+void renderShadowPassFromAABB(CommandBuffer &cmdBuf, ShadowPassInfo &passInfo,
                               const DirectionalLight &dirLight,
                               std::span<const OpaqueCastable> castables,
                               const AABB &worldSceneBounds) {
@@ -196,6 +196,6 @@ void renderShadowPassFromAABB(Renderer &renderer, ShadowPassInfo &passInfo,
                                        bounds.min.z(), bounds.max.z());
 
   Mat4f viewProj = lightProj * lightView.matrix();
-  renderDepthOnlyPass(renderer, passInfo, viewProj, castables);
+  renderDepthOnlyPass(cmdBuf, passInfo, viewProj, castables);
 }
 } // namespace candlewick

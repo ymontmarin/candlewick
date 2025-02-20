@@ -34,7 +34,7 @@ namespace effects {
 
     void release(SDL_GPUDevice *device) noexcept;
 
-    void render(Renderer &renderer, const Camera &camera,
+    void render(CommandBuffer &cmdBuf, const Camera &camera,
                 const DirectionalLight &light,
                 std::span<const OpaqueCastable> castables);
   };

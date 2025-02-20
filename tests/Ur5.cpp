@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
   }
 
   GuiSystem guiSys{
-      renderer, [&plane_data](Renderer &r) {
+      renderer, [&plane_data](const Renderer &r) {
         static bool demo_window_open = true;
 
         ImGui::Begin("Renderer info & controls", nullptr,
@@ -348,9 +348,8 @@ int main(int argc, char **argv) {
     pin::updateGeometryPlacements(model, pin_data, geom_model, geom_data);
 
     // acquire command buffer and swapchain
-    renderer.beginFrame();
-    renderer.acquireSwapchain();
-    SDL_GPUCommandBuffer *command_buffer = renderer.command_buffer;
+    auto command_buffer = renderer.acquireCommandBuffer();
+    renderer.acquireSwapchain(command_buffer);
     SDL_GPURenderPass *render_pass;
 
     if (renderer.swapchain) {
@@ -386,7 +385,7 @@ int main(int argc, char **argv) {
           g_myLight.intensity,
       };
       SDL_BindGPUGraphicsPipeline(render_pass, meshPipeline);
-      renderer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
+      command_buffer.pushFragmentUniform(1, &lightUbo, sizeof(lightUbo));
 
       // loop over mesh groups
       for (size_t i = 0; i < geom_model.ngeoms; i++) {
@@ -401,12 +400,13 @@ int main(int argc, char **argv) {
         const auto &obj = robotShapes[i];
         const auto &mesh = obj.mesh;
 
-        renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
-        renderer.bindMesh(render_pass, mesh);
+        command_buffer.pushVertexUniform(0, &cameraUniform,
+                                         sizeof(cameraUniform));
+        rend::bindMesh(render_pass, mesh);
         for (size_t j = 0; j < mesh.numViews(); j++) {
           const auto material = obj.materials[j];
-          renderer.pushFragmentUniform(0, &material, sizeof(material));
-          renderer.drawView(render_pass, mesh.view(j));
+          command_buffer.pushFragmentUniform(0, &material, sizeof(material));
+          rend::drawView(render_pass, mesh.view(j));
         }
       }
 
@@ -421,28 +421,30 @@ int main(int argc, char **argv) {
             math::computeNormalMatrix(modelView),
         };
         const auto material = plane_data.material;
-        renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
-        renderer.pushFragmentUniform(0, &material, sizeof(material));
-        renderer.bindMesh(render_pass, plane);
-        renderer.draw(render_pass, plane);
+        command_buffer.pushVertexUniform(0, &cameraUniform,
+                                         sizeof(cameraUniform));
+        command_buffer.pushFragmentUniform(0, &material, sizeof(material));
+        rend::bindMesh(render_pass, plane);
+        rend::draw(render_pass, plane);
       }
 
       // render 3d hud elements
       if (renderGrid) {
         const GpuMat4 cameraUniform = g_camera.viewProj();
-        renderer.pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform));
+        command_buffer.pushVertexUniform(0, &cameraUniform,
+                                         sizeof(cameraUniform));
         SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
-        renderer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
-        renderer.bindMesh(render_pass, gridMesh);
-        renderer.draw(render_pass, gridMesh);
+        command_buffer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
+        rend::bindMesh(render_pass, gridMesh);
+        rend::draw(render_pass, gridMesh);
 
         SDL_BindGPUGraphicsPipeline(render_pass, debugTrianglePipeline);
         for (size_t i = 0; i < 3; i++) {
           const Mesh &m = triad_meshes[i];
           GpuVec4 triad_col{triad_data[i].material.baseColor};
-          renderer.pushFragmentUniform(0, &triad_col, sizeof(triad_col));
-          renderer.bindMesh(render_pass, m);
-          renderer.draw(render_pass, m);
+          command_buffer.pushFragmentUniform(0, &triad_col, sizeof(triad_col));
+          rend::bindMesh(render_pass, m);
+          rend::draw(render_pass, m);
         }
       }
 
@@ -452,9 +454,9 @@ int main(int argc, char **argv) {
       break;
     }
 
-    guiSys.render(renderer);
+    guiSys.render(command_buffer);
 
-    renderer.endFrame();
+    command_buffer.submit();
 
     if (performRecording) {
       record_callback(swapchain_format);

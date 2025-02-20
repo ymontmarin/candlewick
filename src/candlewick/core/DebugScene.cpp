@@ -8,7 +8,7 @@
 namespace candlewick {
 
 DebugScene::DebugScene(const Renderer &renderer)
-    : _device(renderer.device), _trianglePipeline(nullptr),
+    : _renderer(renderer), _device(renderer.device), _trianglePipeline(nullptr),
       _linePipeline(nullptr), _registry() {
   _swapchainTextureFormat = renderer.getSwapchainTextureFormat();
   _depthFormat = renderer.depthFormat();
@@ -43,7 +43,7 @@ DebugScene::addLineGrid(std::optional<Float4> color) {
   return {entity, item};
 }
 
-void DebugScene::renderMeshComponents(Renderer &renderer,
+void DebugScene::renderMeshComponents(CommandBuffer &cmdBuf,
                                       SDL_GPURenderPass *render_pass,
                                       const Camera &camera) const {
   const Mat4f viewProj = camera.viewProj();
@@ -63,12 +63,12 @@ void DebugScene::renderMeshComponents(Renderer &renderer,
     }
 
     const GpuMat4 mvp = viewProj * cmd.transform;
-    renderer.pushVertexUniform(TRANSFORM_SLOT, &mvp, sizeof(mvp));
-    renderer.bindMesh(render_pass, cmd.mesh);
+    cmdBuf.pushVertexUniform(TRANSFORM_SLOT, &mvp, sizeof(mvp));
+    rend::bindMesh(render_pass, cmd.mesh);
     for (size_t i = 0; i < cmd.mesh.numViews(); i++) {
       const auto &color = cmd.colors[i];
-      renderer.pushFragmentUniform(COLOR_SLOT, &color, sizeof(color));
-      renderer.drawView(render_pass, cmd.mesh.view(i));
+      cmdBuf.pushFragmentUniform(COLOR_SLOT, &color, sizeof(color));
+      rend::drawView(render_pass, cmd.mesh.view(i));
     }
   }
 }
@@ -110,11 +110,11 @@ void DebugScene::setupPipelines(const MeshLayout &layout) {
     _linePipeline = SDL_CreateGPUGraphicsPipeline(_device, &info);
 }
 
-void DebugScene::render(Renderer &renderer, const Camera &camera) const {
+void DebugScene::render(CommandBuffer &cmdBuf, const Camera &camera) const {
 
   SDL_GPUColorTargetInfo color_target_info;
   SDL_zero(color_target_info);
-  color_target_info.texture = renderer.swapchain;
+  color_target_info.texture = _renderer.swapchain;
   color_target_info.load_op = SDL_GPU_LOADOP_LOAD;
   color_target_info.store_op = SDL_GPU_STOREOP_STORE;
   SDL_GPUDepthStencilTargetInfo depth_target_info;
@@ -122,13 +122,13 @@ void DebugScene::render(Renderer &renderer, const Camera &camera) const {
   depth_target_info.store_op = SDL_GPU_STOREOP_STORE;
   depth_target_info.stencil_load_op = SDL_GPU_LOADOP_LOAD;
   depth_target_info.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
-  depth_target_info.texture = renderer.depth_texture;
+  depth_target_info.texture = _renderer.depth_texture;
   depth_target_info.cycle = false;
 
-  SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
-      renderer.command_buffer, &color_target_info, 1, &depth_target_info);
+  SDL_GPURenderPass *render_pass =
+      SDL_BeginGPURenderPass(cmdBuf, &color_target_info, 1, &depth_target_info);
 
-  renderMeshComponents(renderer, render_pass, camera);
+  renderMeshComponents(cmdBuf, render_pass, camera);
 
   SDL_EndGPURenderPass(render_pass);
 }

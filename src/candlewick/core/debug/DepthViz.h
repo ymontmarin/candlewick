@@ -35,7 +35,8 @@ inline void DepthDebugPass::release(SDL_GPUDevice *device) {
   }
 }
 
-void renderDepthDebug(Renderer &renderer, const DepthDebugPass &pass,
+void renderDepthDebug(const Renderer &renderer, CommandBuffer &cmdBuf,
+                      const DepthDebugPass &pass,
                       const DepthDebugPass::Options &opts);
 
 } // namespace candlewick

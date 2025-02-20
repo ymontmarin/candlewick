@@ -90,7 +90,7 @@ namespace effects {
   }
 
   void
-  ScreenSpaceShadowPass::render(Renderer &renderer, const Camera &camera,
+  ScreenSpaceShadowPass::render(CommandBuffer &cmdBuf, const Camera &camera,
                                 const DirectionalLight &light,
                                 std::span<const OpaqueCastable> castables) {
     SDL_GPUColorTargetInfo color_target_info;
@@ -101,8 +101,8 @@ namespace effects {
     color_target_info.store_op = SDL_GPU_STOREOP_STORE;
     color_target_info.cycle = false;
 
-    SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(
-        renderer.command_buffer, &color_target_info, 1, nullptr);
+    SDL_GPURenderPass *render_pass =
+        SDL_BeginGPURenderPass(cmdBuf, &color_target_info, 1, nullptr);
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
     Mat4f invProj = camera.projection.inverse();
@@ -114,7 +114,7 @@ namespace effects {
         config.maxDist,
         config.numSteps,
     };
-    renderer.pushFragmentUniform(0, &ubo, sizeof(ubo));
+    cmdBuf.pushFragmentUniform(0, &ubo, sizeof(ubo));
     rend::bindFragmentSampler(render_pass, 0,
                               {
                                   .texture = depthTexture,
@@ -123,9 +123,9 @@ namespace effects {
 
     for (auto &cs : castables) {
       GpuMat4 mvp = vp * cs.transform;
-      renderer.pushVertexUniform(0, &mvp, sizeof(mvp));
-      renderer.bindMeshView(render_pass, cs.mesh);
-      renderer.drawView(render_pass, cs.mesh);
+      cmdBuf.pushVertexUniform(0, &mvp, sizeof(mvp));
+      rend::bindMeshView(render_pass, cs.mesh);
+      rend::drawView(render_pass, cs.mesh);
     }
 
     SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);

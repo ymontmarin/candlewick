@@ -267,7 +267,7 @@ int main(int argc, char **argv) {
   FrustumBoundsDebugSystem frustumBoundsDebug{registry, renderer};
 
   GuiSystem gui_system{
-      renderer, [&](Renderer &r) {
+      renderer, [&](const Renderer &r) {
         static bool demo_window_open = true;
 
         ImGui::Begin("Renderer info & controls", nullptr,
@@ -382,42 +382,43 @@ int main(int argc, char **argv) {
     FrustumCornersType main_cam_frustum = frustumFromCamera(g_camera);
 
     // acquire command buffer and swapchain
-    renderer.beginFrame();
+    CommandBuffer command_buffer = renderer.acquireCommandBuffer();
 
-    if (renderer.waitAndAcquireSwapchain()) {
+    if (renderer.waitAndAcquireSwapchain(command_buffer)) {
       const GpuMat4 viewProj = g_camera.viewProj();
       robot_scene.updateTransforms();
       robot_scene.collectOpaqueCastables();
       auto &castables = robot_scene.castables();
-      renderShadowPassFromAABB(renderer, shadowPassInfo, sceneLight, castables,
-                               worldSpaceBounds);
-      renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
+      renderShadowPassFromAABB(command_buffer, shadowPassInfo, sceneLight,
+                               castables, worldSpaceBounds);
+      renderDepthOnlyPass(command_buffer, depthPassInfo, viewProj, castables);
       switch (g_showDebugViz) {
       case FULL_RENDER:
-        renderDepthOnlyPass(renderer, depthPassInfo, viewProj, castables);
-        robot_scene.render(renderer, g_camera);
-        debug_scene.render(renderer, g_camera);
+        renderDepthOnlyPass(command_buffer, depthPassInfo, viewProj, castables);
+        robot_scene.render(command_buffer, g_camera);
+        debug_scene.render(command_buffer, g_camera);
         if (showFrustum)
-          frustumBoundsDebug.render(renderer, g_camera);
+          frustumBoundsDebug.render(command_buffer, g_camera);
         break;
       case DEPTH_DEBUG:
-        renderDepthDebug(renderer, depthDebugPass, {depth_mode, nearZ, farZ});
+        renderDepthDebug(renderer, command_buffer, depthDebugPass,
+                         {depth_mode, nearZ, farZ});
         break;
       case LIGHT_DEBUG:
-        renderDepthDebug(renderer, shadowDebugPass,
+        renderDepthDebug(renderer, command_buffer, shadowDebugPass,
                          {depth_mode,
                           orthoProjNear(shadowPassInfo.cam.projection),
                           orthoProjFar(shadowPassInfo.cam.projection),
                           CameraProjection::ORTHOGRAPHIC});
         break;
       }
-      gui_system.render(renderer);
+      gui_system.render(command_buffer);
     } else {
       SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
       continue;
     }
 
-    renderer.endFrame();
+    command_buffer.submit();
 
     if (performRecording) {
       record_callback();

@@ -101,20 +101,20 @@ void Visualizer::displayImpl() {
 
 void Visualizer::render() {
 
-  renderer.beginFrame();
-  if (renderer.waitAndAcquireSwapchain()) {
+  CommandBuffer cmdBuf = renderer.acquireCommandBuffer();
+  if (renderer.waitAndAcquireSwapchain(cmdBuf)) {
     robotScene->collectOpaqueCastables();
     std::span castables = robotScene->castables();
-    renderShadowPassFromAABB(renderer, robotScene->shadowPass,
+    renderShadowPassFromAABB(cmdBuf, robotScene->shadowPass,
                              robotScene->directionalLight, castables,
                              robotScene->worldSpaceBounds);
 
-    robotScene->render(renderer, camera);
-    debugScene->render(renderer, camera);
-    guiSystem.render(renderer);
+    robotScene->render(cmdBuf, camera);
+    debugScene->render(cmdBuf, camera);
+    guiSystem.render(cmdBuf);
   }
 
-  renderer.endFrame();
+  cmdBuf.submit();
 }
 
 } // namespace candlewick::multibody

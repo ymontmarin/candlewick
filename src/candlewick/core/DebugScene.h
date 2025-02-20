@@ -44,6 +44,7 @@ struct DebugMeshComponent {
 ///
 /// This implements a basic render system for DebugMeshComponent.
 class DebugScene final {
+  const Renderer &_renderer;
   const Device &_device;
   SDL_GPUGraphicsPipeline *_trianglePipeline;
   SDL_GPUGraphicsPipeline *_linePipeline;
@@ -52,7 +53,8 @@ class DebugScene final {
   std::vector<std::unique_ptr<IDebugSubSystem>> _systems;
   entt::registry _registry;
 
-  void renderMeshComponents(Renderer &renderer, SDL_GPURenderPass *render_pass,
+  void renderMeshComponents(CommandBuffer &cmdBuf,
+                            SDL_GPURenderPass *render_pass,
                             const Camera &camera) const;
 
 public:
@@ -90,13 +92,12 @@ public:
     }
   }
 
-  void render(Renderer &renderer, const Camera &camera) const;
+  void render(CommandBuffer &cmdBuf, const Camera &camera) const;
 
   void release();
 
   ~DebugScene() { release(); }
 };
-
 static_assert(Scene<DebugScene>);
 
 } // namespace candlewick
