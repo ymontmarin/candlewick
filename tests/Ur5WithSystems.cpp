@@ -61,6 +61,7 @@ static Camera g_camera = {
     .view = Eigen::Isometry3f{lookAt({2.0, 0, 2.}, Float3::Zero())},
 };
 static CameraProjection g_cameraType = CameraProjection::PERSPECTIVE;
+static CylinderCameraControl g_camControl{g_camera};
 static bool quitRequested = false;
 static bool showFrustum = false;
 enum VizMode {
@@ -85,7 +86,6 @@ static void updateOrtho(float zoom) {
 }
 
 void eventLoop(const Renderer &renderer) {
-  CylinderCameraControl camControl{g_camera};
   // update pixel density and display scale
   pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
   displayScale = SDL_GetWindowDisplayScale(renderer.window);
@@ -138,13 +138,16 @@ void eventLoop(const Renderer &renderer) {
     case SDL_EVENT_MOUSE_MOTION: {
       SDL_MouseButtonFlags mouseButton = event.motion.state;
       bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
+      Float2 mvt{event.motion.xrel, event.motion.yrel};
       if (mouseButton & SDL_BUTTON_LMASK) {
         if (controlPressed) {
-          camControl.moveInOut(0.95f, event.motion.yrel);
+          g_camControl.moveInOut(0.95f, event.motion.yrel);
         } else {
-          camControl.viewportDrag({event.motion.xrel, event.motion.yrel},
-                                  rotSensitivity, panSensitivity);
+          g_camControl.viewportDrag(mvt, rotSensitivity, panSensitivity);
         }
+      }
+      if (mouseButton & SDL_BUTTON_MMASK) {
+        g_camControl.pan(mvt, 5e-3f);
       }
       if (mouseButton & SDL_BUTTON_RMASK) {
         float camXLocRotSpeed = 0.01f * pixelDensity;
