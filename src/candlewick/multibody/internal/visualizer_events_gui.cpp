@@ -15,7 +15,8 @@ void add_light_gui(DirectionalLight &light) {
   ImGui::ColorEdit3("color", light.color.data());
 }
 
-void camera_params_gui(CameraControlParams &params) {
+void camera_params_gui(CylinderCameraControl &controller,
+                       CameraControlParams &params) {
   if (ImGui::TreeNode("Camera controls")) {
     ImGui::SliderFloat("Rot. sensitivity", &params.rotSensitivity, 0.001f,
                        0.01f);
@@ -26,6 +27,10 @@ void camera_params_gui(CameraControlParams &params) {
     ImGui::SliderFloat("Local rot. sensitivity", &params.localRotSensitivity,
                        0.001f, 0.04f);
     ImGui::Checkbox("Invert Y", &params.yInvert);
+    if (ImGui::Button("Reset target")) {
+      controller.target.setZero();
+      controller.updateLookAt();
+    }
     ImGui::TreePop();
   }
 }
@@ -41,7 +46,7 @@ void Visualizer::default_gui_exec(Visualizer &viz) {
   ImGui::SetItemTooltip("Configuration for lights");
   add_light_gui(light);
 
-  camera_params_gui(viz.cameraParams);
+  camera_params_gui(viz.controller, viz.cameraParams);
 
   ImGui::End();
 }
@@ -71,7 +76,7 @@ void mouse_motion_handler(CylinderCameraControl &controller,
   }
 }
 
-void Visualizer::eventLoop() {
+void Visualizer::processEvents() {
   ImGuiIO &io = ImGui::GetIO();
 
   SDL_Event event;

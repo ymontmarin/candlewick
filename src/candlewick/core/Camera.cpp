@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "CameraControls.h"
 
 namespace candlewick {
 
@@ -61,4 +62,37 @@ Mat4f orthographicMatrix(const Float2 &sizes, float near, float far) {
       0., 0., 0., 1.;
   return proj;
 }
+
+namespace camera_util {
+  void rotateAroundPoint(Camera &camera, const Mat3f &R, const Float3 &p) {
+    Float3 np = -p;
+    np -= R * np;
+    Eigen::Isometry3f A{R};
+    A.translate(np);
+    camera.view = camera.view * A;
+  }
+} // namespace camera_util
+
+CylinderCameraControl &CylinderCameraControl::pan(Float2 step_,
+                                                  float sensitivity) {
+  step_ = sensitivity * step_;
+  step_.y() = -step_.y();
+  const Float3 step{step_.x(), step_.y(), 0.f};
+  camera_util::localTranslate(camera, step);
+  const Float3 worldStep = camera.view.linear().transpose() * step;
+  target += worldStep;
+  return *this;
+}
+
+CylinderCameraControl &CylinderCameraControl::moveInOut(float scale,
+                                                        float offset) {
+  const float alpha = 1.f - (offset > 0 ? 1.f / scale : scale);
+  Float3 toCamera = camera.position() - target;
+  const float curDist = toCamera.norm();
+  const float step = curDist * alpha;
+  camera_util::localTranslateZ(camera, step);
+  target += camera.forward() * step;
+  return *this;
+}
+
 } // namespace candlewick

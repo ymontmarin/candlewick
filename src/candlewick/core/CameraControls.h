@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Camera.h"
-#include <SDL3/SDL_keycode.h>
 
 namespace candlewick {
 
@@ -23,8 +22,10 @@ namespace camera_util {
     camera.view.linear().applyOnTheLeft(R);
   }
 
+  void rotateAroundPoint(Camera &camera, const Mat3f &R, const Float3 &p);
+
   /// \brief Rotate the camera around the center by a given increment.
-  inline void worldRotateZ(Camera &camera, Radf angle) {
+  inline void rotateZAroundPoint(Camera &camera, Radf angle, const Float3 &p) {
     float c, s;
     c = std::cos(angle);
     s = std::sin(angle);
@@ -32,7 +33,7 @@ namespace camera_util {
     R << c, -s, 0., //
         s, +c, 0.,  //
         0., 0., 1.;
-    camera.view.linear().applyOnTheRight(R);
+    rotateAroundPoint(camera, R, p);
   }
 
   inline void localTranslate(Camera &camera, const Float3 &tr) {
@@ -48,9 +49,7 @@ namespace camera_util {
   }
 
   inline void worldTranslate(Camera &camera, const Float3 &tr) {
-    auto R = camera.view.linear();
-    auto p = camera.view.translation();
-    p += R * tr;
+    camera.view.translate(tr);
   }
 
   inline void worldTranslateZ(Camera &camera, float step) {
@@ -64,24 +63,27 @@ namespace camera_util {
 
 } // namespace camera_util
 
-template <class U>
-concept CameraController = requires(U u) {
-  { u.camera } -> std::convertible_to<Camera &>;
-  { u.dolly(std::declval<float>()) } -> std::same_as<U &>;
-};
-
 struct CylinderCameraControl {
   Camera &camera;
+  Float3 target{0.f, 0.f, 0.f};
 
   static constexpr bool DEFAULT_Y_INVERT = true;
 
+  CylinderCameraControl(Camera &_camera) : camera(_camera) {}
+
+  auto &updateLookAt() {
+    camera.view = lookAt(camera.position(), target);
+    return *this;
+  }
+
   auto &dolly(float height) {
+    target.z() += height;
     camera_util::worldTranslateZ(camera, height);
     return *this;
   }
 
   auto &orbit(Radf angle) {
-    camera_util::worldRotateZ(camera, angle);
+    camera_util::rotateZAroundPoint(camera, angle, target);
     return *this;
   }
 
@@ -97,23 +99,6 @@ struct CylinderCameraControl {
 
   CylinderCameraControl &moveInOut(float scale, float offset);
 };
-
-inline CylinderCameraControl &CylinderCameraControl::pan(Float2 step,
-                                                         float sensitivity) {
-  step = sensitivity * step;
-  camera_util::localTranslate(camera, {step.x(), -step.y(), 0.f});
-  return *this;
-}
-
-inline CylinderCameraControl &CylinderCameraControl::moveInOut(float scale,
-                                                               float offset) {
-  const float alpha = 1.f - (offset > 0 ? 1.f / scale : scale);
-  const float curDist = camera.view.translation().norm();
-  camera_util::localTranslateZ(camera, curDist * alpha);
-  return *this;
-}
-
-static_assert(CameraController<CylinderCameraControl>);
 
 /// \}
 
