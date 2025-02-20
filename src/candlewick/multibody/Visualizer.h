@@ -27,7 +27,7 @@ struct CameraControlParams {
   float panSensitivity = 5e-3f;
   float zoomSensitivity = 0.05f;
   float localRotSensitivity = 0.01f;
-  bool yInvert = true;
+  bool yInvert = false;
 
   // Mouse button modifiers
   struct MouseConfig {
