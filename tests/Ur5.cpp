@@ -421,9 +421,9 @@ int main(int argc, char **argv) {
             math::computeNormalMatrix(modelView),
         };
         const auto material = plane_data.material;
-        command_buffer.pushVertexUniform(0, &cameraUniform,
-                                         sizeof(cameraUniform));
-        command_buffer.pushFragmentUniform(0, &material, sizeof(material));
+        command_buffer
+            .pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform))
+            .pushFragmentUniform(0, &material, sizeof(material));
         rend::bindMesh(render_pass, plane);
         rend::draw(render_pass, plane);
       }
@@ -431,10 +431,10 @@ int main(int argc, char **argv) {
       // render 3d hud elements
       if (renderGrid) {
         const GpuMat4 cameraUniform = g_camera.viewProj();
-        command_buffer.pushVertexUniform(0, &cameraUniform,
-                                         sizeof(cameraUniform));
+        command_buffer
+            .pushVertexUniform(0, &cameraUniform, sizeof(cameraUniform))
+            .pushFragmentUniform(0, &gridColor, sizeof(gridColor));
         SDL_BindGPUGraphicsPipeline(render_pass, debugLinePipeline);
-        command_buffer.pushFragmentUniform(0, &gridColor, sizeof(gridColor));
         rend::bindMesh(render_pass, gridMesh);
         rend::draw(render_pass, gridMesh);
 

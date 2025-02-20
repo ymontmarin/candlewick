@@ -306,10 +306,11 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
                                 .texture = ssaoPass.ssaoMap,
                                 .sampler = ssaoPass.texSampler,
                             });
-  command_buffer.pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
-                                     sizeof(lightUbo));
   int _useSsao = _config.enable_ssao;
-  command_buffer.pushFragmentUniform(2, &_useSsao, sizeof(_useSsao));
+  command_buffer
+      .pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
+                           sizeof(lightUbo))
+      .pushFragmentUniform(2, &_useSsao, sizeof(_useSsao));
 
   auto *pipeline = renderPipelines[PIPELINE_TRIANGLEMESH];
   assert(pipeline);
@@ -375,10 +376,10 @@ void RobotScene::renderOtherGeometry(CommandBuffer &command_buffer,
       const Mesh &mesh = obj.mesh;
       const Mat4f mvp = viewProj * modelMat;
       const auto &color = obj.materials[0].baseColor;
-      command_buffer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &mvp,
-                                       sizeof(mvp));
-      command_buffer.pushFragmentUniform(FragmentUniformSlots::MATERIAL, &color,
-                                         sizeof(color));
+      command_buffer
+          .pushVertexUniform(VertexUniformSlots::TRANSFORM, &mvp, sizeof(mvp))
+          .pushFragmentUniform(FragmentUniformSlots::MATERIAL, &color,
+                               sizeof(color));
       rend::bindMesh(render_pass, mesh);
       rend::draw(render_pass, mesh);
     }
