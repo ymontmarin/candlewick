@@ -2,6 +2,7 @@
 #include "errors.h"
 #include <utility>
 #include <cassert>
+#include <SDL3/SDL_init.h>
 
 namespace candlewick {
 Renderer::Renderer(Device &&device, SDL_Window *window)
@@ -47,6 +48,18 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
   }
   depth_texture = Texture(this->device, texInfo);
   SDL_SetGPUTextureName(device, depth_texture, "Main depth texture");
+}
+
+bool Renderer::waitAndAcquireSwapchain(CommandBuffer &command_buffer) {
+  assert(SDL_IsMainThread());
+  return SDL_WaitAndAcquireGPUSwapchainTexture(command_buffer, window,
+                                               &swapchain, NULL, NULL);
+}
+
+bool Renderer::acquireSwapchain(CommandBuffer &command_buffer) {
+  assert(SDL_IsMainThread());
+  return SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain,
+                                        NULL, NULL);
 }
 
 namespace rend {
