@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
 
   // DEBUG SYSTEM
 
-  DebugScene debug_scene{renderer};
+  DebugScene debug_scene{registry, renderer};
   auto &robot_debug =
       debug_scene.addSystem<multibody::RobotDebugSystem>(model, pin_data);
   auto [triad_id, triad] = debug_scene.addTriad();

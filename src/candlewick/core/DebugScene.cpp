@@ -7,9 +7,9 @@
 
 namespace candlewick {
 
-DebugScene::DebugScene(const Renderer &renderer)
-    : _renderer(renderer), _device(renderer.device), _trianglePipeline(nullptr),
-      _linePipeline(nullptr), _registry() {
+DebugScene::DebugScene(entt::registry &reg, const Renderer &renderer)
+    : _registry(reg), _renderer(renderer), _trianglePipeline(nullptr),
+      _linePipeline(nullptr) {
   _swapchainTextureFormat = renderer.getSwapchainTextureFormat();
   _depthFormat = renderer.depthFormat();
 }
@@ -17,7 +17,7 @@ DebugScene::DebugScene(const Renderer &renderer)
 std::tuple<entt::entity, DebugMeshComponent &> DebugScene::addTriad() {
   auto triad_datas = loadTriadSolid();
   std::vector<GpuVec4> triad_colors(3);
-  Mesh triad = createMeshFromBatch(_device, triad_datas, true);
+  Mesh triad = createMeshFromBatch(device(), triad_datas, true);
   for (size_t i = 0; i < 3; i++) {
     triad_colors[i] = triad_datas[i].material.baseColor;
   }
@@ -32,7 +32,7 @@ std::tuple<entt::entity, DebugMeshComponent &> DebugScene::addTriad() {
 std::tuple<entt::entity, DebugMeshComponent &>
 DebugScene::addLineGrid(std::optional<Float4> color) {
   auto grid_data = loadGrid(20);
-  Mesh grid = createMesh(_device, grid_data, true);
+  Mesh grid = createMesh(device(), grid_data, true);
   GpuVec4 grid_color = color.value_or(grid_data.material.baseColor);
 
   setupPipelines(grid.layout);
@@ -76,8 +76,8 @@ void DebugScene::renderMeshComponents(CommandBuffer &cmdBuf,
 void DebugScene::setupPipelines(const MeshLayout &layout) {
   if (_linePipeline && _trianglePipeline)
     return;
-  auto vertexShader = Shader::fromMetadata(_device, "Hud3dElement.vert");
-  auto fragmentShader = Shader::fromMetadata(_device, "Hud3dElement.frag");
+  auto vertexShader = Shader::fromMetadata(device(), "Hud3dElement.vert");
+  auto fragmentShader = Shader::fromMetadata(device(), "Hud3dElement.frag");
   SDL_GPUColorTargetDescription color_desc;
   SDL_zero(color_desc);
   color_desc.format = _swapchainTextureFormat;
@@ -102,12 +102,12 @@ void DebugScene::setupPipelines(const MeshLayout &layout) {
       .props = 0,
   };
   if (!_trianglePipeline)
-    _trianglePipeline = SDL_CreateGPUGraphicsPipeline(_device, &info);
+    _trianglePipeline = SDL_CreateGPUGraphicsPipeline(device(), &info);
 
   // re-use
   info.primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST;
   if (!_linePipeline)
-    _linePipeline = SDL_CreateGPUGraphicsPipeline(_device, &info);
+    _linePipeline = SDL_CreateGPUGraphicsPipeline(device(), &info);
 }
 
 void DebugScene::render(CommandBuffer &cmdBuf, const Camera &camera) const {
@@ -134,9 +134,9 @@ void DebugScene::render(CommandBuffer &cmdBuf, const Camera &camera) const {
 }
 
 void DebugScene::release() {
-  if (_device) {
-    SDL_ReleaseGPUGraphicsPipeline(_device, _trianglePipeline);
-    SDL_ReleaseGPUGraphicsPipeline(_device, _linePipeline);
+  if (device()) {
+    SDL_ReleaseGPUGraphicsPipeline(device(), _trianglePipeline);
+    SDL_ReleaseGPUGraphicsPipeline(device(), _linePipeline);
   }
   // clean up all DebugMeshComponent objects.
   _registry.clear<DebugMeshComponent>();

@@ -30,7 +30,7 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
 
   robotScene.emplace(registry, renderer, visualModel(), visualData(),
                      RobotScene::Config{.enable_shadows = true});
-  debugScene.emplace(renderer);
+  debugScene.emplace(registry, renderer);
 
   robotScene->directionalLight = {
       .direction = {0., -1., -1.},

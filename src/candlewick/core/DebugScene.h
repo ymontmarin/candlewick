@@ -43,15 +43,14 @@ struct DebugMeshComponent {
 /// \brief %Scene for organizing debug entities and render systems.
 ///
 /// This implements a basic render system for DebugMeshComponent.
-class DebugScene final {
+class DebugScene {
+  entt::registry &_registry;
   const Renderer &_renderer;
-  const Device &_device;
   SDL_GPUGraphicsPipeline *_trianglePipeline;
   SDL_GPUGraphicsPipeline *_linePipeline;
   SDL_GPUTextureFormat _swapchainTextureFormat, _depthFormat;
   std::vector<entt::scoped_connection> _connections;
   std::vector<std::unique_ptr<IDebugSubSystem>> _systems;
-  entt::registry _registry;
 
   void renderMeshComponents(CommandBuffer &cmdBuf,
                             SDL_GPURenderPass *render_pass,
@@ -61,11 +60,11 @@ public:
   enum { TRANSFORM_SLOT = 0 };
   enum { COLOR_SLOT = 0 };
 
-  DebugScene(const Renderer &renderer);
+  DebugScene(entt::registry &registry, const Renderer &renderer);
   DebugScene(const DebugScene &) = delete;
   DebugScene &operator=(const DebugScene &) = delete;
 
-  const Device &device() const noexcept { return _device; }
+  const Device &device() const noexcept { return _renderer.device; }
   entt::registry &registry() { return _registry; }
   const entt::registry &registry() const { return _registry; }
 
