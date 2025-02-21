@@ -84,14 +84,27 @@ CylinderCameraControl &CylinderCameraControl::pan(Float2 step_,
   return *this;
 }
 
-CylinderCameraControl &CylinderCameraControl::moveInOut(float scale,
+CylinderCameraControl &CylinderCameraControl::moveInOut(float baseScale,
                                                         float offset) {
-  const float alpha = 1.f - (offset > 0 ? 1.f / scale : scale);
-  Float3 toCamera = camera.position() - target;
-  const float curDist = toCamera.norm();
-  const float step = curDist * alpha;
+  const float alpha = std::pow(baseScale, offset);
+  Float3 vt = camera.transformPoint(target);
+  const float curDist = -vt.z();
+
+  // if > 0, we move closer and currentDist decreases
+  // this is the step *forwards*.
+  float step = (alpha - 1.f) * curDist;
+  const float MIN_DIST = 0.05f;
+
+  if (curDist < 0) {
+    float recoverStep = 0.1f * curDist;
+    camera_util::localTranslateZ(camera, recoverStep);
+    return *this;
+  }
+
+  if (step > 0 && curDist - step < MIN_DIST) {
+    step = MIN_DIST - curDist;
+  }
   camera_util::localTranslateZ(camera, step);
-  target += camera.forward() * step;
   return *this;
 }
 

@@ -76,11 +76,19 @@ struct CylinderCameraControl {
     return *this;
   }
 
-  auto &dolly(float height) {
-    target.z() += height;
-    camera_util::worldTranslateZ(camera, height);
+  auto &translate(const Float3 &tr) {
+    target += tr;
+    camera_util::worldTranslate(camera, tr);
     return *this;
   }
+
+  auto &localTranslate(const Float3 &tr) {
+    target += camera.transformVector(tr);
+    camera_util::localTranslate(camera, tr);
+    return *this;
+  }
+
+  auto &dolly(float height) { return translate({0, 0, height}); }
 
   auto &orbit(Radf angle) {
     camera_util::rotateZAroundPoint(camera, angle, target);
