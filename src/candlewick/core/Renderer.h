@@ -57,13 +57,6 @@ struct Renderer {
   bool hasDepthTexture() const { return depth_texture.hasValue(); }
   SDL_GPUTextureFormat depthFormat() const { return depth_texture.format(); }
 
-  /// Render a collection of Mesh collected in a Shape object.
-  /// The Shape class satisfies the necessary invariants to allow for
-  /// batching. We only have to bind the vertex and index buffers once, here.
-  /// \param pass The GPU render pass
-  /// \param shape The Shape object
-  // void render(SDL_GPURenderPass *pass, const Shape &shape);
-
   void destroy() {
     SDL_ReleaseWindowFromGPUDevice(device, window);
     depth_texture.release();
