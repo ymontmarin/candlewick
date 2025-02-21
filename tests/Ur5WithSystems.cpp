@@ -121,10 +121,10 @@ void eventLoop(const Renderer &renderer) {
       const float step_size = 0.06f;
       switch (event.key.key) {
       case SDLK_LEFT:
-        g_camControl.localTranslate({0, 0, +step_size});
+        g_camControl.localTranslate({+step_size, 0, 0});
         break;
       case SDLK_RIGHT:
-        g_camControl.localTranslate({0, 0, -step_size});
+        g_camControl.localTranslate({-step_size, 0, 0});
         break;
       case SDLK_UP:
         g_camControl.dolly(+step_size);
