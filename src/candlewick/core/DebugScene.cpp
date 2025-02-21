@@ -1,6 +1,7 @@
 #include "DebugScene.h"
 #include "Camera.h"
 #include "Shader.h"
+#include "Components.h"
 
 #include "../primitives/Arrow.h"
 #include "../primitives/Grid.h"
@@ -24,8 +25,8 @@ std::tuple<entt::entity, DebugMeshComponent &> DebugScene::addTriad() {
   setupPipelines(triad.layout);
   auto entity = _registry.create();
   auto &item = _registry.emplace<DebugMeshComponent>(
-      entity, DebugPipelines::TRIANGLE_FILL, std::move(triad), triad_colors,
-      Mat4f::Identity());
+      entity, DebugPipelines::TRIANGLE_FILL, std::move(triad), triad_colors);
+  _registry.emplace<TransformComponent>(entity, Mat4f::Identity());
   return {entity, item};
 }
 
@@ -38,8 +39,8 @@ DebugScene::addLineGrid(std::optional<Float4> color) {
   setupPipelines(grid.layout);
   auto entity = _registry.create();
   auto &item = _registry.emplace<DebugMeshComponent>(
-      entity, DebugPipelines::LINE, std::move(grid), std::vector{grid_color},
-      Mat4f::Identity());
+      entity, DebugPipelines::LINE, std::move(grid), std::vector{grid_color});
+  _registry.emplace<TransformComponent>(entity, Mat4f::Identity());
   return {entity, item};
 }
 
@@ -48,8 +49,9 @@ void DebugScene::renderMeshComponents(CommandBuffer &cmdBuf,
                                       const Camera &camera) const {
   const Mat4f viewProj = camera.viewProj();
 
-  auto mesh_view = _registry.view<const DebugMeshComponent>();
-  for (auto [ent, cmd] : mesh_view.each()) {
+  auto mesh_view =
+      _registry.view<const DebugMeshComponent, const TransformComponent>();
+  for (auto [ent, cmd, tr] : mesh_view.each()) {
     if (!cmd.enable)
       continue;
 
@@ -62,7 +64,7 @@ void DebugScene::renderMeshComponents(CommandBuffer &cmdBuf,
       break;
     }
 
-    const GpuMat4 mvp = viewProj * cmd.transform;
+    const GpuMat4 mvp = viewProj * tr;
     cmdBuf.pushVertexUniform(TRANSFORM_SLOT, &mvp, sizeof(mvp));
     rend::bindMesh(render_pass, cmd.mesh);
     for (size_t i = 0; i < cmd.mesh.numViews(); i++) {

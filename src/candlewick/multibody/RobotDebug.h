@@ -17,13 +17,7 @@ struct RobotDebugSystem final : IDebugSubSystem {
       : IDebugSubSystem(), pinModel(model), pinData(data) {}
 
   entt::entity addFrameTriad(DebugScene &scene, pin::FrameIndex frame_id,
-                             const Float3 &scale = DEFAULT_TRIAD_SCALE) {
-    entt::registry &reg = scene.registry();
-    auto [ent, triad] = scene.addTriad();
-    reg.emplace<DebugScaleComponent>(ent, scale);
-    reg.emplace<PinFrameComponent>(ent, frame_id);
-    return ent;
-  }
+                             const Float3 &scale = DEFAULT_TRIAD_SCALE);
 
   entt::entity addFrameVelocityArrow(DebugScene &scene,
                                      pin::FrameIndex frame_id);

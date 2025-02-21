@@ -27,17 +27,13 @@ struct IDebugSubSystem {
   virtual ~IDebugSubSystem() = default;
 };
 
-struct DebugScaleComponent {
-  Float3 value;
-};
-
 struct DebugMeshComponent {
   DebugPipelines pipeline_type;
   Mesh mesh;
   // fragment shader
   std::vector<GpuVec4> colors;
-  Mat4f transform;
   bool enable = true;
+  Float3 scale = Float3::Ones();
 };
 
 /// \brief %Scene for organizing debug entities and render systems.

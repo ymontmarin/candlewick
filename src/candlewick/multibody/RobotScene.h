@@ -7,6 +7,7 @@
 #include "../core/AABB.h"
 #include "../core/DepthAndShadowPass.h"
 #include "../core/Texture.h"
+#include "../core/Components.h"
 #include "../posteffects/SSAO.h"
 #include "../utils/MeshData.h"
 #include "../third-party/magic_enum.hpp"
@@ -17,19 +18,6 @@
 
 namespace candlewick {
 namespace multibody {
-
-  /// \brief A visibility component for ECS.
-  struct VisibilityComponent {
-    bool status;
-    operator bool() const { return status; }
-  };
-
-  // Tag environment entities
-  struct EnvironmentTag {};
-
-  struct TransformComponent {
-    Mat4f transform;
-  };
 
   void updateRobotTransforms(entt::registry &registry,
                              const pin::GeometryData &geom_data);

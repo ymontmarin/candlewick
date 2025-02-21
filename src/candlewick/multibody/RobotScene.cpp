@@ -181,7 +181,7 @@ void updateRobotTransforms(entt::registry &registry,
     if (!visible)
       continue;
     SE3f pose = geom_data.oMg[geom_id].cast<float>();
-    tr.transform = pose.toHomogeneousMatrix();
+    tr = pose.toHomogeneousMatrix();
   }
 }
 
@@ -204,7 +204,7 @@ void RobotScene::collectOpaqueCastables() {
 
     const Mesh &mesh = meshMaterial.mesh;
     for (auto &v : mesh.views())
-      _castables.emplace_back(v, tr.transform);
+      _castables.emplace_back(v, tr);
   }
 }
 
@@ -323,17 +323,17 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
     if (!visible || (obj.pipeline_type != PIPELINE_TRIANGLEMESH))
       continue;
 
-    const Mat4f modelView = camera.view * tr.transform;
+    const Mat4f modelView = camera.view * tr;
     const Mesh &mesh = obj.mesh;
     TransformUniformData data{
         .modelView = modelView,
-        .mvp = GpuMat4{viewProj * tr.transform},
+        .mvp = GpuMat4{viewProj * tr},
         .normalMatrix = math::computeNormalMatrix(modelView),
     };
     command_buffer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,
                                      sizeof(data));
     if (enable_shadows) {
-      Mat4f lightMvp = lightViewProj * tr.transform;
+      Mat4f lightMvp = lightViewProj * tr;
       command_buffer.pushVertexUniform(1, &lightMvp, sizeof(lightMvp));
     }
     rend::bindMesh(render_pass, mesh);
@@ -372,7 +372,7 @@ void RobotScene::renderOtherGeometry(CommandBuffer &command_buffer,
       if (!visible || (obj.pipeline_type != current_pipeline_type))
         continue;
 
-      auto &modelMat = tr.transform;
+      auto &modelMat = tr;
       const Mesh &mesh = obj.mesh;
       const Mat4f mvp = viewProj * modelMat;
       const auto &color = obj.materials[0].baseColor;
