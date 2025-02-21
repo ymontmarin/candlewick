@@ -55,8 +55,8 @@ auto RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom)
 
 entt::entity RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
                                               PipelineType pipe_type) {
-  Mesh mesh = createMesh(_device, data);
-  uploadMeshToDevice(_device, mesh, data);
+  Mesh mesh = createMesh(device(), data);
+  uploadMeshToDevice(device(), mesh, data);
   entt::entity entity = _registry.create();
   _registry.emplace<TransformComponent>(entity, placement);
   if (pipe_type != PIPELINE_POINTCLOUD)
@@ -84,8 +84,8 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
                        const pin::GeometryModel &geom_model,
                        const pin::GeometryData &geom_data, Config config)
     : // screenSpaceShadows{.sampler = nullptr, .pass{NoInit}},
-      _registry(registry), _config(config), _device(renderer.device),
-      _renderer(renderer), _geomModel(geom_model), _geomData(geom_data) {
+      _registry(registry), _config(config), _renderer(renderer),
+      _geomModel(geom_model), _geomData(geom_data) {
 
   for (size_t i = 0; i < kNumPipelineTypes; i++) {
     renderPipelines[i] = NULL;
@@ -114,7 +114,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     const auto &geom_obj = geom_model.geometryObjects[geom_id];
     auto meshDatas = loadGeometryObject(geom_obj);
     PipelineType pipeline_type = pinGeomToPipeline(*geom_obj.geometry);
-    auto mesh = createMeshFromBatch(_device, meshDatas, true);
+    auto mesh = createMeshFromBatch(device(), meshDatas, true);
     assert(validateMesh(mesh));
 
     // local copy for use
@@ -388,13 +388,13 @@ void RobotScene::renderOtherGeometry(CommandBuffer &command_buffer,
 }
 
 void RobotScene::release() {
-  if (!_device)
+  if (!device())
     return;
 
   _registry.clear<MeshMaterialComponent>();
 
   for (auto &pipeline : renderPipelines) {
-    SDL_ReleaseGPUGraphicsPipeline(_device, pipeline);
+    SDL_ReleaseGPUGraphicsPipeline(device(), pipeline);
     pipeline = nullptr;
   }
 
@@ -411,9 +411,9 @@ SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
 
   const PipelineConfig &pipe_config = _config.pipeline_configs.at(type);
   auto vertexShader =
-      Shader::fromMetadata(_device, pipe_config.vertex_shader_path);
+      Shader::fromMetadata(device(), pipe_config.vertex_shader_path);
   auto fragmentShader =
-      Shader::fromMetadata(_device, pipe_config.fragment_shader_path);
+      Shader::fromMetadata(device(), pipe_config.fragment_shader_path);
 
   SDL_GPUColorTargetDescription color_targets[2];
   SDL_zero(color_targets);
@@ -452,7 +452,7 @@ SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
   };
   desc.rasterizer_state.cull_mode = pipe_config.cull_mode;
   desc.rasterizer_state.fill_mode = pipe_config.fill_mode;
-  return SDL_CreateGPUGraphicsPipeline(_device, &desc);
+  return SDL_CreateGPUGraphicsPipeline(device(), &desc);
 }
 
 } // namespace candlewick::multibody

@@ -155,6 +155,8 @@ namespace multibody {
 
     const entt::registry &registry() const { return _registry; }
 
+    const Device &device() { return _renderer.device; }
+
     void initGBuffer(const Renderer &renderer);
 
     SDL_GPUGraphicsPipeline *renderPipelines[kNumPipelineTypes];
@@ -169,7 +171,6 @@ namespace multibody {
   private:
     entt::registry &_registry;
     Config _config;
-    const Device &_device;
     const Renderer &_renderer;
     std::reference_wrapper<pin::GeometryModel const> _geomModel;
     std::reference_wrapper<pin::GeometryData const> _geomData;
