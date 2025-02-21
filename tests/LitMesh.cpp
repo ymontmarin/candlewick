@@ -180,8 +180,8 @@ int main() {
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01f * pixelDensity;
-          camera_util::localRotateX(camera,
-                                    camXLocRotSpeed * event.motion.yrel);
+          camera_util::localRotateXAroundOrigin(camera, camXLocRotSpeed *
+                                                            event.motion.yrel);
         }
       }
     }

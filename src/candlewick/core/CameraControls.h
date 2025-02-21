@@ -11,7 +11,8 @@ namespace camera_util {
   /// These functions are meant for modifying a camera's pose and view.
   /// \{
 
-  inline void localRotateX(Camera &camera, Radf angle) {
+  /// \brief Rotate around the origin in the local X-axis.
+  inline void localRotateXAroundOrigin(Camera &camera, Radf angle) {
     float c, s;
     c = std::cos(angle);
     s = std::sin(angle);
@@ -22,7 +23,8 @@ namespace camera_util {
     camera.view.linear().applyOnTheLeft(R);
   }
 
-  void rotateAroundPoint(Camera &camera, const Mat3f &R, const Float3 &p);
+  void rotateAroundPoint(Camera &camera, const Mat3f &R,
+                         const Float3 &p = Float3::Zero());
 
   /// \brief Rotate the camera around the center by a given increment.
   inline void rotateZAroundPoint(Camera &camera, Radf angle, const Float3 &p) {

@@ -65,8 +65,7 @@ Mat4f orthographicMatrix(const Float2 &sizes, float near, float far) {
 
 namespace camera_util {
   void rotateAroundPoint(Camera &camera, const Mat3f &R, const Float3 &p) {
-    Float3 np = -p;
-    np -= R * np;
+    Float3 np = R * p - p;
     Eigen::Isometry3f A{R};
     A.translate(np);
     camera.view = camera.view * A;

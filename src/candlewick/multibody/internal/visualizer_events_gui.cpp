@@ -72,7 +72,7 @@ void mouse_motion_handler(CylinderCameraControl &controller,
   }
   if (mb & SDL_BUTTON_RMASK) {
     Radf rot_angle = params.localRotSensitivity * mvt.y();
-    camera_util::localRotateX(controller.camera, rot_angle);
+    camera_util::localRotateXAroundOrigin(controller.camera, rot_angle);
   }
 }
 
