@@ -23,7 +23,9 @@ struct Renderer {
   Texture depth_texture{NoInit};
 
   Renderer(NoInitT) : device(NoInit), window(nullptr), swapchain(nullptr) {}
+  /// \brief Constructor without a depth format.
   Renderer(Device &&device, SDL_Window *window);
+  /// \brief Constructor with a depth format. This will create a depth texture.
   Renderer(Device &&device, SDL_Window *window,
            SDL_GPUTextureFormat suggested_depth_format);
 
