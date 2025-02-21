@@ -3,6 +3,7 @@
 #include "Core.h"
 #include <SDL3/SDL_gpu.h>
 #include <cassert>
+#include <utility>
 
 namespace candlewick {
 
@@ -14,10 +15,29 @@ public:
   operator SDL_GPUCommandBuffer *() const { return _cmdBuf; }
 
   CommandBuffer(const CommandBuffer &) = delete;
-  CommandBuffer(CommandBuffer &&) = delete;
+  CommandBuffer(CommandBuffer &&other) noexcept : _cmdBuf(other._cmdBuf) {
+    other._cmdBuf = nullptr;
+  }
 
-  void submit() { SDL_SubmitGPUCommandBuffer(_cmdBuf); }
-  void cancel() { SDL_CancelGPUCommandBuffer(_cmdBuf); }
+  CommandBuffer &operator=(CommandBuffer &&other) noexcept;
+
+  friend void swap(CommandBuffer &lhs, CommandBuffer &rhs) noexcept {
+    std::swap(lhs._cmdBuf, rhs._cmdBuf);
+  }
+
+  void submit() noexcept {
+    if (active())
+      SDL_SubmitGPUCommandBuffer(_cmdBuf);
+    _cmdBuf = nullptr;
+  }
+
+  void cancel() noexcept {
+    if (active())
+      SDL_CancelGPUCommandBuffer(_cmdBuf);
+    _cmdBuf = nullptr;
+  }
+
+  bool active() const noexcept { return _cmdBuf; }
 
   /// \brief Push uniform data to the vertex shader.
   CommandBuffer &pushVertexUniform(Uint32 slot_index, const void *data,
