@@ -57,8 +57,8 @@ namespace camera_util {
   }
 
   inline void setWorldPosition(Camera &camera, const Float3 &pos) {
-    auto R = camera.view.linear();
-    camera.view.translation() = R * pos;
+    auto Rt = camera.view.linear();
+    camera.view.translation() = -Rt * pos;
   }
 
 } // namespace camera_util
