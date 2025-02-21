@@ -157,7 +157,7 @@ int main() {
       case SDL_EVENT_MOUSE_MOTION: {
         auto mouseButton = event.motion.state;
         bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
-        if (mouseButton >= SDL_BUTTON_LMASK) {
+        if (mouseButton & SDL_BUTTON_LMASK) {
           if (controlPressed)
             camControl.moveInOut(0.95f, event.motion.yrel);
           else
@@ -165,7 +165,7 @@ int main() {
                 Float2{event.motion.xrel, event.motion.yrel},
                 5e-3f * pixelDensity, 1e-2f * pixelDensity);
         }
-        if (mouseButton >= SDL_BUTTON_RMASK) {
+        if (mouseButton & SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01f * pixelDensity;
           camera_util::localRotateX(g_camera,
                                     camXLocRotSpeed * event.motion.yrel);
