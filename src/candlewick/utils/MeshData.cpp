@@ -1,6 +1,7 @@
 #include "MeshData.h"
 #include "../core/Device.h"
 #include "../core/Mesh.h"
+#include "../core/CommandBuffer.h"
 
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_log.h>
@@ -103,11 +104,10 @@ Mesh createMeshFromBatch(const Device &device,
 void uploadMeshToDevice(const Device &device, const MeshView &meshView,
                         const MeshData &meshData) {
 
-  SDL_GPUCommandBuffer *upload_command_buffer;
   SDL_GPUTransferBuffer *transfer_buffer;
   SDL_GPUCopyPass *copy_pass;
 
-  upload_command_buffer = SDL_AcquireGPUCommandBuffer(device);
+  CommandBuffer upload_command_buffer{device};
   copy_pass = SDL_BeginGPUCopyPass(upload_command_buffer);
 
   auto &layout = meshData.layout();

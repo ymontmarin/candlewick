@@ -8,10 +8,9 @@ namespace candlewick {
 
 class CommandBuffer {
   SDL_GPUCommandBuffer *_cmdBuf;
-  CommandBuffer(SDL_GPUCommandBuffer *ptr) : _cmdBuf{ptr} {}
 
 public:
-  static CommandBuffer acquire(const Device &device);
+  CommandBuffer(const Device &device);
   operator SDL_GPUCommandBuffer *() const { return _cmdBuf; }
 
   CommandBuffer(const CommandBuffer &) = delete;

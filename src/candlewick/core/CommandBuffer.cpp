@@ -3,8 +3,8 @@
 
 namespace candlewick {
 
-CommandBuffer CommandBuffer::acquire(const Device &device) {
-  return CommandBuffer(SDL_AcquireGPUCommandBuffer(device));
+CommandBuffer::CommandBuffer(const Device &device) {
+  _cmdBuf = SDL_AcquireGPUCommandBuffer(device);
 }
 
 } // namespace candlewick

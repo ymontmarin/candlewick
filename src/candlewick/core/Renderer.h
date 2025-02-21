@@ -29,12 +29,10 @@ struct Renderer {
   Renderer(Device &&device, SDL_Window *window,
            SDL_GPUTextureFormat suggested_depth_format);
 
-  bool initialized() { return bool(device); }
+  bool initialized() const { return bool(device); }
 
   /// Acquire the command buffer, starting a frame.
-  CommandBuffer acquireCommandBuffer() {
-    return CommandBuffer::acquire(device);
-  }
+  CommandBuffer acquireCommandBuffer() const { return CommandBuffer(device); }
 
   /// \brief Wait until swapchain is available, then acquire it.
   /// \sa acquireSwapchain()
