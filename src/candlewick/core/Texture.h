@@ -33,21 +33,17 @@ struct Texture {
 
   Uint32 textureSize() const;
 
-  SDL_GPUDevice *device() const { return _device; }
+  const Device &device() const;
 
-  void release() noexcept;
+  void destroy() noexcept;
+  ~Texture() noexcept { this->destroy(); }
 
 private:
   SDL_GPUTexture *_texture;
-  SDL_GPUDevice *_device;
+  Device const *_device;
   SDL_GPUTextureCreateInfo _description;
 };
 
-inline void Texture::release() noexcept {
-  if (_device && _texture) {
-    SDL_ReleaseGPUTexture(_device, _texture);
-    _texture = nullptr;
-    _device = nullptr;
-  }
-}
+inline Texture::Texture(NoInitT) : _texture(nullptr), _device(nullptr) {}
+
 } // namespace candlewick

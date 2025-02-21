@@ -52,11 +52,7 @@ struct Renderer {
   bool hasDepthTexture() const { return depth_texture.hasValue(); }
   SDL_GPUTextureFormat depthFormat() const { return depth_texture.format(); }
 
-  void destroy() {
-    SDL_ReleaseWindowFromGPUDevice(device, window);
-    depth_texture.release();
-    device.destroy();
-  }
+  void destroy() noexcept;
 };
 
 namespace rend {

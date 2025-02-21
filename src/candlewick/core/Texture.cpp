@@ -8,13 +8,11 @@
 
 namespace candlewick {
 
-Texture::Texture(NoInitT) : _texture(nullptr), _device(nullptr) {}
-
 Texture::Texture(const Device &device, SDL_GPUTextureCreateInfo texture_desc,
                  const char *name)
-    : _texture(nullptr), _device(device),
+    : _texture(nullptr), _device(&device),
       _description(std::move(texture_desc)) {
-  if (!(_texture = SDL_CreateGPUTexture(_device, &_description))) {
+  if (!(_texture = SDL_CreateGPUTexture(*_device, &_description))) {
     std::string msg = std::format("Failed to create texture with format (%s)",
                                   magic_enum::enum_name(_description.format));
     if (name)
@@ -22,7 +20,7 @@ Texture::Texture(const Device &device, SDL_GPUTextureCreateInfo texture_desc,
     throw RAIIException(std::move(msg));
   }
   if (name != nullptr)
-    SDL_SetGPUTextureName(_device, _texture, name);
+    SDL_SetGPUTextureName(*_device, _texture, name);
 }
 
 Texture::Texture(Texture &&other) noexcept {
@@ -35,7 +33,7 @@ Texture::Texture(Texture &&other) noexcept {
 }
 
 Texture &Texture::operator=(Texture &&other) noexcept {
-  this->release();
+  this->destroy();
   _device = other._device;
   _texture = other._texture;
   _description = std::move(other._description);
@@ -64,4 +62,13 @@ Uint32 Texture::textureSize() const {
                                            depth());
 }
 
+const Device &Texture::device() const { return *_device; }
+
+void Texture::destroy() noexcept {
+  if (_device && _texture) {
+    SDL_ReleaseGPUTexture(*_device, _texture);
+    _texture = nullptr;
+    _device = nullptr;
+  }
+}
 } // namespace candlewick

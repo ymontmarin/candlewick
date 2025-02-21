@@ -26,7 +26,8 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
         std::format("Failed to acquire window: {}", SDL_GetError()));
   }
   SDL_Log("Video driver: %s", SDL_GetCurrentVideoDriver());
-  renderer = Renderer{std::move(dev), window, config.depth_stencil_format};
+  ::new (&renderer)
+      Renderer{std::move(dev), window, config.depth_stencil_format};
 
   robotScene.emplace(registry, renderer, visualModel(), visualData(),
                      RobotScene::Config{.enable_shadows = true});

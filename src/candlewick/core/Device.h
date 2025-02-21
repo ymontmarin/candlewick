@@ -29,18 +29,25 @@ struct Device {
   explicit Device(SDL_GPUShaderFormat format_flags, bool debug_mode = false);
   Device(const Device &) = delete;
   Device(Device &&other) noexcept;
-  Device &operator=(Device &&other) noexcept;
+  Device &operator=(Device &&) = delete;
+
+  void create(SDL_GPUShaderFormat format_flags, bool debug_mode = false);
 
   operator SDL_GPUDevice *() const { return _device; }
   operator bool() const { return _device; }
 
-  const char *driverName() const { return driver; }
+  const char *driverName() const noexcept;
+
   SDL_GPUShaderFormat shaderFormats() const {
     return SDL_GetGPUShaderFormats(_device);
   }
 
+  /// \brief Release ownership of and return the \c SDL_GPUDevice handle.
+  SDL_GPUDevice *release() noexcept {
+    return _device;
+    _device = nullptr;
+  }
   void destroy() noexcept;
-  ~Device() noexcept { destroy(); }
 
   bool operator==(const Device &other) const {
     return _device && (_device == other._device);
@@ -48,24 +55,13 @@ struct Device {
 
 private:
   SDL_GPUDevice *_device;
-  const char *driver;
 };
 
-inline Device::Device(NoInitT) noexcept : _device(nullptr), driver(nullptr) {}
+inline Device::Device(NoInitT) noexcept : _device(nullptr) {}
 
 inline Device::Device(Device &&other) noexcept {
   _device = other._device;
-  driver = other.driver;
   other._device = nullptr;
-}
-
-inline Device &Device::operator=(Device &&other) noexcept {
-  // destroy if needed. if not needed this is a no-op
-  destroy();
-  _device = other._device;
-  driver = other.driver;
-  other._device = nullptr;
-  return *this;
 }
 
 } // namespace candlewick

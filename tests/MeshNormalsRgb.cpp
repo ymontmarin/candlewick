@@ -1,5 +1,6 @@
 #include "Common.h"
 
+#include "candlewick/core/CommandBuffer.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/utils/MeshData.h"
@@ -111,7 +112,6 @@ int main() {
   vertexShader.release();
   fragmentShader.release();
 
-  SDL_GPUCommandBuffer *command_buffer;
   SDL_GPUTexture *swapchain;
 
   Radf fov = 70.0_degf;
@@ -185,7 +185,7 @@ int main() {
 
     SDL_GPURenderPass *render_pass;
 
-    command_buffer = SDL_AcquireGPUCommandBuffer(device);
+    CommandBuffer command_buffer(device);
     SDL_Log("Frame [%u]", frameNo);
 
     if (!SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain,
@@ -223,7 +223,7 @@ int main() {
       SDL_EndGPURenderPass(render_pass);
     }
 
-    SDL_SubmitGPUCommandBuffer(command_buffer);
+    command_buffer.submit();
     frameNo++;
   }
 

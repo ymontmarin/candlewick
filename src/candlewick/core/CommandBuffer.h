@@ -25,16 +25,18 @@ public:
     std::swap(lhs._cmdBuf, rhs._cmdBuf);
   }
 
-  void submit() noexcept {
-    if (active())
-      SDL_SubmitGPUCommandBuffer(_cmdBuf);
+  bool submit() noexcept {
+    if (!(active() && SDL_SubmitGPUCommandBuffer(_cmdBuf)))
+      return false;
     _cmdBuf = nullptr;
+    return true;
   }
 
-  void cancel() noexcept {
-    if (active())
-      SDL_CancelGPUCommandBuffer(_cmdBuf);
+  bool cancel() noexcept {
+    if (!(active() && SDL_CancelGPUCommandBuffer(_cmdBuf)))
+      return false;
     _cmdBuf = nullptr;
+    return true;
   }
 
   bool active() const noexcept { return _cmdBuf; }

@@ -398,7 +398,7 @@ void RobotScene::release() {
     pipeline = nullptr;
   }
 
-  gBuffer.normalMap.release();
+  gBuffer.normalMap.destroy();
   ssaoPass.release();
   shadowPass.release();
 }

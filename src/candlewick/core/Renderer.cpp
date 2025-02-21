@@ -62,6 +62,14 @@ bool Renderer::acquireSwapchain(CommandBuffer &command_buffer) {
                                         NULL, NULL);
 }
 
+void Renderer::destroy() noexcept {
+  if (device && window) {
+    SDL_ReleaseWindowFromGPUDevice(device, window);
+    device.destroy();
+    window = nullptr;
+  }
+}
+
 namespace rend {
   void bindMesh(SDL_GPURenderPass *pass, const Mesh &mesh) {
     const Uint32 num_buffers = Uint32(mesh.vertexBuffers.size());

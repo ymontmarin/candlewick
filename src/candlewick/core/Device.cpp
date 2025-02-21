@@ -6,15 +6,22 @@
 
 namespace candlewick {
 
-Device::Device(SDL_GPUShaderFormat format_flags, bool debug_mode)
-    : _device(nullptr) {
+Device::Device(SDL_GPUShaderFormat format_flags, bool debug_mode) {
+  create(format_flags, debug_mode);
+}
+
+void Device::create(SDL_GPUShaderFormat format_flags, bool debug_mode) {
   _device = SDL_CreateGPUDevice(format_flags, debug_mode, nullptr);
   if (!_device) {
     throw RAIIException(
         std::format("Failed to create GPU device: {}", SDL_GetError()));
   }
-  driver = SDL_GetGPUDeviceDriver(_device);
+  const char *driver = SDL_GetGPUDeviceDriver(_device);
   SDL_Log("Device driver: %s", driver);
+}
+
+const char *Device::driverName() const noexcept {
+  return SDL_GetGPUDeviceDriver(_device);
 }
 
 void Device::destroy() noexcept {

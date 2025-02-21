@@ -13,7 +13,7 @@ using namespace candlewick;
 bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return false;
-  ctx.device = Device{auto_detect_shader_format_subset(), true};
+  ctx.device.create(auto_detect_shader_format_subset(), true);
 
   ctx.window =
       SDL_CreateWindow("candlewick: examples", int(wWidth), int(wHeight), 0);

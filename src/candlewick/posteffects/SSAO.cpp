@@ -1,5 +1,6 @@
 #include "SSAO.h"
 
+#include "../core/CommandBuffer.h"
 #include "../core/Shader.h"
 #include "../core/Camera.h"
 #include "../core/Renderer.h"
@@ -89,9 +90,9 @@ namespace ssao {
   bool pushSsaoNoiseData(const SsaoPass::SsaoNoise &noise) {
     auto values = generateNoiseTextureValues(noise.pixel_window_size);
     using element_type = decltype(values)::value_type;
-    auto &tex = noise.tex;
-    SDL_GPUDevice *dev = tex.device();
-    SDL_GPUCommandBuffer *command_buffer = SDL_AcquireGPUCommandBuffer(dev);
+    const Texture &tex = noise.tex;
+    auto &dev = tex.device();
+    CommandBuffer command_buffer(dev);
     SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(command_buffer);
 
     auto payload_size = Uint32(values.size() * sizeof(values[0]));
@@ -115,7 +116,7 @@ namespace ssao {
     SDL_UploadToGPUTexture(copy_pass, &tex_trans_info, &tex_region, false);
 
     SDL_EndGPUCopyPass(copy_pass);
-    return SDL_SubmitGPUCommandBuffer(command_buffer);
+    return command_buffer.submit();
   }
 
   SsaoPass::SsaoPass(const Renderer &renderer, const MeshLayout &layout,
@@ -227,7 +228,7 @@ namespace ssao {
   }
 
   void SsaoPass::release() {
-    auto *device = ssaoMap.device();
+    auto &device = ssaoMap.device();
     // release neither input texture because they are **borrowed**.
 
     if (texSampler)
@@ -235,15 +236,15 @@ namespace ssao {
     if (pipeline)
       SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 
-    ssaoMap.release();
+    ssaoMap.destroy();
 
-    ssaoNoise.tex.release();
+    ssaoNoise.tex.destroy();
     if (ssaoNoise.sampler)
       SDL_ReleaseGPUSampler(device, ssaoNoise.sampler);
 
     if (blurPipeline)
       SDL_ReleaseGPUGraphicsPipeline(device, blurPipeline);
-    blurPass1Tex.release();
+    blurPass1Tex.destroy();
   }
 
 } // namespace ssao
