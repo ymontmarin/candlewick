@@ -35,7 +35,7 @@ void RobotDebugSystem::updateFrames(entt::registry &reg) {
   auto view = reg.view<const PinFrameComponent, const DebugMeshComponent,
                        TransformComponent>();
   for (auto &&[ent, frame_id, dmc, tr] : view.each()) {
-    Mat4f pose{pinData.oMf[frame_id].cast<float>()};
+    Mat4f pose{m_robotData.oMf[frame_id].cast<float>()};
     auto D = dmc.scale.asDiagonal();
     pose.topLeftCorner<3, 3>().applyOnTheRight(D);
     tr = pose;
@@ -49,9 +49,10 @@ void RobotDebugSystem::updateFrameVelocities(entt::registry &reg) {
                        const DebugMeshComponent, TransformComponent>();
   for (auto &&[ent, fvc, dmc, tr] : view.each()) {
     Motionf vel =
-        pin::getFrameVelocity(pinModel, pinData, fvc, pin::LOCAL).cast<float>();
+        pin::getFrameVelocity(m_robotModel, m_robotData, fvc, pin::LOCAL)
+            .cast<float>();
 
-    const SE3f pose = pinData.oMf[fvc].cast<float>();
+    const SE3f pose = m_robotData.oMf[fvc].cast<float>();
     Eigen::Quaternionf quatf;
     Eigen::DiagonalMatrix<float, 3> scaleMatrix;
     tr = pose.toHomogeneousMatrix();

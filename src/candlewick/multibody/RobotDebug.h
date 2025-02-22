@@ -14,7 +14,7 @@ struct RobotDebugSystem final : IDebugSubSystem {
   inline static const Float3 DEFAULT_TRIAD_SCALE = Float3::Constant(0.3333f);
 
   RobotDebugSystem(const pin::Model &model, const pin::Data &data)
-      : IDebugSubSystem(), pinModel(model), pinData(data) {}
+      : IDebugSubSystem(), m_robotModel(model), m_robotData(data) {}
 
   entt::entity addFrameTriad(DebugScene &scene, pin::FrameIndex frame_id,
                              const Float3 &scale = DEFAULT_TRIAD_SCALE);
@@ -36,8 +36,8 @@ private:
   void updateFrames(entt::registry &reg);
   void updateFrameVelocities(entt::registry &reg);
 
-  const pin::Model &pinModel;
-  const pin::Data &pinData;
+  const pin::Model &m_robotModel;
+  const pin::Data &m_robotData;
 };
 
 } // namespace candlewick::multibody
