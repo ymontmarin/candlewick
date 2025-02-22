@@ -23,4 +23,4 @@ struct TransformComponent : Mat4f {
   using Mat4f::operator=;
 };
 
-}; // namespace candlewick
+} // namespace candlewick
