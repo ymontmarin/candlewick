@@ -54,10 +54,10 @@ void RobotDebugSystem::updateFrameVelocities(entt::registry &reg) {
 
     const SE3f pose = m_robotData.oMf[fvc].cast<float>();
     Eigen::Quaternionf quatf;
-    Eigen::DiagonalMatrix<float, 3> scaleMatrix;
     tr = pose.toHomogeneousMatrix();
     auto v = vel.linear();
-    scaleMatrix = Eigen::Scaling(0.3f, 0.3f, vel_scale * v.norm());
+    Eigen::DiagonalMatrix<float, 3> scaleMatrix(0.3f, 0.3f,
+                                                vel_scale * v.norm());
 
     // the arrow mesh is posed z-up by default.
     // we need to rotate towards where the velocity is pointing,
