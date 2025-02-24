@@ -4,6 +4,7 @@
 #include "../core/DepthAndShadowPass.h"
 #include "../core/errors.h"
 #include "../primitives/Plane.h"
+#include "RobotDebug.h"
 
 namespace candlewick::multibody {
 
@@ -32,6 +33,7 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
   robotScene.emplace(registry, renderer, visualModel(), visualData(),
                      RobotScene::Config{.enable_shadows = true});
   debugScene.emplace(registry, renderer);
+  debugScene->addSystem<RobotDebugSystem>(m_model, data());
 
   robotScene->directionalLight = {
       .direction = {0., -1., -1.},
@@ -47,6 +49,9 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
   robotScene->addEnvironmentObject(loadPlaneTiled(0.5f, prepeat, prepeat),
                                    Mat4f::Identity());
 
+  if (m_environmentFlags & ENV_EL_TRIAD) {
+    debugScene->addTriad();
+  }
   this->resetCamera();
 }
 
@@ -80,8 +85,6 @@ void Visualizer::setCameraPose(const Eigen::Ref<const Matrix4> &pose) {
 }
 
 Visualizer::~Visualizer() {
-  // m_render_thread.join();
-
   robotScene->release();
   debugScene->release();
   guiSystem.release();

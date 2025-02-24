@@ -48,6 +48,14 @@ void Visualizer::default_gui_exec(Visualizer &viz) {
 
   camera_params_gui(viz.controller, viz.cameraParams);
 
+  if (ImGui::TreeNode("Debug Hud elements")) {
+    ImGui::CheckboxFlags("hud.Grid", (int *)&viz.m_environmentFlags,
+                         ENV_EL_GRID);
+    ImGui::CheckboxFlags("hud.Triad", (int *)&viz.m_environmentFlags,
+                         ENV_EL_TRIAD);
+    ImGui::TreePop();
+  }
+
   ImGui::End();
 }
 

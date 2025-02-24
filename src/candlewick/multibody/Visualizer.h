@@ -43,6 +43,13 @@ struct CameraControlParams {
 /// run until shouldExit() returns true.
 class Visualizer final : public BaseVisualizer {
 public:
+  enum EnvElements : int {
+    ENV_EL_GRID = 1 << 0,
+    ENV_EL_TRIAD = 1 << 1,
+  };
+
+  static constexpr Radf DEFAULT_FOV = 55.0_degf;
+
   using BaseVisualizer::setCameraPose;
   entt::registry registry;
   Renderer renderer;
@@ -52,8 +59,6 @@ public:
   Camera camera;
   CylinderCameraControl controller{camera};
   CameraControlParams cameraParams;
-
-  static constexpr Radf DEFAULT_FOV = 55.0_degf;
 
   struct Config {
     Uint32 width;
@@ -104,6 +109,7 @@ public:
 private:
   bool m_cameraControl = true;
   bool m_shouldExit = false;
+  EnvElements m_environmentFlags = ENV_EL_TRIAD;
 
   void render();
 };
