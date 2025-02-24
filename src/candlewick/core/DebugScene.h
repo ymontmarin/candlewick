@@ -45,7 +45,6 @@ class DebugScene {
   SDL_GPUGraphicsPipeline *_trianglePipeline;
   SDL_GPUGraphicsPipeline *_linePipeline;
   SDL_GPUTextureFormat _swapchainTextureFormat, _depthFormat;
-  std::vector<entt::scoped_connection> _connections;
   std::vector<std::unique_ptr<IDebugSubSystem>> _systems;
 
   void renderMeshComponents(CommandBuffer &cmdBuf,
