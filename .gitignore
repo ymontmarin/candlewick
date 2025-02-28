@@ -3,3 +3,4 @@ build*/
 !.vscode/
 frag.spv
 vert.spv
+compile_commands.json
