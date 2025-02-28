@@ -401,7 +401,6 @@ int main(int argc, char **argv) {
       renderDepthOnlyPass(command_buffer, depthPassInfo, viewProj, castables);
       switch (g_showDebugViz) {
       case FULL_RENDER:
-        renderDepthOnlyPass(command_buffer, depthPassInfo, viewProj, castables);
         robot_scene.render(command_buffer, g_camera);
         debug_scene.render(command_buffer, g_camera);
         if (showFrustum)
