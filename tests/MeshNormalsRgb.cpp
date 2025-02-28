@@ -188,8 +188,8 @@ int main() {
     CommandBuffer command_buffer(device);
     SDL_Log("Frame [%u]", frameNo);
 
-    if (!SDL_AcquireGPUSwapchainTexture(command_buffer, window, &swapchain,
-                                        NULL, NULL)) {
+    if (!SDL_WaitAndAcquireGPUSwapchainTexture(command_buffer, window,
+                                               &swapchain, NULL, NULL)) {
       SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
       break;
     } else {
