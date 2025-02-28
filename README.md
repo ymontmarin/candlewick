@@ -12,11 +12,18 @@ Candlewick is a WIP library for a renderer based on SDL3's new [GPU API](https:/
 
 ## Features
 
-Candlewick comes with some basic graphical features.
+Candlewick comes with a set of graphical, interaction, and utility features.
+
+### Graphical features
 
 * Shadow mapping using directional shadow maps
 * Screen-space ambient occlusion (SSAO)
 * **WIP:** Screen-space shadows (SSS)
+
+### Interactivitity
+
+* Integration with ImGui
+* **(optional)** Record videos from the main window using FFmpeg
 
 ### Pinocchio visualizer
 

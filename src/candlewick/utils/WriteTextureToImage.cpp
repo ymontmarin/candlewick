@@ -79,6 +79,7 @@ void dumpTextureImgToFile(const Device &device, SDL_GPUTexture *texture,
   std::free(rgba_pixels);
 }
 
+#ifdef CANDLEWICK_WITH_FFMPEG_SUPPORT
 void videoWriteTextureToFrame(const Device &device,
                               media::VideoRecorder &recorder,
                               SDL_GPUTexture *texture,
@@ -138,5 +139,6 @@ void videoWriteTextureToFrame(const Device &device,
   }
   recorder.writeFrame(raw_data, payload_size, outputFormat);
 }
+#endif
 
 } // namespace candlewick::media

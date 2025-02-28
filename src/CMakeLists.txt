@@ -33,7 +33,6 @@ add_library(
   candlewick/utils/MeshDataView.cpp
   candlewick/utils/MeshTransforms.cpp
   candlewick/utils/PixelFormatConversion.cpp
-  candlewick/utils/VideoRecorder.cpp
   candlewick/utils/WriteTextureToImage.cpp
   candlewick/primitives/Arrow.cpp
   candlewick/primitives/Capsule.cpp
@@ -65,7 +64,10 @@ target_include_directories(candlewick_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(FFmpeg_FOUND)
   message(STATUS "FFmpeg found. Building video module.")
-  target_compile_definitions(candlewick_core PUBLIC CANDLEWICK_HAS_FFMPEG)
+  target_compile_definitions(
+    candlewick_core
+    PUBLIC CANDLEWICK_WITH_FFMPEG_SUPPORT
+  )
   target_link_libraries(
     candlewick_core
     PRIVATE FFmpeg::avformat FFmpeg::avcodec FFmpeg::swscale

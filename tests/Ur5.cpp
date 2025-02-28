@@ -330,14 +330,19 @@ int main(int argc, char **argv) {
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
 
+#ifdef CANDLEWICK_WITH_FFMPEG_SUPPORT
   media::VideoRecorder recorder{NoInit};
   if (performRecording)
-    ::new (&recorder) media::VideoRecorder{wWidth, wHeight, "ur5.mp4"};
+    recorder = media::VideoRecorder{wWidth, wHeight, "ur5.mp4"};
+#endif
 
-  auto record_callback = [=, &renderer, &recorder](auto swapchain_format) {
+  auto record_callback = [&] {
+#ifdef CANDLEWICK_WITH_FFMPEG_SUPPORT
+    auto swapchain_format = renderer.getSwapchainTextureFormat();
     media::videoWriteTextureToFrame(renderer.device, recorder,
                                     renderer.swapchain, swapchain_format,
                                     wWidth, wHeight);
+#endif
   };
 
   while (frameNo < 5000 && !quitRequested) {
@@ -460,7 +465,7 @@ int main(int argc, char **argv) {
     command_buffer.submit();
 
     if (performRecording) {
-      record_callback(swapchain_format);
+      record_callback();
     }
     frameNo++;
   }

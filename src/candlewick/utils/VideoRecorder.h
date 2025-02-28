@@ -1,6 +1,9 @@
 #pragma once
 
-#include <SDL3/SDL_gpu.h>
+#ifndef CANDLEWICK_WITH_FFMPEG_SUPPORT
+#error "Including this file requires candlewick to be built with FFmpeg support"
+#endif
+#include <SDL3/SDL_stdinc.h>
 #include <string>
 #include <memory>
 #include "candlewick/core/Tags.h"

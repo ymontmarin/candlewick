@@ -349,15 +349,19 @@ int main(int argc, char **argv) {
   Eigen::VectorXd q0 = pin::neutral(model);
   Eigen::VectorXd q1 = pin::randomConfiguration(model);
 
+#ifdef CANDLEWICK_WITH_FFMPEG_SUPPORT
   media::VideoRecorder recorder{NoInit};
   if (performRecording)
     recorder = media::VideoRecorder{wWidth, wHeight, "ur5.mp4"};
+#endif
 
-  auto record_callback = [=, &renderer, &recorder]() {
+  auto record_callback = [&] {
+#ifdef CANDLEWICK_WITH_FFMPEG_SUPPORT
     auto swapchain_format = renderer.getSwapchainTextureFormat();
     media::videoWriteTextureToFrame(renderer.device, recorder,
                                     renderer.swapchain, swapchain_format,
                                     wWidth, wHeight);
+#endif
   };
 
   AABB &worldSpaceBounds = robot_scene.worldSpaceBounds;
