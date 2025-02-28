@@ -55,8 +55,14 @@ Candlewick depends mainly on:
 
 * [SDL3](https://github.com/libsdl-org/SDL/) for windowing, processing input events, and of course SDL GPU.
 * [EnTT](https://github.com/skypjack/entt/) for the entity-component system (ECS)
+* [nlohmann/json](https://github.com/nlohmann/json) for processing JSON files
 * the [Eigen](https://gitlab.com/libeigen/eigen/) linear algebra template library
 * [Open Asset Importer Library (assimp)](https://assimp-docs.readthedocs.io/en/latest/) for loading meshes
+
+These dependencies can be installed from Conda as follows:
+```bash
+conda install sdl3 eigen assimp entt nlohmann_json
+```
 
 #### Optional dependencies
 
