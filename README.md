@@ -77,7 +77,7 @@ conda install sdl3 eigen assimp entt nlohmann_json
 * [FFmpeg](https://ffmpeg.org/) for support for recording videos from the rendered graphics.
 * [GoogleTest](https://github.com/google/googletest) for tests | [conda-forge](https://anaconda.org/conda-forge/gtest)
 * For loading and visualizing robots:
-  * the Pinocchio rigid-body dynamics library (required for the `candlewick::multibody` classes and functions).
+  * the [Pinocchio](https://github.com/stack-of-tasks/pinocchio) rigid-body dynamics library (required for the `candlewick::multibody` classes and functions) | [conda-forge](https://anaconda.org/conda-forge/pinocchio)
   * [robot_descriptions_cpp](https://github.com/ManifoldFR/robot_descriptions_cpp), a suite of loaders for robots (required for some examples)
 
 ## Credits
