@@ -49,11 +49,12 @@ void DebugScene::renderMeshComponents(CommandBuffer &cmdBuf,
                                       const Camera &camera) const {
   const Mat4f viewProj = camera.viewProj();
 
-  auto mesh_view =
-      _registry.view<const DebugMeshComponent, const TransformComponent>();
-  for (auto [ent, cmd, tr] : mesh_view.each()) {
+  auto view =
+      _registry.view<const DebugMeshComponent, const TransformComponent>(
+          entt::exclude<Disable>);
+  view.each([&](auto &cmd, auto &tr) {
     if (!cmd.enable)
-      continue;
+      return;
 
     switch (cmd.pipeline_type) {
     case DebugPipelines::TRIANGLE_FILL:
@@ -72,7 +73,7 @@ void DebugScene::renderMeshComponents(CommandBuffer &cmdBuf,
       cmdBuf.pushFragmentUniform(COLOR_SLOT, &color, sizeof(color));
       rend::drawView(render_pass, cmd.mesh.view(i));
     }
-  }
+  });
 }
 
 void DebugScene::setupPipelines(const MeshLayout &layout) {

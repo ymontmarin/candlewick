@@ -5,9 +5,10 @@
 #include <SDL3/SDL_init.h>
 
 namespace candlewick {
-Renderer::Renderer(Device &&device, SDL_Window *window)
-    : device(std::move(device)), window(window), swapchain(nullptr) {
-  if (!SDL_ClaimWindowForGPUDevice(this->device, this->window))
+Renderer::Renderer(Device &&device_, Window &&window_)
+    : device(std::move(device_)), window(std::move(window_)),
+      swapchain(nullptr) {
+  if (!SDL_ClaimWindowForGPUDevice(device, window))
     throw RAIIException(SDL_GetError());
 }
 
@@ -17,12 +18,11 @@ static bool texture_create_info_supported(SDL_GPUDevice *device,
                                       info.usage);
 }
 
-Renderer::Renderer(Device &&device, SDL_Window *window,
+Renderer::Renderer(Device &&device_, Window &&window_,
                    SDL_GPUTextureFormat suggested_depth_format)
-    : Renderer(std::move(device), window) {
+    : Renderer(std::move(device_), std::move(window_)) {
 
-  int width, height;
-  SDL_GetWindowSize(window, &width, &height);
+  auto [width, height] = window.size();
 
   SDL_GPUTextureCreateInfo texInfo{
       .type = SDL_GPU_TEXTURETYPE_2D,
@@ -34,6 +34,7 @@ Renderer::Renderer(Device &&device, SDL_Window *window,
       .layer_count_or_depth = 1,
       .num_levels = 1,
       .sample_count = SDL_GPU_SAMPLECOUNT_1,
+      .props = 0,
   };
   SDL_GPUTextureFormat depth_format_fallbacks[] = {
       SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT,
@@ -66,7 +67,7 @@ void Renderer::destroy() noexcept {
   if (device && window) {
     SDL_ReleaseWindowFromGPUDevice(device, window);
     device.destroy();
-    window = nullptr;
+    window.~Window();
   }
 }
 

@@ -10,6 +10,7 @@ class MeshView;
 struct MeshLayout;
 struct Shader;
 struct Renderer;
+struct Window;
 
 // Geometry classes
 

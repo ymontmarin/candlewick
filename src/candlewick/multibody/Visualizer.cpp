@@ -19,16 +19,11 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
   }
 
   Device dev{auto_detect_shader_format_subset()};
-  SDL_Window *window =
-      SDL_CreateWindow("Candlewick Pinocchio visualizer", int(config.width),
-                       int(config.height), SDL_WINDOW_HIGH_PIXEL_DENSITY);
-  if (!window) {
-    throw RAIIException(
-        std::format("Failed to acquire window: {}", SDL_GetError()));
-  }
+  Window window("Candlewick Pinocchio visualizer", int(config.width),
+                int(config.height), SDL_WINDOW_HIGH_PIXEL_DENSITY);
   SDL_Log("Video driver: %s", SDL_GetCurrentVideoDriver());
   ::new (&renderer)
-      Renderer{std::move(dev), window, config.depth_stencil_format};
+      Renderer{std::move(dev), std::move(window), config.depth_stencil_format};
 
   robotScene.emplace(registry, renderer, visualModel(), visualData(),
                      RobotScene::Config{.enable_shadows = true});
@@ -61,8 +56,7 @@ void Visualizer::resetCamera() {
   Float3 eye{std::cos(xy_plane_view_angle), std::sin(xy_plane_view_angle),
              0.5f};
   eye *= radius;
-  int w, h;
-  SDL_GetWindowSize(renderer.window, &w, &h);
+  auto [w, h] = renderer.window.size();
   float aspectRatio = float(w) / float(h);
   camera.view = lookAt(eye, {0., 0., 0.});
   camera.projection =
@@ -89,7 +83,6 @@ Visualizer::~Visualizer() {
   debugScene->release();
   guiSystem.release();
   renderer.destroy();
-  SDL_DestroyWindow(renderer.window);
   SDL_Quit();
 }
 

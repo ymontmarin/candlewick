@@ -154,8 +154,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
 }
 
 void RobotScene::initGBuffer(const Renderer &renderer) {
-  int width, height;
-  SDL_GetWindowSize(renderer.window, &width, &height);
+  auto [width, height] = renderer.window.size();
   gBuffer.normalMap = Texture{renderer.device,
                               {
                                   .type = SDL_GPU_TEXTURETYPE_2D,

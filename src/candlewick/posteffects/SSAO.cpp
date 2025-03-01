@@ -134,8 +134,7 @@ namespace ssao {
     };
     texSampler = SDL_CreateGPUSampler(device, &samplers_ci);
 
-    int width, height;
-    SDL_GetWindowSize(renderer.window, &width, &height);
+    auto [width, height] = renderer.window.size();
     SDL_GPUTextureCreateInfo texture_desc{
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = SDL_GPU_TEXTUREFORMAT_R32_FLOAT,

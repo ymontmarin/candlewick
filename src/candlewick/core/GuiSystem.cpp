@@ -31,8 +31,7 @@ bool GuiSystem::init(const Renderer &renderer) {
   }
   ImGui_ImplSDLGPU3_InitInfo imguiInfo{
       .Device = renderer.device,
-      .ColorTargetFormat =
-          SDL_GetGPUSwapchainTextureFormat(renderer.device, renderer.window),
+      .ColorTargetFormat = renderer.getSwapchainTextureFormat(),
       .MSAASamples = SDL_GPU_SAMPLECOUNT_1,
   };
   _initialized = ImGui_ImplSDLGPU3_Init(&imguiInfo);
