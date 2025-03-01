@@ -87,8 +87,8 @@ static void updateOrtho(float zoom) {
 
 void eventLoop(const Renderer &renderer) {
   // update pixel density and display scale
-  pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
-  displayScale = SDL_GetWindowDisplayScale(renderer.window);
+  pixelDensity = renderer.window.pixelDensity();
+  displayScale = renderer.window.displayScale();
   const float rotSensitivity = 5e-3f * pixelDensity;
   const float panSensitivity = 1e-2f * pixelDensity;
   SDL_Event event;
@@ -163,9 +163,10 @@ void eventLoop(const Renderer &renderer) {
 Renderer createRenderer(Uint32 width, Uint32 height,
                         SDL_GPUTextureFormat depth_stencil_format) {
   Device dev{auto_detect_shader_format_subset(), true};
-  SDL_Window *window = SDL_CreateWindow(__FILE__, int(width), int(height),
-                                        SDL_WINDOW_HIGH_PIXEL_DENSITY);
-  return Renderer{std::move(dev), window, depth_stencil_format};
+  return Renderer{
+      std::move(dev),
+      Window(__FILE__, int(width), int(height), SDL_WINDOW_HIGH_PIXEL_DENSITY),
+      depth_stencil_format};
 }
 
 int main(int argc, char **argv) {
@@ -440,7 +441,6 @@ int main(int argc, char **argv) {
   debug_scene.release();
   gui_system.release();
   renderer.destroy();
-  SDL_DestroyWindow(renderer.window);
   SDL_Quit();
   return 0;
 }

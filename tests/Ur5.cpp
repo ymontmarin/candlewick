@@ -92,8 +92,8 @@ static void updateOrtho(float zoom) {
 
 void eventLoop(const Renderer &renderer) {
   // update pixel density and display scale
-  pixelDensity = SDL_GetWindowPixelDensity(renderer.window);
-  displayScale = SDL_GetWindowDisplayScale(renderer.window);
+  pixelDensity = renderer.window.pixelDensity();
+  displayScale = renderer.window.displayScale();
   const float rotSensitivity = 5e-3f * pixelDensity;
   const float panSensitivity = 1e-2f * pixelDensity;
   SDL_Event event;
@@ -164,9 +164,10 @@ void eventLoop(const Renderer &renderer) {
 
 Renderer createRenderer(Uint32 width, Uint32 height,
                         SDL_GPUTextureFormat depth_stencil_format) {
-  Device dev{auto_detect_shader_format_subset(), true};
-  SDL_Window *window = SDL_CreateWindow(__FILE__, int(width), int(height), 0);
-  return Renderer{std::move(dev), window, depth_stencil_format};
+  Device device{auto_detect_shader_format_subset(), true};
+  return Renderer{std::move(device),
+                  Window{__FILE__, int(width), int(height), 0},
+                  depth_stencil_format};
 }
 
 int main(int argc, char **argv) {
@@ -277,8 +278,8 @@ int main(int argc, char **argv) {
 
   /** CREATE PIPELINES **/
   // Robot mesh pipeline
-  const auto swapchain_format =
-      SDL_GetGPUSwapchainTextureFormat(device, renderer.window);
+  const SDL_GPUTextureFormat swapchain_format =
+      renderer.getSwapchainTextureFormat();
   {
     Shader vertexShader = Shader::fromMetadata(device, "PbrBasic.vert");
     Shader fragmentShader = Shader::fromMetadata(device, "PbrBasic.frag");

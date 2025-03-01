@@ -40,9 +40,7 @@ namespace effects {
     pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipeline_desc);
     assert(pipeline);
 
-    auto *window = renderer.window;
-    int width, height;
-    SDL_GetWindowSizeInPixels(window, &width, &height);
+    auto [width, height] = renderer.window.sizeInPixels();
     SDL_GPUTextureCreateInfo texture_desc{
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = outputAttachmentFormat,

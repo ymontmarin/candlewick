@@ -4,6 +4,7 @@
 #include "CommandBuffer.h"
 #include "Texture.h"
 #include "Mesh.h"
+#include "Window.h"
 
 #include <span>
 #include <SDL3/SDL_gpu.h>
@@ -18,15 +19,15 @@ namespace candlewick {
 /// \sa Mesh
 struct Renderer {
   Device device;
-  SDL_Window *window;
+  Window window;
   SDL_GPUTexture *swapchain;
   Texture depth_texture{NoInit};
 
   Renderer(NoInitT) : device(NoInit), window(nullptr), swapchain(nullptr) {}
   /// \brief Constructor without a depth format.
-  Renderer(Device &&device, SDL_Window *window);
+  Renderer(Device &&device, Window &&window);
   /// \brief Constructor with a depth format. This will create a depth texture.
-  Renderer(Device &&device, SDL_Window *window,
+  Renderer(Device &&device, Window &&window,
            SDL_GPUTextureFormat suggested_depth_format);
 
   bool initialized() const { return bool(device); }
