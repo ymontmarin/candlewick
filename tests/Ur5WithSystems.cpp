@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
   robot_scene.addEnvironmentObject(loadCube(.33f, {-0.55f, -0.7f}),
                                    Mat4f::Identity());
   robot_scene.addEnvironmentObject(
-      loadConeSolid(5u, 0.2f, .5f),
+      loadConeSolid(16u, 0.2f, .5f),
       Eigen::Affine3f{Eigen::Translation3f{-0.5f, 0.2f, 0.3f}});
   robot_scene.addEnvironmentObject(
       loadCylinderSolid(5, 8u, 0.1f, 1.f),
