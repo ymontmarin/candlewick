@@ -199,8 +199,7 @@ void RobotScene::collectOpaqueCastables() {
       continue;
 
     const Mesh &mesh = meshMaterial.mesh;
-    for (auto &v : mesh.views())
-      _castables.emplace_back(v, tr);
+    _castables.emplace_back(ent, mesh, tr);
   }
 }
 
