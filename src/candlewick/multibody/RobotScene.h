@@ -100,7 +100,7 @@ namespace multibody {
     void updateTransforms();
 
     void collectOpaqueCastables();
-    const std::vector<OpaqueCastable> &castables() const { return _castables; }
+    const std::vector<OpaqueCastable> &castables() const { return m_castables; }
 
     entt::entity
     addEnvironmentObject(MeshData &&data, Mat4f placement,
@@ -130,20 +130,20 @@ namespace multibody {
                              const Camera &camera);
     void release();
 
-    Config &config() { return _config; }
-    const Config &config() const { return _config; }
-    inline bool pbrHasPrepass() const { return _config.triangle_has_prepass; }
-    inline bool shadowsEnabled() const { return _config.enable_shadows; }
+    Config &config() { return m_config; }
+    const Config &config() const { return m_config; }
+    inline bool pbrHasPrepass() const { return m_config.triangle_has_prepass; }
+    inline bool shadowsEnabled() const { return m_config.enable_shadows; }
 
     /// \brief Getter for the referenced pinocchio GeometryModel object.
-    const pin::GeometryModel &geomModel() const { return _geomModel; }
+    const pin::GeometryModel &geomModel() const { return m_geomModel; }
 
     /// \brief Getter for the referenced pinocchio GeometryData object.
-    const pin::GeometryData &geomData() const { return _geomData; }
+    const pin::GeometryData &geomData() const { return m_geomData; }
 
-    const entt::registry &registry() const { return _registry; }
+    const entt::registry &registry() const { return m_registry; }
 
-    const Device &device() { return _renderer.device; }
+    const Device &device() { return m_renderer.device; }
 
     void initGBuffer(const Renderer &renderer);
 
@@ -157,12 +157,12 @@ namespace multibody {
     AABB worldSpaceBounds;
 
   private:
-    entt::registry &_registry;
-    Config _config;
-    const Renderer &_renderer;
-    std::reference_wrapper<pin::GeometryModel const> _geomModel;
-    std::reference_wrapper<pin::GeometryData const> _geomData;
-    std::vector<OpaqueCastable> _castables;
+    entt::registry &m_registry;
+    Config m_config;
+    const Renderer &m_renderer;
+    std::reference_wrapper<pin::GeometryModel const> m_geomModel;
+    std::reference_wrapper<pin::GeometryData const> m_geomData;
+    std::vector<OpaqueCastable> m_castables;
   };
   static_assert(Scene<RobotScene>);
 
