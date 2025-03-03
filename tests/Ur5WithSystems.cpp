@@ -162,9 +162,8 @@ void eventLoop(const Renderer &renderer) {
 
 Renderer createRenderer(Uint32 width, Uint32 height,
                         SDL_GPUTextureFormat depth_stencil_format) {
-  Device dev{auto_detect_shader_format_subset(), true};
   return Renderer{
-      std::move(dev),
+      Device{auto_detect_shader_format_subset(), true},
       Window(__FILE__, int(width), int(height), SDL_WINDOW_HIGH_PIXEL_DENSITY),
       depth_stencil_format};
 }
