@@ -174,11 +174,8 @@ void RobotScene::initGBuffer(const Renderer &renderer) {
 void updateRobotTransforms(entt::registry &registry,
                            const pin::GeometryData &geom_data) {
   auto robot_view =
-      registry.view<const PinGeomObjComponent, const VisibilityComponent,
-                    TransformComponent>();
-  for (auto [ent, geom_id, visible, tr] : robot_view.each()) {
-    if (!visible)
-      continue;
+      registry.view<const PinGeomObjComponent, TransformComponent>();
+  for (auto [ent, geom_id, tr] : robot_view.each()) {
     SE3f pose = geom_data.oMg[geom_id].cast<float>();
     tr = pose.toHomogeneousMatrix();
   }
