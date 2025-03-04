@@ -2,7 +2,6 @@
 #include "../core/Device.h"
 #include "../core/CameraControls.h"
 #include "../core/DepthAndShadowPass.h"
-#include "../core/errors.h"
 #include "../primitives/Plane.h"
 #include "RobotDebug.h"
 
@@ -25,8 +24,9 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
   ::new (&renderer)
       Renderer{std::move(dev), std::move(window), config.depth_stencil_format};
 
-  robotScene.emplace(registry, renderer, visualModel(), visualData(),
-                     RobotScene::Config{.enable_shadows = true});
+  RobotScene::Config rconfig;
+  rconfig.enable_shadows = true;
+  robotScene.emplace(registry, renderer, visualModel(), visualData(), rconfig);
   debugScene.emplace(registry, renderer);
   debugScene->addSystem<RobotDebugSystem>(m_model, data());
 
@@ -90,9 +90,7 @@ void Visualizer::displayImpl() {
   this->processEvents();
 
   debugScene->update();
-  {
-    robotScene->updateTransforms();
-  }
+  robotScene->updateTransforms();
   render();
 }
 
