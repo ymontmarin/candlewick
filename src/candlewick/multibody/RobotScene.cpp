@@ -415,11 +415,10 @@ SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
   color_targets[0].format = render_target_format;
   bool had_prepass =
       (type == PIPELINE_TRIANGLEMESH) && m_config.triangle_has_prepass;
-  SDL_GPUCompareOp depth_compare_op =
-      had_prepass ? SDL_GPU_COMPAREOP_EQUAL : SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
-  SDL_Log("Pipeline type %s uses depth compare op %s",
+  SDL_GPUCompareOp depth_compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
+  SDL_Log("Pipeline type %s uses depth compare op %s (prepass: %d)",
           magic_enum::enum_name(type).data(),
-          magic_enum::enum_name(depth_compare_op).data());
+          magic_enum::enum_name(depth_compare_op).data(), had_prepass);
 
   Uint32 num_color_targets = 1;
   if (type == PIPELINE_TRIANGLEMESH && m_config.enable_normal_target) {
