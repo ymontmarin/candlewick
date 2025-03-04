@@ -47,7 +47,7 @@ using multibody::RobotScene;
 /// Application constants
 
 constexpr Uint32 wWidth = 1680;
-constexpr Uint32 wHeight = 1050;
+constexpr Uint32 wHeight = 900;
 constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 /// Application state
