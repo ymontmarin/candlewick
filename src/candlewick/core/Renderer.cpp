@@ -15,12 +15,6 @@ Renderer::Renderer(Device &&device_, Window &&window_)
     throw RAIIException(SDL_GetError());
 }
 
-static bool texture_create_info_supported(SDL_GPUDevice *device,
-                                          SDL_GPUTextureCreateInfo info) {
-  return SDL_GPUTextureSupportsFormat(device, info.format, info.type,
-                                      info.usage);
-}
-
 Renderer::Renderer(Device &&device_, Window &&window_,
                    SDL_GPUTextureFormat suggested_depth_format)
     : Renderer(std::move(device_), std::move(window_)) {
@@ -40,14 +34,16 @@ Renderer::Renderer(Device &&device_, Window &&window_,
       .props = 0,
   };
   SDL_GPUTextureFormat depth_format_fallbacks[] = {
-      SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT,
+      // supported on macOS, supports SAMPLER usage
+      SDL_GPU_TEXTUREFORMAT_D16_UNORM,
+      // not sure about SAMPLER usage on macOS
       SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
-      SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT,
   };
   size_t try_idx = 0;
-  while (!texture_create_info_supported(this->device, texInfo) &&
+  while (!SDL_GPUTextureSupportsFormat(device, texInfo.format, texInfo.type,
+                                       texInfo.usage) &&
          try_idx < std::size(depth_format_fallbacks)) {
-    texInfo.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+    texInfo.format = depth_format_fallbacks[try_idx];
     try_idx++;
   }
   depth_texture = Texture(this->device, texInfo);
