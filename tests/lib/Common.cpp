@@ -10,13 +10,14 @@
 
 using namespace candlewick;
 
-bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight) {
+bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight,
+                 SDL_WindowFlags windowFlags) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return false;
   ctx.device.create(auto_detect_shader_format_subset(), true);
 
-  ctx.window =
-      SDL_CreateWindow("candlewick: examples", int(wWidth), int(wHeight), 0);
+  ctx.window = SDL_CreateWindow("candlewick: examples", int(wWidth),
+                                int(wHeight), windowFlags);
   if (!SDL_ClaimWindowForGPUDevice(ctx.device, ctx.window)) {
     SDL_Log("Error %s", SDL_GetError());
     return false;

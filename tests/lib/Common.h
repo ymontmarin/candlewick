@@ -17,7 +17,8 @@ struct Context {
   SDL_Window *window;
 };
 
-bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight);
+bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight,
+                 SDL_WindowFlags windowFlags = 0);
 void teardownExample(Context &ctx);
 
 [[nodiscard]] SDL_GPUGraphicsPipeline *
