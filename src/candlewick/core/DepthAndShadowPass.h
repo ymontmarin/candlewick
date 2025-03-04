@@ -26,6 +26,7 @@
 #include "math_types.h"
 #include "LightUniforms.h"
 
+#include <entt/entity/fwd.hpp>
 #include <span>
 
 namespace candlewick {
@@ -96,9 +97,9 @@ struct ShadowPassInfo : DepthPassInfo {
 /// \sa renderDepthOnlyPass()
 /// \sa renderShadowPass()
 struct OpaqueCastable {
-  // this could be the entire mesh
-  MeshView mesh;
-  GpuMat4 transform;
+  entt::entity ent;
+  const Mesh &mesh;
+  Mat4f transform;
 };
 
 /// \ingroup depth_pass

@@ -22,11 +22,15 @@ layout(set=1, binding=1) uniform LightBlockV
     mat4 lightMvp;
 };
 
+out gl_PerVertex {
+    invariant vec4 gl_Position;
+};
+
 void main() {
     vec4 hp = vec4(inPosition, 1.0);
     fragViewPos = vec3(modelView * hp);
     fragViewNormal = normalize(normalMatrix * inNormal);
-    gl_Position = mvp * vec4(inPosition, 1.0);
+    gl_Position = mvp * hp;
 
     vec4 flps = lightMvp * hp;
     fragLightPos = flps.xyz / flps.w;

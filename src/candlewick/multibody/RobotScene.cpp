@@ -57,35 +57,35 @@ entt::entity RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
                                               PipelineType pipe_type) {
   Mesh mesh = createMesh(device(), data);
   uploadMeshToDevice(device(), mesh, data);
-  entt::entity entity = _registry.create();
-  _registry.emplace<TransformComponent>(entity, placement);
+  entt::entity entity = m_registry.create();
+  m_registry.emplace<TransformComponent>(entity, placement);
   if (pipe_type != PIPELINE_POINTCLOUD)
-    _registry.emplace<Opaque>(entity);
-  _registry.emplace<VisibilityComponent>(entity, true);
+    m_registry.emplace<Opaque>(entity);
+  m_registry.emplace<VisibilityComponent>(entity, true);
   // add tag type
-  _registry.emplace<EnvironmentTag>(entity);
-  _registry.emplace<MeshMaterialComponent>(
+  m_registry.emplace<EnvironmentTag>(entity);
+  m_registry.emplace<MeshMaterialComponent>(
       entity, std::move(mesh), std::vector{std::move(data.material)},
       pipe_type);
   return entity;
 }
 
 void RobotScene::clearEnvironment() {
-  auto view = _registry.view<EnvironmentTag>();
-  _registry.destroy(view.begin(), view.end());
+  auto view = m_registry.view<EnvironmentTag>();
+  m_registry.destroy(view.begin(), view.end());
 }
 
 void RobotScene::clearRobotGeometries() {
-  auto view = _registry.view<PinGeomObjComponent>();
-  _registry.destroy(view.begin(), view.end());
+  auto view = m_registry.view<PinGeomObjComponent>();
+  m_registry.destroy(view.begin(), view.end());
 }
 
 RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
                        const pin::GeometryModel &geom_model,
                        const pin::GeometryData &geom_data, Config config)
     : // screenSpaceShadows{.sampler = nullptr, .pass{NoInit}},
-      _registry(registry), _config(config), _renderer(renderer),
-      _geomModel(geom_model), _geomData(geom_data) {
+      m_registry(registry), m_config(config), m_renderer(renderer),
+      m_geomModel(geom_model), m_geomData(geom_data) {
 
   for (size_t i = 0; i < kNumPipelineTypes; i++) {
     renderPipelines[i] = NULL;
@@ -95,7 +95,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
            PIPELINE_TRIANGLEMESH, PIPELINE_HEIGHTFIELD,
            //  PIPELINE_POINTCLOUD
        }) {
-    if (!config.pipeline_configs.contains(type)) {
+    if (!m_config.pipeline_configs.contains(type)) {
       char errbuf[64];
       size_t maxlen = sizeof(errbuf);
       SDL_snprintf(errbuf, maxlen,
@@ -107,7 +107,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
 
   // initialize render target for GBuffer
   this->initGBuffer(renderer);
-  const bool enable_shadows = _config.enable_shadows;
+  const bool enable_shadows = m_config.enable_shadows;
 
   for (pin::GeomIndex geom_id = 0; geom_id < geom_model.ngeoms; geom_id++) {
 
@@ -174,27 +174,24 @@ void RobotScene::initGBuffer(const Renderer &renderer) {
 void updateRobotTransforms(entt::registry &registry,
                            const pin::GeometryData &geom_data) {
   auto robot_view =
-      registry.view<const PinGeomObjComponent, const VisibilityComponent,
-                    TransformComponent>();
-  for (auto [ent, geom_id, visible, tr] : robot_view.each()) {
-    if (!visible)
-      continue;
+      registry.view<const PinGeomObjComponent, TransformComponent>();
+  for (auto [ent, geom_id, tr] : robot_view.each()) {
     SE3f pose = geom_data.oMg[geom_id].cast<float>();
     tr = pose.toHomogeneousMatrix();
   }
 }
 
 void RobotScene::updateTransforms() {
-  ::candlewick::multibody::updateRobotTransforms(_registry, _geomData);
+  ::candlewick::multibody::updateRobotTransforms(m_registry, m_geomData);
 }
 
 void RobotScene::collectOpaqueCastables() {
   const PipelineType pipeline_type = PIPELINE_TRIANGLEMESH;
   auto all_view =
-      _registry.view<const Opaque, const TransformComponent,
-                     const VisibilityComponent, const MeshMaterialComponent>();
+      m_registry.view<const Opaque, const TransformComponent,
+                      const VisibilityComponent, const MeshMaterialComponent>();
 
-  _castables.clear();
+  m_castables.clear();
 
   // collect castable objects
   for (auto [ent, tr, vis, meshMaterial] : all_view.each()) {
@@ -202,13 +199,12 @@ void RobotScene::collectOpaqueCastables() {
       continue;
 
     const Mesh &mesh = meshMaterial.mesh;
-    for (auto &v : mesh.views())
-      _castables.emplace_back(v, tr);
+    m_castables.emplace_back(ent, mesh, tr);
   }
 }
 
 void RobotScene::render(CommandBuffer &command_buffer, const Camera &camera) {
-  if (_config.enable_ssao) {
+  if (m_config.enable_ssao) {
     ssaoPass.render(command_buffer, camera);
   }
 
@@ -281,17 +277,17 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
       camera.projection,
   };
 
-  const bool enable_shadows = _config.enable_shadows;
+  const bool enable_shadows = m_config.enable_shadows;
   const Mat4f lightViewProj = shadowPass.cam.viewProj();
   const Mat4f viewProj = camera.viewProj();
 
   // this is the first render pass, hence:
   // clear the color texture (swapchain), either load or clear the depth texture
-  SDL_GPULoadOp depth_load_op =
-      _config.triangle_has_prepass ? SDL_GPU_LOADOP_LOAD : SDL_GPU_LOADOP_CLEAR;
   SDL_GPURenderPass *render_pass =
-      getRenderPass(_renderer, command_buffer, SDL_GPU_LOADOP_CLEAR,
-                    depth_load_op, _config.enable_normal_target, gBuffer);
+      getRenderPass(m_renderer, command_buffer, SDL_GPU_LOADOP_CLEAR,
+                    m_config.triangle_has_prepass ? SDL_GPU_LOADOP_LOAD
+                                                  : SDL_GPU_LOADOP_CLEAR,
+                    m_config.enable_normal_target, gBuffer);
 
   if (enable_shadows) {
     rend::bindFragmentSampler(render_pass, SHADOW_MAP_SLOT,
@@ -305,7 +301,7 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
                                 .texture = ssaoPass.ssaoMap,
                                 .sampler = ssaoPass.texSampler,
                             });
-  int _useSsao = _config.enable_ssao;
+  int _useSsao = m_config.enable_ssao;
   command_buffer
       .pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
                            sizeof(lightUbo))
@@ -316,9 +312,9 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
   SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
   auto all_view =
-      _registry.view<const VisibilityComponent, const TransformComponent,
-                     const MeshMaterialComponent>();
-  for (auto [entity, visible, tr, obj] : all_view.each()) {
+      m_registry.view<const VisibilityComponent, const TransformComponent,
+                      const MeshMaterialComponent>();
+  for (auto [ent, visible, tr, obj] : all_view.each()) {
     if (!visible || (obj.pipeline_type != PIPELINE_TRIANGLEMESH))
       continue;
 
@@ -350,7 +346,7 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
 void RobotScene::renderOtherGeometry(CommandBuffer &command_buffer,
                                      const Camera &camera) {
   SDL_GPURenderPass *render_pass =
-      getRenderPass(_renderer, command_buffer, SDL_GPU_LOADOP_LOAD,
+      getRenderPass(m_renderer, command_buffer, SDL_GPU_LOADOP_LOAD,
                     SDL_GPU_LOADOP_LOAD, false, gBuffer);
 
   const Mat4f viewProj = camera.viewProj();
@@ -365,8 +361,8 @@ void RobotScene::renderOtherGeometry(CommandBuffer &command_buffer,
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
     auto env_view =
-        _registry.view<const VisibilityComponent, const TransformComponent,
-                       const MeshMaterialComponent>();
+        m_registry.view<const VisibilityComponent, const TransformComponent,
+                        const MeshMaterialComponent>();
     for (auto [entity, visible, tr, obj] : env_view.each()) {
       if (!visible || (obj.pipeline_type != current_pipeline_type))
         continue;
@@ -390,7 +386,7 @@ void RobotScene::release() {
   if (!device())
     return;
 
-  _registry.clear<MeshMaterialComponent>();
+  m_registry.clear<MeshMaterialComponent>();
 
   for (auto &pipeline : renderPipelines) {
     SDL_ReleaseGPUGraphicsPipeline(device(), pipeline);
@@ -408,7 +404,7 @@ SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
 
   SDL_assert(validateMeshLayout(layout));
 
-  const PipelineConfig &pipe_config = _config.pipeline_configs.at(type);
+  const PipelineConfig &pipe_config = m_config.pipeline_configs.at(type);
   auto vertexShader =
       Shader::fromMetadata(device(), pipe_config.vertex_shader_path);
   auto fragmentShader =
@@ -418,15 +414,14 @@ SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
   SDL_zero(color_targets);
   color_targets[0].format = render_target_format;
   bool had_prepass =
-      (type == PIPELINE_TRIANGLEMESH) && _config.triangle_has_prepass;
-  SDL_GPUCompareOp depth_compare_op =
-      had_prepass ? SDL_GPU_COMPAREOP_EQUAL : SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
-  SDL_Log("Pipeline type %s uses depth compare op %s",
+      (type == PIPELINE_TRIANGLEMESH) && m_config.triangle_has_prepass;
+  SDL_GPUCompareOp depth_compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
+  SDL_Log("Pipeline type %s uses depth compare op %s (prepass: %d)",
           magic_enum::enum_name(type).data(),
-          magic_enum::enum_name(depth_compare_op).data());
+          magic_enum::enum_name(depth_compare_op).data(), had_prepass);
 
   Uint32 num_color_targets = 1;
-  if (type == PIPELINE_TRIANGLEMESH && _config.enable_normal_target) {
+  if (type == PIPELINE_TRIANGLEMESH && m_config.enable_normal_target) {
     num_color_targets = 2;
     color_targets[1].format = gBuffer.normalMap.format();
   }

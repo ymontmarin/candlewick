@@ -182,8 +182,9 @@ int main(int argc, char **argv) {
   if (!SDL_Init(SDL_INIT_VIDEO))
     return 1;
 
+  // D16_UNORM works on macOS, D24_UNORM and D32_FLOAT break the depth prepass
   Renderer renderer =
-      createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D32_FLOAT);
+      createRenderer(wWidth, wHeight, SDL_GPU_TEXTUREFORMAT_D16_UNORM);
 
   entt::registry registry{};
 
@@ -223,7 +224,7 @@ int main(int argc, char **argv) {
   robot_scene.addEnvironmentObject(loadCube(.33f, {-0.55f, -0.7f}),
                                    Mat4f::Identity());
   robot_scene.addEnvironmentObject(
-      loadConeSolid(5u, 0.2f, .5f),
+      loadConeSolid(16u, 0.2f, .5f),
       Eigen::Affine3f{Eigen::Translation3f{-0.5f, 0.2f, 0.3f}});
   robot_scene.addEnvironmentObject(
       loadCylinderSolid(5, 8u, 0.1f, 1.f),
@@ -258,7 +259,9 @@ int main(int argc, char **argv) {
   robot_debug.addFrameTriad(debug_scene, ee_frame_id);
   robot_debug.addFrameVelocityArrow(debug_scene, ee_frame_id);
 
-  auto depthPassInfo = DepthPassInfo::create(renderer, plane_obj.mesh.layout);
+  auto depthPassInfo =
+      DepthPassInfo::create(renderer, plane_obj.mesh.layout, NULL,
+                            {SDL_GPU_CULLMODE_NONE, 0.05f, 0.f, true, false});
   auto &shadowPassInfo = robot_scene.shadowPass;
   auto shadowDebugPass =
       DepthDebugPass::create(renderer, shadowPassInfo.depthTexture);

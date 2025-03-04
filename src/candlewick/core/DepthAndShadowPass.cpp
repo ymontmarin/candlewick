@@ -146,11 +146,12 @@ void renderDepthOnlyPass(CommandBuffer &cmdBuf, const DepthPassInfo &passInfo,
 
   GpuMat4 mvp;
   for (auto &cs : castables) {
-    assert(validateMeshView(cs.mesh));
-    rend::bindMeshView(render_pass, cs.mesh);
-    mvp.noalias() = viewProj * cs.transform;
+    auto &[ent, mesh, tr] = cs;
+    assert(validateMesh(mesh));
+    rend::bindMesh(render_pass, mesh);
+    mvp.noalias() = viewProj * tr;
     cmdBuf.pushVertexUniform(DepthPassInfo::TRANSFORM_SLOT, &mvp, sizeof(mvp));
-    rend::drawView(render_pass, cs.mesh);
+    rend::draw(render_pass, mesh);
   }
 
   SDL_EndGPURenderPass(render_pass);

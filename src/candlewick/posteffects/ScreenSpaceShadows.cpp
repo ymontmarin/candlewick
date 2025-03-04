@@ -122,8 +122,8 @@ namespace effects {
     for (auto &cs : castables) {
       GpuMat4 mvp = vp * cs.transform;
       cmdBuf.pushVertexUniform(0, &mvp, sizeof(mvp));
-      rend::bindMeshView(render_pass, cs.mesh);
-      rend::drawView(render_pass, cs.mesh);
+      rend::bindMesh(render_pass, cs.mesh);
+      rend::draw(render_pass, cs.mesh);
     }
 
     SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
