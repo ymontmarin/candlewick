@@ -1,8 +1,11 @@
 #include "Renderer.h"
 #include "errors.h"
+#include "../third-party/magic_enum.hpp"
+
 #include <utility>
 #include <cassert>
 #include <SDL3/SDL_init.h>
+#include <SDL3/SDL_log.h>
 
 namespace candlewick {
 Renderer::Renderer(Device &&device_, Window &&window_)
@@ -48,6 +51,8 @@ Renderer::Renderer(Device &&device_, Window &&window_,
     try_idx++;
   }
   depth_texture = Texture(this->device, texInfo);
+  SDL_Log("Created depth texture of format %s (dims (%d, %d))\n",
+          magic_enum::enum_name(texInfo.format).data(), width, height);
   SDL_SetGPUTextureName(device, depth_texture, "Main depth texture");
 }
 
