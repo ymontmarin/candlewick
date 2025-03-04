@@ -15,11 +15,8 @@ int main() {
   const int numGpus = SDL_GetNumGPUDrivers();
   SDL_Log("Found %d GPU drivers.", numGpus);
 
-  const char *title = __FILE_NAME__;
   Device device{auto_detect_shader_format_subset(), true};
-  if (!device)
-    return 1;
-  SDL_Window *window = SDL_CreateWindow(title, 1280, 480, 0);
+  SDL_Window *window = SDL_CreateWindow(__FILE_NAME__, 1280, 480, 0);
   if (!window) {
     SDL_Log("Failed to create window! %s", SDL_GetError());
     return 1;
@@ -75,31 +72,28 @@ int main() {
       return 1;
     }
 
-    SDL_GPUTexture *swapchainTexture;
-    if (!SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchainTexture, NULL,
-                                        NULL)) {
+    SDL_GPUTexture *swapchain;
+    if (!SDL_WaitAndAcquireGPUSwapchainTexture(cmdbuf, window, &swapchain, NULL,
+                                               NULL)) {
       SDL_SubmitGPUCommandBuffer(cmdbuf);
       break;
-    }
-    SDL_Log("Acquired command buffer and swapchain (frame %3d)", frame);
-    SDL_GPUColorTargetInfo ctinfo;
-    SDL_zero(ctinfo);
-    ctinfo.texture = swapchainTexture;
-    ctinfo.clear_color = SDL_FColor{0.f, 0.f, 0.f, 1.f};
-    ctinfo.load_op = SDL_GPU_LOADOP_CLEAR;
-    ctinfo.store_op = SDL_GPU_STOREOP_STORE;
-    SDL_GPURenderPass *renderPass =
-        SDL_BeginGPURenderPass(cmdbuf, &ctinfo, 1, NULL);
-    SDL_BindGPUGraphicsPipeline(renderPass, pipelineFill);
+    } else {
+      SDL_Log("Acquired command buffer and swapchain (frame %3d)", frame);
+      SDL_GPUColorTargetInfo ctinfo;
+      SDL_zero(ctinfo);
+      ctinfo.texture = swapchain;
+      ctinfo.clear_color = SDL_FColor{0.f, 0.f, 0.f, 1.f};
+      ctinfo.load_op = SDL_GPU_LOADOP_CLEAR;
+      ctinfo.store_op = SDL_GPU_STOREOP_STORE;
+      SDL_GPURenderPass *renderPass =
+          SDL_BeginGPURenderPass(cmdbuf, &ctinfo, 1, NULL);
+      SDL_BindGPUGraphicsPipeline(renderPass, pipelineFill);
 
-    SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
-    SDL_EndGPURenderPass(renderPass);
+      SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
+      SDL_EndGPURenderPass(renderPass);
+      frame++;
+    }
     SDL_SubmitGPUCommandBuffer(cmdbuf);
-    frame++;
-
-    if (mustQuit) {
-      break;
-    }
   }
   SDL_Log("Quitting...");
   SDL_ReleaseGPUGraphicsPipeline(device, pipelineFill);
