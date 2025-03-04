@@ -1,5 +1,7 @@
 #pragma once
 
+#include <coal/fwd.hh>
+
 namespace candlewick {
 struct Camera;
 class CommandBuffer;
@@ -12,9 +14,6 @@ struct Shader;
 struct Renderer;
 struct Window;
 
-// Geometry classes
-
-struct AABB;
-struct OBB;
+using coal::AABB;
 
 } // namespace candlewick

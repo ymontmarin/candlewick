@@ -368,8 +368,7 @@ int main(int argc, char **argv) {
   };
 
   AABB &worldSpaceBounds = robot_scene.worldSpaceBounds;
-  worldSpaceBounds.grow({-1.f, -1.f, 0.f});
-  worldSpaceBounds.grow({+1.f, +1.f, 1.f});
+  worldSpaceBounds.update({-1.f, -1.f, 0.f}, {+1.f, +1.f, 1.f});
 
   frustumBoundsDebug.addBounds(worldSpaceBounds);
   frustumBoundsDebug.addFrustum(shadowPassInfo.cam);

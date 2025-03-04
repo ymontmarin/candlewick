@@ -3,8 +3,6 @@
 #include "../Renderer.h"
 #include "../Shader.h"
 #include "../Camera.h"
-#include "../AABB.h"
-#include "../OBB.h"
 
 namespace candlewick {
 namespace frustum_debug {
@@ -88,18 +86,18 @@ namespace frustum_debug {
 
   void renderOBB(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                  const Camera &camera, const OBB &obb, const Float4 &color) {
-    Mat4f transform = obb.toTransformationMatrix();
+    Mat4f transform = toTransformationMatrix(obb);
     Mat4f mvp = camera.viewProj() * transform;
-    renderFrustum(cmdBuf, render_pass, Mat4f::Identity(), mvp, obb.center,
-                  color);
+    Float3 eyePos = obb.center().cast<float>();
+    renderFrustum(cmdBuf, render_pass, Mat4f::Identity(), mvp, eyePos, color);
   }
 
   void renderAABB(CommandBuffer &cmdBuf, SDL_GPURenderPass *render_pass,
                   const Camera &camera, const AABB &aabb, const Float4 &color) {
-    Mat4f transform = aabb.toTransformationMatrix();
+    Mat4f transform = toTransformationMatrix(aabb);
     Mat4f mvp = camera.viewProj() * transform;
-    renderFrustum(cmdBuf, render_pass, Mat4f::Identity(), mvp, aabb.center(),
-                  color);
+    Float3 eyePos = aabb.center().cast<float>();
+    renderFrustum(cmdBuf, render_pass, Mat4f::Identity(), mvp, eyePos, color);
   }
 
 } // namespace frustum_debug

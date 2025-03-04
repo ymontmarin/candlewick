@@ -37,8 +37,7 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
   };
   guiSystem.init(renderer);
 
-  robotScene->worldSpaceBounds.grow({-1.f, -1.f, 0.f});
-  robotScene->worldSpaceBounds.grow({+1.f, +1.f, 1.f});
+  robotScene->worldSpaceBounds.update({-1., -1., 0.}, {+1., +1., 1.});
 
   Uint32 prepeat = 25;
   robotScene->addEnvironmentObject(loadPlaneTiled(0.5f, prepeat, prepeat),

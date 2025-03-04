@@ -64,6 +64,7 @@ Candlewick depends mainly on:
 * [EnTT](https://github.com/skypjack/entt/) for the entity-component system (ECS)
 * [nlohmann/json](https://github.com/nlohmann/json) for processing JSON files
 * the [Eigen](https://gitlab.com/libeigen/eigen/) linear algebra template library
+* [Coal](https://github.com/coal-library/coal)
 * [Open Asset Importer Library (assimp)](https://assimp-docs.readthedocs.io/en/latest/) for loading meshes
 
 These dependencies can be installed from Conda as follows:
