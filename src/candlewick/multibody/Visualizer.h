@@ -63,7 +63,7 @@ public:
   struct Config {
     Uint32 width;
     Uint32 height;
-    SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+    SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
   };
 
   /// \brief Default GUI callback for the Visualizer; provide your own callback
