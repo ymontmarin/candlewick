@@ -108,8 +108,6 @@ void renderDepthOnlyPass(CommandBuffer &cmdBuf, const DepthPassInfo &passInfo,
                          const Mat4f &viewProj,
                          std::span<const OpaqueCastable> castables);
 
-struct AABB;
-
 /// \addtogroup depth_pass
 /// \section depth_testing Depth testing in modern APIs
 ///

@@ -2,6 +2,7 @@
 
 find_package(assimp REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(coal REQUIRED)
 find_package(nlohmann_json 3.11.3 REQUIRED)
 find_package(EnTT REQUIRED)
 find_package(FFmpeg COMPONENTS avformat avcodec swscale)
@@ -19,7 +20,6 @@ add_library(
   candlewick/core/GuiSystem.cpp
   candlewick/core/Mesh.cpp
   candlewick/core/MeshLayout.cpp
-  candlewick/core/OBB.cpp
   candlewick/core/Renderer.cpp
   candlewick/core/Shader.cpp
   candlewick/core/Texture.cpp
@@ -51,7 +51,13 @@ add_library(
 
 target_link_libraries(
   candlewick_core
-  PUBLIC SDL3::SDL3-shared assimp::assimp Eigen3::Eigen EnTT::EnTT imgui-headers
+  PUBLIC
+    SDL3::SDL3-shared
+    assimp::assimp
+    Eigen3::Eigen
+    coal::coal
+    EnTT::EnTT
+    imgui-headers
   PRIVATE nlohmann_json::nlohmann_json
 )
 target_compile_definitions(

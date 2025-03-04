@@ -2,8 +2,7 @@
 
 #include "../Core.h"
 #include "../Device.h"
-#include "../AABB.h"
-#include "../OBB.h"
+#include "../Collision.h"
 #include "../math_types.h"
 
 #include <entt/entity/registry.hpp>

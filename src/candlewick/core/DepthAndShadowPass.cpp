@@ -1,7 +1,7 @@
 #include "DepthAndShadowPass.h"
 #include "Renderer.h"
 #include "Shader.h"
-#include "AABB.h"
+#include "Collision.h"
 #include "Camera.h"
 
 #include <stdexcept>
@@ -171,10 +171,13 @@ void renderShadowPassFromFrustum(CommandBuffer &cmdBuf,
   auto &lightProj = passInfo.cam.projection;
 
   const Float3 eye = frustumCenter - radius * dirLight.direction.normalized();
-  AABB bounds{Float3::Constant(-radius), Float3::Constant(+radius)};
+  using Eigen::Vector3d;
+
+  AABB bounds{Vector3d::Constant(-radius), Vector3d::Constant(radius)};
   lightView = lookAt(eye, frustumCenter);
-  lightProj = shadowOrthographicMatrix({bounds.width(), bounds.height()},
-                                       bounds.min.z(), bounds.max.z());
+  lightProj =
+      shadowOrthographicMatrix({bounds.width(), bounds.height()},
+                               float(bounds.min_.z()), float(bounds.max_.z()));
 
   Mat4f viewProj = passInfo.cam.viewProj();
   renderDepthOnlyPass(cmdBuf, passInfo, viewProj, castables);
@@ -184,17 +187,19 @@ void renderShadowPassFromAABB(CommandBuffer &cmdBuf, ShadowPassInfo &passInfo,
                               const DirectionalLight &dirLight,
                               std::span<const OpaqueCastable> castables,
                               const AABB &worldSceneBounds) {
-  Float3 center = worldSceneBounds.center();
-  float radius = worldSceneBounds.radius();
+  Float3 center = worldSceneBounds.center().cast<float>();
+  float radius = 0.5f * float(worldSceneBounds.size());
   radius = std::ceil(radius * 16.f) / 16.f;
   Float3 eye = center - radius * dirLight.direction.normalized();
   auto &lightView = passInfo.cam.view;
   auto &lightProj = passInfo.cam.projection;
   lightView = lookAt(eye, center, Float3::UnitZ());
+  using Eigen::Vector3d;
 
-  AABB bounds{Float3::Constant(-radius), Float3::Constant(+radius)};
-  lightProj = shadowOrthographicMatrix({bounds.width(), bounds.height()},
-                                       bounds.min.z(), bounds.max.z());
+  AABB bounds{Vector3d::Constant(-radius), Vector3d::Constant(radius)};
+  lightProj =
+      shadowOrthographicMatrix({bounds.width(), bounds.height()},
+                               float(bounds.min_.z()), float(bounds.max_.z()));
 
   Mat4f viewProj = lightProj * lightView.matrix();
   renderDepthOnlyPass(cmdBuf, passInfo, viewProj, castables);
