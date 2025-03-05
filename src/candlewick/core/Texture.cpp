@@ -1,7 +1,7 @@
 #include "Texture.h"
 #include "Device.h"
 #include "errors.h"
-#include "../third-party/magic_enum.hpp"
+#include <magic_enum.hpp>
 
 #include <cassert>
 #include <format>

@@ -82,12 +82,16 @@ int main() {
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     return 1;
   }
-  Device device{auto_detect_shader_format_subset()};
+  Device device{auto_detect_shader_format_subset(), true};
 
   const Uint32 wWidth = 1280;
   const Uint32 wHeight = 720;
   const float aspectRatio = float(wWidth) / wHeight;
   SDL_Window *window = SDL_CreateWindow(__FILE_NAME__, wWidth, wHeight, 0);
+  if (!window) {
+    SDL_Log("Failed to create window! %s", SDL_GetError());
+    return 1;
+  }
   if (!SDL_ClaimWindowForGPUDevice(device, window)) {
     SDL_Log("Error: %s", SDL_GetError());
     return 1;
@@ -97,9 +101,9 @@ int main() {
 
   MeshLayout mesh_layout;
   mesh_layout.addBinding(0, sizeof(Vertex))
-      .addAttribute("pos", 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                    offsetof(Vertex, pos))
-      .addAttribute("col", 1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+      .addAttribute(VertexAttrib::Position, 0,
+                    SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(Vertex, pos))
+      .addAttribute(VertexAttrib::Color0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
                     offsetof(Vertex, col));
 
   SDL_GPUBufferCreateInfo buffer_desc{.usage = SDL_GPU_BUFFERUSAGE_VERTEX,
@@ -211,7 +215,7 @@ int main() {
   Uint32 frame = 0;
 
   // Main loop
-  for (Uint32 i = 0; i < 200; i++) {
+  while (frame < 1000) {
     SDL_GPURenderPass *render_pass;
     SDL_GPUBufferBinding vertex_binding = mesh.getVertexBinding(0);
     cmdbuf = SDL_AcquireGPUCommandBuffer(device);
@@ -225,8 +229,8 @@ int main() {
     view = lookAt(eye, center, {0., 0., 1.});
     projViewMat = perp * view * modelMat;
 
-    if (SDL_AcquireGPUSwapchainTexture(cmdbuf, window, &swapchain, NULL,
-                                       NULL)) {
+    if (SDL_WaitAndAcquireGPUSwapchainTexture(cmdbuf, window, &swapchain, NULL,
+                                              NULL)) {
       SDL_GPUColorTargetInfo ctinfo{.texture = swapchain,
                                     .clear_color = SDL_FColor{},
                                     .load_op = SDL_GPU_LOADOP_CLEAR,
@@ -248,13 +252,13 @@ int main() {
                                    sizeof(projViewMat));
       SDL_DrawGPUPrimitives(render_pass, vertexCount, 1, 0, 0);
       SDL_EndGPURenderPass(render_pass);
+      SDL_Log("Frame [%3d] phi = %.2f", frame, phi);
+      frame++;
     } else {
       SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
       break;
     }
     SDL_SubmitGPUCommandBuffer(cmdbuf);
-    SDL_Log("Frame [%3d] phi = %.2f", frame, phi);
-    frame++;
   }
 
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);

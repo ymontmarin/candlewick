@@ -47,7 +47,7 @@ using multibody::RobotScene;
 /// Application constants
 
 constexpr Uint32 wWidth = 1680;
-constexpr Uint32 wHeight = 1050;
+constexpr Uint32 wHeight = 900;
 constexpr float aspectRatio = float(wWidth) / float(wHeight);
 
 /// Application state
@@ -162,10 +162,9 @@ void eventLoop(const Renderer &renderer) {
 
 Renderer createRenderer(Uint32 width, Uint32 height,
                         SDL_GPUTextureFormat depth_stencil_format) {
-  return Renderer{
-      Device{auto_detect_shader_format_subset(), true},
-      Window(__FILE__, int(width), int(height), SDL_WINDOW_HIGH_PIXEL_DENSITY),
-      depth_stencil_format};
+  return Renderer{Device{auto_detect_shader_format_subset(), true},
+                  Window(__FILE__, int(width), int(height), 0),
+                  depth_stencil_format};
 }
 
 int main(int argc, char **argv) {
@@ -437,6 +436,7 @@ int main(int argc, char **argv) {
     frameNo++;
   }
 
+  SDL_WaitForGPUIdle(renderer.device);
   frustumBoundsDebug.release();
   depthPassInfo.release();
   shadowDebugPass.release(renderer.device);

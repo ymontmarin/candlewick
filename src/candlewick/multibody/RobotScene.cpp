@@ -206,10 +206,7 @@ void RobotScene::render(CommandBuffer &command_buffer, const Camera &camera) {
     ssaoPass.render(command_buffer, camera);
   }
 
-  // render geometry which participated in the prepass
   renderPBRTriangleGeometry(command_buffer, camera);
-
-  // render geometry which was _not_ in the prepass
   renderOtherGeometry(command_buffer, camera);
 }
 
@@ -318,9 +315,10 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
 
     const Mat4f modelView = camera.view * tr;
     const Mesh &mesh = obj.mesh;
+    Mat4f mvp = viewProj * tr;
     TransformUniformData data{
         .modelView = modelView,
-        .mvp = GpuMat4{viewProj * tr},
+        .mvp = mvp,
         .normalMatrix = math::computeNormalMatrix(modelView),
     };
     command_buffer.pushVertexUniform(VertexUniformSlots::TRANSFORM, &data,

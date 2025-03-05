@@ -64,18 +64,22 @@ Candlewick depends mainly on:
 * [EnTT](https://github.com/skypjack/entt/) for the entity-component system (ECS)
 * [nlohmann/json](https://github.com/nlohmann/json) for processing JSON files
 * the [Eigen](https://gitlab.com/libeigen/eigen/) linear algebra template library
-* [Coal](https://github.com/coal-library/coal)
+* the [Coal](https://github.com/coal-library/coal) collision algorithms library
+* [magic_enum](https://github.com/Neargye/magic_enum) (enum reflection library)
 * [Open Asset Importer Library (assimp)](https://assimp-docs.readthedocs.io/en/latest/) for loading meshes
 
 These dependencies can be installed from Conda as follows:
 ```bash
-conda install sdl3 eigen assimp entt nlohmann_json
+conda install sdl3 eigen magic_enum assimp entt nlohmann_json
 ```
 
 #### Optional dependencies
 
 * [eigenpy](https://github.com/stack-of-tasks/eigenpy) for Python bindings.
-* [FFmpeg](https://ffmpeg.org/) for support for recording videos from the rendered graphics.
+* [FFmpeg](https://ffmpeg.org/) for support for recording videos from the rendered graphics. The CMake finder module also requires pkg-config.
+  ```bash
+  conda install ffmpeg pkg-config
+  ```
 * [GoogleTest](https://github.com/google/googletest) for tests | [conda-forge](https://anaconda.org/conda-forge/gtest)
 * For loading and visualizing robots:
   * the [Pinocchio](https://github.com/stack-of-tasks/pinocchio) rigid-body dynamics library (required for the `candlewick::multibody` classes and functions) | [conda-forge](https://anaconda.org/conda-forge/pinocchio)

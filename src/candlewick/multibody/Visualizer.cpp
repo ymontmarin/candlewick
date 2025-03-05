@@ -19,7 +19,7 @@ Visualizer::Visualizer(const Config &config, const pin::Model &model,
 
   Device dev{auto_detect_shader_format_subset()};
   Window window("Candlewick Pinocchio visualizer", int(config.width),
-                int(config.height), SDL_WINDOW_HIGH_PIXEL_DENSITY);
+                int(config.height), 0);
   SDL_Log("Video driver: %s", SDL_GetCurrentVideoDriver());
   ::new (&renderer)
       Renderer{std::move(dev), std::move(window), config.depth_stencil_format};
