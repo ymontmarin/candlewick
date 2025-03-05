@@ -62,6 +62,8 @@ for stage_file in stages:
                     spv_file,
                     "-o",
                     out_file,
+                    "--msl-version",
+                    "2.1.0",
                 ],
                 shell=False,
             )
