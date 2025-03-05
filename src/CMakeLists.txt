@@ -5,7 +5,7 @@ find_package(Eigen3 REQUIRED)
 find_package(coal REQUIRED)
 find_package(nlohmann_json 3.11.3 REQUIRED)
 find_package(EnTT REQUIRED)
-find_package(magic_enum CONFIG REQUIRED)
+find_package(magic_enum 0.9.6 CONFIG REQUIRED)
 find_package(FFmpeg COMPONENTS avformat avcodec swscale)
 
 add_library(
