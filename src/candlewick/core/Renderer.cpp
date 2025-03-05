@@ -1,6 +1,6 @@
 #include "Renderer.h"
 #include "errors.h"
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include <utility>
 #include <cassert>

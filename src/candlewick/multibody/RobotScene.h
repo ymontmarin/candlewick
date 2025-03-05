@@ -10,7 +10,7 @@
 #include "../core/Components.h"
 #include "../posteffects/SSAO.h"
 #include "../utils/MeshData.h"
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include <entt/entity/fwd.hpp>
 #include <coal/fwd.hh>

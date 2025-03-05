@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL_gpu.h>
 #include "math_types.h"
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 inline bool operator==(const SDL_GPUVertexBufferDescription &lhs,
                        const SDL_GPUVertexBufferDescription &rhs) {
