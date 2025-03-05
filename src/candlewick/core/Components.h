@@ -9,12 +9,6 @@ struct Opaque {};
 /// Tag struct for disabled (invisible) entities.
 struct Disable {};
 
-/// \brief A visibility component for ECS.
-struct VisibilityComponent {
-  bool status;
-  operator bool() const { return status; }
-};
-
 // Tag environment entities
 struct EnvironmentTag {};
 

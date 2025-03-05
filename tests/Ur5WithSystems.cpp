@@ -217,9 +217,8 @@ int main(int argc, char **argv) {
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
   entt::entity plane_entity = robot_scene.addEnvironmentObject(
       loadPlaneTiled(0.5f, 20, 20), plane_transform.matrix());
-  auto [plane_obj, plane_vis] =
-      registry.get<RobotScene::MeshMaterialComponent, VisibilityComponent>(
-          plane_entity);
+  auto &plane_obj =
+      registry.get<RobotScene::MeshMaterialComponent>(plane_entity);
 
   robot_scene.addEnvironmentObject(loadCube(.33f, {-0.55f, -0.7f}),
                                    Mat4f::Identity());
@@ -308,7 +307,11 @@ int main(int argc, char **argv) {
         }
 
         ImGui::SeparatorText("Env. status");
-        ImGui::Checkbox("Render plane", &plane_vis.status);
+        static bool plane_vis = true;
+        if (ImGui::Checkbox("Render plane", &plane_vis)) {
+          plane_vis ? (void)registry.remove<Disable>(plane_entity)
+                    : registry.emplace<Disable>(plane_entity);
+        }
         ImGui::Checkbox("Render grid", &grid.enable);
         ImGui::Checkbox("Render triad", &triad.enable);
         ImGui::Checkbox("Render frustum", &showFrustum);
