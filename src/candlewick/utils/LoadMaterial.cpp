@@ -1,6 +1,6 @@
 #include "LoadMaterial.h"
 
-#include "../third-party/magic_enum.hpp"
+#include <magic_enum.hpp>
 
 namespace candlewick {
 
