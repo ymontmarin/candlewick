@@ -197,11 +197,7 @@ private:
 /// \brief Validation function. Checks if a MeshLayout produces invalid data for
 /// a Mesh.
 inline bool validateMeshLayout(const MeshLayout &layout) {
-  SDL_GPUVertexInputState inputState = layout.toVertexInputState();
-  return (inputState.num_vertex_buffers > 0) &&
-         (inputState.vertex_buffer_descriptions) &&
-         (inputState.num_vertex_attributes > 0) &&
-         (inputState.vertex_attributes);
+  return (layout.numBuffers() > 0) && (layout.numAttributes() > 0);
 }
 
 /// \brief Basic concept checking if type V has the correct layout and alignment
