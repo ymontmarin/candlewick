@@ -10,7 +10,7 @@ bool operator==(const DefaultVertex &lhs, const DefaultVertex &rhs) {
 }
 
 GTEST_TEST(TestErasedBlob, default_vertex) {
-  constexpr auto layout = meshLayoutFor<DefaultVertex>();
+  auto layout = meshLayoutFor<DefaultVertex>();
   EXPECT_TRUE(layout == layout);
   std::vector<DefaultVertex> vertexData;
   Uint64 size = 10;
@@ -45,7 +45,7 @@ static_assert(IsVertexType<CustomVertex>, "Invalid vertex type.");
 
 namespace candlewick {
 template <> struct VertexTraits<CustomVertex> {
-  static constexpr auto layout() {
+  static auto layout() {
     return MeshLayout{}
         .addBinding(0, sizeof(CustomVertex))
         .addAttribute(VertexAttrib::Position, 0,
@@ -66,7 +66,7 @@ bool operator==(const CustomVertex &lhs, const CustomVertex &rhs) {
 }
 
 GTEST_TEST(TestErasedBlob, custom_vertex) {
-  constexpr auto layout = meshLayoutFor<CustomVertex>();
+  auto layout = meshLayoutFor<CustomVertex>();
   EXPECT_TRUE(layout == layout);
   EXPECT_TRUE(layout != meshLayoutFor<DefaultVertex>());
   EXPECT_EQ(sizeof(CustomVertex), layout.vertexSize());

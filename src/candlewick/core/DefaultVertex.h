@@ -14,7 +14,7 @@ struct alignas(16) DefaultVertex {
 static_assert(IsVertexType<DefaultVertex>, "");
 
 template <> struct VertexTraits<DefaultVertex> {
-  static constexpr auto layout() {
+  static auto layout() {
     return MeshLayout{}
         .addBinding(0, sizeof(DefaultVertex))
         .addAttribute(VertexAttrib::Position, 0,

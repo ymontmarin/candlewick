@@ -10,7 +10,7 @@ struct alignas(16) PosOnlyVertex {
 };
 
 template <> struct VertexTraits<PosOnlyVertex> {
-  static constexpr auto layout() {
+  static auto layout() {
     return MeshLayout{}
         .addBinding(0, sizeof(PosOnlyVertex))
         .addAttribute(VertexAttrib::Position, 0,
@@ -25,7 +25,7 @@ struct alignas(16) PosNormalVertex {
 };
 
 template <> struct VertexTraits<PosNormalVertex> {
-  static constexpr auto layout() {
+  static auto layout() {
     return MeshLayout{}
         .addBinding(0, sizeof(PosNormalVertex))
         .addAttribute(VertexAttrib::Position, 0,
