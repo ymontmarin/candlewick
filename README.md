@@ -82,9 +82,7 @@ conda install sdl3 eigen magic_enum assimp entt nlohmann_json
   ```
 * [GoogleTest](https://github.com/google/googletest) for the tests | `conda install gtest`
 * [CLI11](https://github.com/CLIUtils/CLI11) for the examples and tests | `conda install cli11`
-* For loading and visualizing robots:
-  * the [Pinocchio](https://github.com/stack-of-tasks/pinocchio) rigid-body dynamics library (required for the `candlewick::multibody` classes and functions) | [conda-forge](https://anaconda.org/conda-forge/pinocchio)
-  * [robot_descriptions_cpp](https://github.com/ManifoldFR/robot_descriptions_cpp), a suite of loaders for robots (required for some examples)
+* The [Pinocchio](https://github.com/stack-of-tasks/pinocchio) rigid-body dynamics library (required for the `candlewick::multibody` classes and functions). Pinocchio must be built with collision support. | [conda-forge](https://anaconda.org/conda-forge/pinocchio)
 
 ## Credits
 
