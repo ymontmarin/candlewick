@@ -1,4 +1,4 @@
-definitions: [./CMakeLists.txt,./cmake,./src]
+definitions: [./CMakeLists.txt,./cmake,./src,./tests/CMakeLists.txt]
 line_length: 80
 indent: 2
 warn_about_unknown_commands: false

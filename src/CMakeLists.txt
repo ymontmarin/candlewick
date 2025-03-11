@@ -54,7 +54,6 @@ target_link_libraries(
   PUBLIC
     SDL3::SDL3-shared
     assimp::assimp
-    Eigen3::Eigen
     coal::coal
     magic_enum::magic_enum
     EnTT::EnTT
@@ -95,7 +94,6 @@ target_include_directories(${PROJECT_NAME} INTERFACE candlewick)
 
 if(BUILD_PINOCCHIO_VISUALIZER)
   find_package(pinocchio REQUIRED)
-  find_package(robot_descriptions_cpp REQUIRED)
 
   file(
     GLOB multibody_sources
@@ -108,7 +106,6 @@ if(BUILD_PINOCCHIO_VISUALIZER)
     candlewick_multibody
     PUBLIC
       candlewick_core
-      robot_descriptions_cpp::robot_descriptions_cpp
       pinocchio::pinocchio_default
       pinocchio::pinocchio_visualizers
   )
