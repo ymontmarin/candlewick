@@ -131,7 +131,7 @@ public:
     return *this;
   }
 
-  const SDL_GPUVertexAttribute *getAttribute(VertexAttrib loc) const {
+  const SDL_GPUVertexAttribute *getAttribute(VertexAttrib loc) const noexcept {
     for (Uint32 i = 0; i < numAttributes(); i++) {
       if (m_attrs[i].location == static_cast<Uint16>(loc)) {
         return &m_attrs[i];
