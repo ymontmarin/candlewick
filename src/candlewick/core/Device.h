@@ -10,17 +10,8 @@ namespace candlewick {
 /// compatible with the device.
 /// \param name Device name. Pass nullptr (default) to auto-detect the best
 /// device.
-inline SDL_GPUShaderFormat
-auto_detect_shader_format_subset(const char *name = nullptr) {
-  SDL_GPUShaderFormat available_formats = SDL_GPU_SHADERFORMAT_INVALID;
-  SDL_GPUShaderFormat formats[]{SDL_GPU_SHADERFORMAT_SPIRV,
-                                SDL_GPU_SHADERFORMAT_MSL};
-  for (SDL_GPUShaderFormat test_format : formats) {
-    if (SDL_GPUSupportsShaderFormats(test_format, name))
-      available_formats |= test_format;
-  }
-  return available_formats;
-}
+SDL_GPUShaderFormat
+auto_detect_shader_format_subset(const char *name = nullptr);
 
 /// \brief RAII wrapper for \c SDL_GPUDevice.
 struct Device {
