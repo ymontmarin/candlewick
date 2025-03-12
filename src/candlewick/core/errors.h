@@ -13,7 +13,7 @@
 namespace candlewick {
 class RAIIException : public std::runtime_error {
 public:
-  RAIIException(std::string_view upstreamMsg);
+  RAIIException(std::string_view msg);
 };
 
 class InvalidArgument : public std::invalid_argument {
