@@ -54,6 +54,8 @@ struct Renderer {
   SDL_GPUTextureFormat depthFormat() const { return depth_texture.format(); }
 
   void destroy() noexcept;
+
+  ~Renderer() noexcept { this->destroy(); }
 };
 
 namespace rend {
