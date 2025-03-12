@@ -102,14 +102,7 @@ namespace rend {
   void drawView(SDL_GPURenderPass *pass, const MeshView &mesh,
                 Uint32 numInstances = 1);
 
-  /// \brief Bind single texture-sampler pair for vertex shader.
-  inline void bindVertexSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
-                                const SDL_GPUTextureSamplerBinding &binding) {
-    SDL_BindGPUVertexSamplers(pass, first_slot, &binding, 1);
-  }
-
   /// \brief Bind multiple fragment shader samplers.
-  /// \sa bindVertexSampler()
   inline void
   bindVertexSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
                      std::span<const SDL_GPUTextureSamplerBinding> bindings) {
@@ -119,21 +112,13 @@ namespace rend {
 
   /// \copybrief bindFragmentSamplers()
   /// This overload exists to enable taking a brace-initialized array.
-  template <std::size_t N>
-  void bindVertexSamplers(
+  inline void bindVertexSamplers(
       SDL_GPURenderPass *pass, Uint32 first_slot,
-      const SDL_GPUTextureSamplerBinding (&sampler_bindings)[N]) {
-    SDL_BindGPUVertexSamplers(pass, first_slot, sampler_bindings, N);
-  }
-
-  /// \brief Bind single texture-sampler pair for fragment shader.
-  inline void bindFragmentSampler(SDL_GPURenderPass *pass, Uint32 first_slot,
-                                  const SDL_GPUTextureSamplerBinding &binding) {
-    SDL_BindGPUFragmentSamplers(pass, first_slot, &binding, 1);
+      std::initializer_list<SDL_GPUTextureSamplerBinding> sampler_bindings) {
+    bindVertexSamplers(pass, first_slot, std::span(sampler_bindings));
   }
 
   /// \brief Bind multiple fragment shader samplers.
-  /// \sa bindFragmentSampler()
   inline void
   bindFragmentSamplers(SDL_GPURenderPass *pass, Uint32 first_slot,
                        std::span<const SDL_GPUTextureSamplerBinding> bindings) {
@@ -143,11 +128,10 @@ namespace rend {
 
   /// \copybrief bindFragmentSamplers()
   /// This overload exists to enable taking a brace-initialized array.
-  template <std::size_t N>
-  void bindFragmentSamplers(
+  inline void bindFragmentSamplers(
       SDL_GPURenderPass *pass, Uint32 first_slot,
-      const SDL_GPUTextureSamplerBinding (&sampler_bindings)[N]) {
-    SDL_BindGPUFragmentSamplers(pass, first_slot, sampler_bindings, N);
+      std::initializer_list<SDL_GPUTextureSamplerBinding> sampler_bindings) {
+    bindFragmentSamplers(pass, first_slot, std::span(sampler_bindings));
   }
 
 } // namespace rend

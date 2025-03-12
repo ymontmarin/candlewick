@@ -285,17 +285,17 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
                     m_config.enable_normal_target, gBuffer);
 
   if (enable_shadows) {
-    rend::bindFragmentSampler(render_pass, SHADOW_MAP_SLOT,
-                              {
-                                  .texture = shadowPass.depthTexture,
-                                  .sampler = shadowPass.sampler,
-                              });
+    rend::bindFragmentSamplers(render_pass, SHADOW_MAP_SLOT,
+                               {{
+                                   .texture = shadowPass.depthTexture,
+                                   .sampler = shadowPass.sampler,
+                               }});
   }
-  rend::bindFragmentSampler(render_pass, SSAO_SLOT,
-                            {
-                                .texture = ssaoPass.ssaoMap,
-                                .sampler = ssaoPass.texSampler,
-                            });
+  rend::bindFragmentSamplers(render_pass, SSAO_SLOT,
+                             {{
+                                 .texture = ssaoPass.ssaoMap,
+                                 .sampler = ssaoPass.texSampler,
+                             }});
   int _useSsao = m_config.enable_ssao;
   command_buffer
       .pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,

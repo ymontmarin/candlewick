@@ -215,12 +215,12 @@ namespace ssao {
       SDL_BindGPUGraphicsPipeline(render_pass, blurPipeline);
 
       cmdBuf.pushFragmentUniform(0, &blurDir, sizeof(blurDir));
-      rend::bindFragmentSampler(
+      rend::bindFragmentSamplers(
           render_pass, 0,
-          {
+          {{
               .texture = (i == 0) ? ssaoMap : blurPass1Tex,
               .sampler = texSampler,
-          });
+          }});
       SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
       SDL_EndGPURenderPass(render_pass);
     }
