@@ -35,7 +35,7 @@ namespace media {
     VideoRecorder(VideoRecorder &&);
     VideoRecorder &operator=(VideoRecorder &&);
 
-    bool isInitialized() const { return impl_ != nullptr; }
+    bool initialized() const { return impl_ != nullptr; }
     VideoRecorder(Uint32 width, Uint32 height, const std::string &filename,
                   Settings settings);
 
