@@ -5,11 +5,11 @@ endif(GENERATE_PYTHON_STUBS)
 
 find_package(eigenpy 3.2.0 REQUIRED)
 
-set(PY_SOURCES src/module.cpp src/expose-visualizer.cpp)
+set(pycandlewick_SOURCES src/module.cpp)
 
 set(PYLIB_INSTALL_DIR ${PYTHON_SITELIB}/${PROJECT_NAME})
 
-Python3_add_library(pycandlewick MODULE WITH_SOABI ${PY_SOURCES})
+Python3_add_library(pycandlewick MODULE WITH_SOABI ${pycandlewick_SOURCES})
 target_link_libraries(pycandlewick PRIVATE candlewick eigenpy::eigenpy)
 target_include_directories(
   pycandlewick
@@ -19,6 +19,14 @@ target_compile_definitions(
   pycandlewick
   PRIVATE SHADERS_INSTALL_DIR="${CANDLEWICK_SHADER_INSTALL_DIR}/compiled"
 )
+if(BUILD_PINOCCHIO_VISUALIZER)
+  target_sources(pycandlewick PRIVATE src/expose-visualizer.cpp)
+  # Add definition for the core library
+  target_compile_definitions(
+    pycandlewick
+    PRIVATE CANDLEWICK_PYTHON_PINOCCHIO_SUPPORT
+  )
+endif()
 
 set_target_properties(
   pycandlewick
@@ -40,12 +48,6 @@ install(
 
 if(GENERATE_PYTHON_STUBS)
   LOAD_STUBGEN()
-  # generate_stubs(
-  #   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}
-  #   pycandlewick
-  #   ${PYTHON_SITELIB}/${PROJECT_NAME}/pycandlewick
-  #   pycandlewick
-  # )
   GENERATE_STUBS(
     ${CMAKE_CURRENT_BINARY_DIR}
     ${PROJECT_NAME}

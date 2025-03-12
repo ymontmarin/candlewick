@@ -5,7 +5,9 @@
 namespace bp = boost::python;
 using namespace candlewick;
 
+#ifdef CANDLEWICK_PYTHON_PINOCCHIO_SUPPORT
 void exposeVisualizer();
+#endif
 void exposeRenderer() {
   bp::class_<Device, boost::noncopyable>("Device", bp::no_init)
       .def("driverName", &Device::driverName, ("self"_a));
@@ -22,8 +24,10 @@ BOOST_PYTHON_MODULE(pycandlewick) {
   bp::def("currentShaderDirectory", &currentShaderDirectory);
 
   exposeRenderer();
+#ifdef CANDLEWICK_PYTHON_PINOCCHIO_SUPPORT
   {
     bp::scope submod = get_namespace("multibody");
     exposeVisualizer();
   }
+#endif
 }
