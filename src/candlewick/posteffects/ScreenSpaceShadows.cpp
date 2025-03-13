@@ -113,11 +113,11 @@ namespace effects {
         config.numSteps,
     };
     cmdBuf.pushFragmentUniform(0, &ubo, sizeof(ubo));
-    rend::bindFragmentSampler(render_pass, 0,
-                              {
-                                  .texture = depthTexture,
-                                  .sampler = depthSampler,
-                              });
+    rend::bindFragmentSamplers(render_pass, 0,
+                               {{
+                                   .texture = depthTexture,
+                                   .sampler = depthSampler,
+                               }});
 
     for (auto &cs : castables) {
       GpuMat4 mvp = vp * cs.transform;

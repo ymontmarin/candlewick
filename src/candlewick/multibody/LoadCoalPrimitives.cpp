@@ -37,8 +37,9 @@ void getPlaneOrHalfspaceNormalOffset(const coal::CollisionGeometry &geometry,
     return;
   }
   default:
-    CDW_UNREACHABLE_ASSERT("This function should not be called with a "
-                           "non-Plane, non-Halfspace coal CollisionGeometry.");
+    CANDLEWICK_UNREACHABLE_ASSERT(
+        "This function should not be called with a "
+        "non-Plane, non-Halfspace coal CollisionGeometry.");
   }
 }
 
@@ -83,6 +84,7 @@ MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
     break;
   }
   case GEOM_HALFSPACE:
+    [[fallthrough]];
   case GEOM_PLANE: {
     meshData = toOwningMeshData(loadPlane());
     Float3 n;

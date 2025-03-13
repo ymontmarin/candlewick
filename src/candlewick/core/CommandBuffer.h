@@ -2,6 +2,7 @@
 
 #include "Core.h"
 #include <SDL3/SDL_gpu.h>
+#include <SDL3/SDL_log.h>
 #include <cassert>
 #include <utility>
 
@@ -40,6 +41,17 @@ public:
   }
 
   bool active() const noexcept { return _cmdBuf; }
+
+  ~CommandBuffer() noexcept {
+    if (active()) {
+      SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                  "CommandBuffer object is being destroyed while still active! "
+                  "It will be cancelled.");
+      SDL_CancelGPUCommandBuffer(_cmdBuf);
+      _cmdBuf = nullptr;
+      assert(false);
+    }
+  }
 
   /// \brief Push uniform data to the vertex shader.
   CommandBuffer &pushVertexUniform(Uint32 slot_index, const void *data,

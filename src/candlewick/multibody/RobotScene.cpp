@@ -117,7 +117,7 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     assert(validateMesh(mesh));
 
     // local copy for use
-    const auto layout = mesh.layout;
+    const auto layout = mesh.layout();
 
     // add entity for this geometry
     entt::entity entity = registry.create();
@@ -285,17 +285,17 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
                     m_config.enable_normal_target, gBuffer);
 
   if (enable_shadows) {
-    rend::bindFragmentSampler(render_pass, SHADOW_MAP_SLOT,
-                              {
-                                  .texture = shadowPass.depthTexture,
-                                  .sampler = shadowPass.sampler,
-                              });
+    rend::bindFragmentSamplers(render_pass, SHADOW_MAP_SLOT,
+                               {{
+                                   .texture = shadowPass.depthTexture,
+                                   .sampler = shadowPass.sampler,
+                               }});
   }
-  rend::bindFragmentSampler(render_pass, SSAO_SLOT,
-                            {
-                                .texture = ssaoPass.ssaoMap,
-                                .sampler = ssaoPass.texSampler,
-                            });
+  rend::bindFragmentSamplers(render_pass, SSAO_SLOT,
+                             {{
+                                 .texture = ssaoPass.ssaoMap,
+                                 .sampler = ssaoPass.texSampler,
+                             }});
   int _useSsao = m_config.enable_ssao;
   command_buffer
       .pushFragmentUniform(FragmentUniformSlots::LIGHTING, &lightUbo,
@@ -425,7 +425,7 @@ SDL_GPUGraphicsPipeline *RobotScene::createPipeline(
   SDL_GPUGraphicsPipelineCreateInfo desc{
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
-      .vertex_input_state = layout.toVertexInputState(),
+      .vertex_input_state = layout,
       .primitive_type = getPrimitiveTopologyForType(type),
       .depth_stencil_state{
           .compare_op = depth_compare_op,
