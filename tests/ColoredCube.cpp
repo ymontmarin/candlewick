@@ -1,5 +1,6 @@
 #include "Common.h"
 
+#include "candlewick/core/Renderer.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/MeshLayout.h"
@@ -82,20 +83,22 @@ int main() {
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     return 1;
   }
-  Device device{auto_detect_shader_format_subset(), true};
-
   const Uint32 wWidth = 1280;
   const Uint32 wHeight = 720;
   const float aspectRatio = float(wWidth) / wHeight;
+
   SDL_Window *window = SDL_CreateWindow(__FILE_NAME__, wWidth, wHeight, 0);
   if (!window) {
     SDL_Log("Failed to create window! %s", SDL_GetError());
     return 1;
   }
-  if (!SDL_ClaimWindowForGPUDevice(device, window)) {
-    SDL_Log("Error: %s", SDL_GetError());
-    return 1;
-  }
+
+  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+  Renderer ctx(Device{auto_detect_shader_format_subset(), true},
+               Window{window}, // take ownership of existing SDL_Window handle
+               depth_stencil_format);
+  Device &device = ctx.device;
+  SDL_GPUTexture *depthTexture = ctx.depth_texture;
 
   // Buffers
 
@@ -163,9 +166,6 @@ int main() {
   SDL_zero(color_desc);
   color_desc.format = SDL_GetGPUSwapchainTextureFormat(device, window);
 
-  SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
-  assert(int(depth_stencil_format) >= 0);
-
   SDL_GPUGraphicsPipelineCreateInfo pipeline_desc{
       .vertex_shader = vertexShader,
       .fragment_shader = fragmentShader,
@@ -201,10 +201,6 @@ int main() {
   vertexShader.release();
   fragmentShader.release();
 
-  // Depth texture
-  SDL_GPUTexture *depthTexture = createDepthTexture(
-      device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
-
   const Radf fov_rad = 45.0_degf;
   Mat4f perp = perspectiveFromFov(fov_rad, aspectRatio, 0.1f, 10.f);
   Mat4f modelMat = Mat4f::Identity();
@@ -218,8 +214,8 @@ int main() {
   while (frame < 1000) {
     SDL_GPURenderPass *render_pass;
     SDL_GPUBufferBinding vertex_binding = mesh.getVertexBinding(0);
-    cmdbuf = SDL_AcquireGPUCommandBuffer(device);
-    SDL_GPUTexture *swapchain;
+    CommandBuffer cmdbuf{device};
+    SDL_GPUTexture *&swapchain = ctx.swapchain;
     const Float3 center{0., 0., 0.};
     Float3 eye{0., 0., 0.};
     // start at phi -> eye.x = 2.5, eye.y = 0.5
@@ -229,8 +225,7 @@ int main() {
     view = lookAt(eye, center, {0., 0., 1.});
     projViewMat = perp * view * modelMat;
 
-    if (SDL_WaitAndAcquireGPUSwapchainTexture(cmdbuf, window, &swapchain, NULL,
-                                              NULL)) {
+    if (ctx.waitAndAcquireSwapchain(cmdbuf)) {
       SDL_GPUColorTargetInfo ctinfo{.texture = swapchain,
                                     .clear_color = SDL_FColor{},
                                     .load_op = SDL_GPU_LOADOP_CLEAR,
@@ -258,17 +253,12 @@ int main() {
       SDL_Log("Failed to acquire swapchain: %s", SDL_GetError());
       break;
     }
-    SDL_SubmitGPUCommandBuffer(cmdbuf);
+    cmdbuf.submit();
   }
 
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 
-  SDL_ReleaseGPUTexture(device, depthTexture);
-
   mesh.release();
-
-  SDL_ReleaseWindowFromGPUDevice(device, window);
-  SDL_DestroyWindow(window);
-  device.destroy();
+  ctx.destroy();
   SDL_Quit();
 }

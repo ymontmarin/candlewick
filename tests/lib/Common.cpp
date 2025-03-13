@@ -10,29 +10,6 @@
 
 using namespace candlewick;
 
-bool initExample(Context &ctx, Uint32 wWidth, Uint32 wHeight,
-                 SDL_WindowFlags windowFlags) {
-  if (!SDL_Init(SDL_INIT_VIDEO))
-    return false;
-  ctx.device.create(auto_detect_shader_format_subset(), true);
-
-  ctx.window = SDL_CreateWindow("candlewick: examples", int(wWidth),
-                                int(wHeight), windowFlags);
-  if (!SDL_ClaimWindowForGPUDevice(ctx.device, ctx.window)) {
-    SDL_Log("Error %s", SDL_GetError());
-    return false;
-  }
-
-  return true;
-}
-
-void teardownExample(Context &ctx) {
-  SDL_ReleaseWindowFromGPUDevice(ctx.device, ctx.window);
-  SDL_DestroyWindow(ctx.window);
-  ctx.device.destroy();
-  SDL_Quit();
-}
-
 SDL_GPUGraphicsPipeline *
 initGridPipeline(const Device &device, SDL_Window *window,
                  const MeshLayout &layout,
@@ -72,25 +49,6 @@ initGridPipeline(const Device &device, SDL_Window *window,
   SDL_GPUGraphicsPipeline *hudElemPipeline =
       SDL_CreateGPUGraphicsPipeline(device, &createInfo);
   return hudElemPipeline;
-}
-
-SDL_GPUTexture *createDepthTexture(const Device &device, SDL_Window *window,
-                                   SDL_GPUTextureFormat depth_tex_format,
-                                   SDL_GPUSampleCount sample_count) {
-  Uint32 w, h;
-  SDL_GetWindowSizeInPixels(window, (int *)&w, (int *)&h);
-  SDL_GPUTextureCreateInfo texinfo{
-      .type = SDL_GPU_TEXTURETYPE_2D,
-      .format = depth_tex_format,
-      .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-      .width = w,
-      .height = h,
-      .layer_count_or_depth = 1,
-      .num_levels = 1,
-      .sample_count = sample_count,
-      .props = 0,
-  };
-  return SDL_CreateGPUTexture(device, &texinfo);
 }
 
 MeshData loadCube(float size, const Float2 &loc) {

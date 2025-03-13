@@ -1,5 +1,6 @@
 #include "Common.h"
 
+#include "candlewick/core/Renderer.h"
 #include "candlewick/core/Mesh.h"
 #include "candlewick/core/Shader.h"
 #include "candlewick/utils/MeshData.h"
@@ -35,8 +36,6 @@ const Uint32 wWidth = 1600;
 const Uint32 wHeight = 900;
 const float aspectRatio = float(wWidth) / wHeight;
 
-Context ctx;
-
 struct light_ubo_t {
   GpuVec3 viewSpaceDir;
   alignas(16) GpuVec3 color;
@@ -44,9 +43,11 @@ struct light_ubo_t {
 };
 
 int main() {
-  if (!initExample(ctx, wWidth, wHeight)) {
+  if (!SDL_Init(SDL_INIT_VIDEO))
     return 1;
-  }
+  Renderer ctx(Device{auto_detect_shader_format_subset(), false},
+               Window{__FILE__, wWidth, wHeight, 0},
+               SDL_GPU_TEXTUREFORMAT_D16_UNORM);
   Device &device = ctx.device;
   SDL_Window *window = ctx.window;
   const TestMesh test_mesh = meshes[2];
@@ -81,8 +82,8 @@ int main() {
   auto fragmentShader = Shader::fromMetadata(device, "PbrBasic.frag");
 
   SDL_GPUTextureFormat depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
-  SDL_GPUTexture *depthTexture = createDepthTexture(
-      device, window, depth_stencil_format, SDL_GPU_SAMPLECOUNT_1);
+  assert(ctx.hasDepthTexture());
+  SDL_GPUTexture *depthTexture = ctx.depth_texture;
 
   SDL_GPUColorTargetDescription colorTarget;
   SDL_zero(colorTarget);
@@ -253,6 +254,7 @@ int main() {
   }
   SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 
-  teardownExample(ctx);
+  ctx.destroy();
+  SDL_Quit();
   return 0;
 }
