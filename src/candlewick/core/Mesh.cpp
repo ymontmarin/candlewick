@@ -73,8 +73,7 @@ Mesh &Mesh::bindVertexBuffer(Uint32 slot, SDL_GPUBuffer *buffer) {
       return *this;
     }
   }
-  CDW_UNREACHABLE_ASSERT("Binding slot not found!");
-  std::terminate();
+  CANDLEWICK_TERMINATE("Binding slot not found!");
 }
 
 Mesh &Mesh::setIndexBuffer(SDL_GPUBuffer *buffer) {
