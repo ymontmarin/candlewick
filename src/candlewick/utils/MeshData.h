@@ -30,8 +30,8 @@ private:
   Uint32 m_vertexSize;            //< Size of an individual vertex (in bytes)
 public:
   using IndexType = Uint32;
-  SDL_GPUPrimitiveType primitiveType; //< Geometry primitive for the mesh
-  MeshLayout layout;                  //< Handle to the MeshLayout
+  SDL_GPUPrimitiveType primitiveType; //< Geometry primitive for the mesh.
+  MeshLayout layout;                  //< %Mesh layout.
   std::vector<IndexType> indexData;   //< Indices for indexed mesh. Optional.
   PbrMaterial material;               //< PBR material
 
@@ -41,7 +41,6 @@ public:
   explicit MeshData(SDL_GPUPrimitiveType primitiveType,
                     std::vector<VertexT> vertexData,
                     std::vector<IndexType> indexData = {});
-
   explicit MeshData(SDL_GPUPrimitiveType primitiveType,
                     const MeshLayout &layout, std::vector<char> vertexData,
                     std::vector<IndexType> indexData = {});
