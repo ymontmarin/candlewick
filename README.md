@@ -1,12 +1,8 @@
 # Candlewick: a WIP renderer based on SDL_gpu
 
------
+> [!WARNING]
+> Candlewick is still under **active** development. Support will be limited, and the API might break unexpectedly and repeatedly.
 
-<p align="center" style="font-weight: bold">
-  UNDER DEVELOPMENT
-</p>
-
------
 
 Candlewick is a WIP library for a renderer based on SDL3's new [GPU API](https://wiki.libsdl.org/SDL3/CategoryGPU).
 
