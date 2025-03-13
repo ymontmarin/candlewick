@@ -13,13 +13,20 @@ class CommandBuffer {
 
 public:
   CommandBuffer(const Device &device);
+
+  /// \brief Convert to SDL_GPU command buffer handle.
   operator SDL_GPUCommandBuffer *() const { return _cmdBuf; }
 
+  /// \brief Deleted copy constructor.
   CommandBuffer(const CommandBuffer &) = delete;
-  CommandBuffer(CommandBuffer &&other) noexcept : _cmdBuf(other._cmdBuf) {
-    other._cmdBuf = nullptr;
-  }
 
+  /// \brief Move constructor.
+  CommandBuffer(CommandBuffer &&other) noexcept;
+
+  /// \brief Deleted copy assignment operator.
+  CommandBuffer &operator=(const CommandBuffer &) = delete;
+
+  /// \brief Move assignment operator.
   CommandBuffer &operator=(CommandBuffer &&other) noexcept;
 
   friend void swap(CommandBuffer &lhs, CommandBuffer &rhs) noexcept {
