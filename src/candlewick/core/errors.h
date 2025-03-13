@@ -9,11 +9,11 @@
 #include <string_view>
 
 #define CANDLEWICK_UNREACHABLE_ASSERT(msg)                                     \
-  SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s: %s", __FUNCTION__, msg);             \
+  SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s: %s", __FUNCTION__, msg);     \
   ::candlewick::unreachable();
 
 #define CANDLEWICK_TERMINATE(msg)                                              \
-  SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s: %s", __FUNCTION__, msg);             \
+  SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s: %s", __FUNCTION__, msg);     \
   ::std::terminate();
 
 namespace candlewick {
