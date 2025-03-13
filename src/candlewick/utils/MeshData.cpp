@@ -158,7 +158,7 @@ void uploadMeshToDevice(const Device &device, const MeshView &meshView,
   }
   SDL_ReleaseGPUTransferBuffer(device, transfer_buffer);
   SDL_EndGPUCopyPass(copy_pass);
-  if (!SDL_SubmitGPUCommandBuffer(upload_command_buffer)) {
+  if (!upload_command_buffer.submit()) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                  "%s: Failed to submit command buffer: %s", __FILE__,
                  SDL_GetError());
