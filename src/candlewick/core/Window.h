@@ -50,11 +50,13 @@ struct Window {
 
   std::string_view title() const { return SDL_GetWindowTitle(_handle); }
 
-  ~Window() noexcept {
+  void destroy() noexcept {
     if (_handle)
       SDL_DestroyWindow(_handle);
     _handle = nullptr;
   }
+
+  ~Window() noexcept { this->destroy(); }
 
 private:
   SDL_Window *_handle;
