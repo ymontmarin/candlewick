@@ -17,6 +17,19 @@ void exposeRenderer() {
   bp::def("get_gpu_driver_name", SDL_GetGPUDriver, ("index"_a),
           "Get the name of the GPU driver of the corresponding index.");
 
+  bp::def(
+      "get_gpu_drivers",
+      +[] {
+        int n = SDL_GetNumGPUDrivers();
+        bp::list a;
+        if (n > 0) {
+          for (int i = 0; i < n; i++)
+            a.append(SDL_GetGPUDriver(i));
+        }
+        return a;
+      },
+      "Get all GPU drivers' names.");
+
   bp::def("auto_detect_shader_format_subset", auto_detect_shader_format_subset,
           adfs_overloads{
               ("driver_name"_a = NULL),
