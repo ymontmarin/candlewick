@@ -10,19 +10,18 @@ namespace candlewick::multibody {
 Visualizer::Visualizer(const Config &config, const pin::Model &model,
                        const pin::GeometryModel &visual_model,
                        GuiSystem::GuiBehavior gui_callback)
-    : BaseVisualizer(model, visual_model), registry{}, renderer(NoInit),
-      guiSystem(NoInit, std::move(gui_callback)) {
+    : BaseVisualizer(model, visual_model), registry{}, renderer{NoInit},
+      guiSystem{NoInit, std::move(gui_callback)} {
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     throw std::runtime_error(
         std::format("Failed to init video: {}", SDL_GetError()));
   }
 
-  Device dev{auto_detect_shader_format_subset()};
-  Window window("Candlewick Pinocchio visualizer", int(config.width),
-                int(config.height), 0);
   SDL_Log("Video driver: %s", SDL_GetCurrentVideoDriver());
-  ::new (&renderer)
-      Renderer{std::move(dev), std::move(window), config.depth_stencil_format};
+  ::new (&renderer) Renderer{Device{auto_detect_shader_format_subset()},
+                             Window{"Candlewick Pinocchio visualizer",
+                                    int(config.width), int(config.height), 0},
+                             config.depth_stencil_format};
 
   RobotScene::Config rconfig;
   rconfig.enable_shadows = true;
