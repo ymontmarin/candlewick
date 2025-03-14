@@ -24,7 +24,7 @@ MeshDataView loadPlane() {
 
 MeshData loadPlaneTiled(float scale, Uint32 xrepeat, Uint32 yrepeat,
                         bool centered) {
-  MeshData dataOwned = toOwningMeshData(loadPlane());
+  MeshData dataOwned = loadPlane().toOwned();
   {
     // normalize to (-1,-1) -- (1,1)
     const Eigen::Translation3f tr{0.5, 0.5, 0.};
@@ -34,7 +34,7 @@ MeshData loadPlaneTiled(float scale, Uint32 xrepeat, Uint32 yrepeat,
   meshes.reserve(xrepeat * yrepeat);
   for (Sint32 i = 0; i < Sint32(xrepeat); i++) {
     for (Sint32 j = 0; j < Sint32(yrepeat); j++) {
-      MeshData &m = meshes.emplace_back(toOwningMeshData(dataOwned));
+      MeshData &m = meshes.emplace_back(MeshData::copy(dataOwned));
       const Eigen::Translation3f tr{float(i) * scale, float(j) * scale, 0.f};
       apply3DTransformInPlace(m, Eigen::Affine3f(tr).scale(scale));
     }

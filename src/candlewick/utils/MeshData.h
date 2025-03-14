@@ -23,8 +23,7 @@ template <typename Derived> struct MeshDataBase {
   bool isIndexed() const { return numIndices() > 0; }
 };
 
-struct MeshData : MeshDataBase<MeshData> {
-private:
+class MeshData : public MeshDataBase<MeshData> {
   std::vector<char> m_vertexData; //< Type-erased vertex data
   Uint32 m_numVertices;           //< Actual number of vertices
   Uint32 m_vertexSize;            //< Size of an individual vertex (in bytes)

@@ -11,7 +11,7 @@ struct MeshDataView : MeshDataBase<MeshDataView> {
   std::span<const char> vertexData;
   std::span<const IndexType> indexData;
 
-  MeshDataView(const MeshData &meshData);
+  explicit MeshDataView(const MeshData &meshData);
 
   template <IsVertexType V>
   MeshDataView(SDL_GPUPrimitiveType primitiveType, std::span<const V> vertices,
@@ -24,6 +24,8 @@ struct MeshDataView : MeshDataBase<MeshDataView> {
   MeshDataView(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
                std::span<const char> vertices,
                std::span<const IndexType> indices = {});
+
+  MeshData toOwned() const;
 };
 
 template <IsVertexType V>
@@ -41,7 +43,5 @@ MeshDataView::MeshDataView(SDL_GPUPrimitiveType primitiveType,
                            const IndexType (&indices)[M])
     : MeshDataView(primitiveType, std::span<const V>{vertices},
                    std::span<const IndexType>{indices}) {}
-
-MeshData toOwningMeshData(const MeshDataView &view);
 
 } // namespace candlewick

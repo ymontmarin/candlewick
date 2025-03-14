@@ -54,7 +54,7 @@ MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
   case GEOM_BOX: {
     auto &g = castGeom<Box>(geometry);
     transform.scale(2 * g.halfSide.cast<float>());
-    meshData = toOwningMeshData(loadCubeSolid());
+    meshData = loadCubeSolid().toOwned();
     break;
   }
   case GEOM_SPHERE: {
@@ -86,7 +86,7 @@ MeshData loadCoalPrimitive(const coal::CollisionGeometry &geometry,
   case GEOM_HALFSPACE:
     [[fallthrough]];
   case GEOM_PLANE: {
-    meshData = toOwningMeshData(loadPlane());
+    meshData = loadPlane().toOwned();
     Float3 n;
     float d;
     getPlaneOrHalfspaceNormalOffset(geometry, n, d);

@@ -13,13 +13,10 @@ MeshDataView::MeshDataView(SDL_GPUPrimitiveType primitiveType,
     : primitiveType(primitiveType), layout(layout), vertexData(vertices),
       indexData(indices) {}
 
-MeshData toOwningMeshData(const MeshDataView &view) {
-  std::vector<char> vertexData;
-  vertexData.assign(view.vertexData.begin(), view.vertexData.end());
-  std::vector<MeshData::IndexType> indexData;
-  indexData.assign(view.indexData.begin(), view.indexData.end());
-  return MeshData{view.primitiveType, view.layout, std::move(vertexData),
-                  std::move(indexData)};
+MeshData MeshDataView::toOwned() const {
+  std::vector<char> vtxOut{vertexData.begin(), vertexData.end()};
+  std::vector<IndexType> idxOut{indexData.begin(), indexData.end()};
+  return MeshData{primitiveType, layout, std::move(vtxOut), std::move(idxOut)};
 }
 
 } // namespace candlewick

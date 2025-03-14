@@ -4,7 +4,7 @@
 
 namespace candlewick {
 
-struct MeshData;
+class MeshData;
 struct MeshDataView;
 
 } // namespace candlewick
