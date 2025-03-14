@@ -50,7 +50,7 @@ int main() {
                SDL_GPU_TEXTUREFORMAT_D16_UNORM);
   Device &device = ctx.device;
   SDL_Window *window = ctx.window;
-  const TestMesh test_mesh = meshes[2];
+  const TestMesh test_mesh = meshes[0];
 
   const char *basePath = SDL_GetBasePath();
   char meshPath[256];
