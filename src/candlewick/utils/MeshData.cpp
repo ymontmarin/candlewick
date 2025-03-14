@@ -127,7 +127,7 @@ void uploadMeshToDevice(const Device &device, const MeshView &meshView,
         (std::byte *)SDL_MapGPUTransferBuffer(device, transfer_buffer, false);
     // copy vertices
     {
-      SDL_memcpy(map, meshData.data(), vertex_payload_size);
+      SDL_memcpy(map, meshData.vertexData().data(), vertex_payload_size);
       SDL_GPUTransferBufferLocation src_location{
           .transfer_buffer = transfer_buffer,
           .offset = 0,

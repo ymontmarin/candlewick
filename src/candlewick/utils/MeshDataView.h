@@ -21,7 +21,7 @@ struct MeshDataView : MeshDataBase<MeshDataView> {
   MeshDataView(SDL_GPUPrimitiveType primitiveType, const V (&vertices)[N],
                const IndexType (&indices)[M]);
 
-  MeshDataView(SDL_GPUPrimitiveType primitiveType, MeshLayout layout,
+  MeshDataView(SDL_GPUPrimitiveType primitiveType, const MeshLayout &layout,
                std::span<const char> vertices,
                std::span<const IndexType> indices = {});
 

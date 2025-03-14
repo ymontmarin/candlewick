@@ -48,7 +48,9 @@ public:
   MeshData &operator=(const MeshData &) noexcept = delete;
 
   /// \brief Explicit copy function, uses private copy ctor.
-  static MeshData copy(const MeshData &other) { return MeshData{other}; };
+  [[nodiscard]] static MeshData copy(const MeshData &other) {
+    return MeshData{other};
+  };
 
   /// \brief Number of individual vertices.
   Uint32 numVertices() const noexcept { return m_numVertices; }
@@ -70,16 +72,16 @@ public:
   /// \brief Access an attribute. Use this when the underlying vertex data type
   /// is unknown.
   template <typename T>
-  T &getAttribute(const Uint64 vertexId, const SDL_GPUVertexAttribute &attr) {
+  [[nodiscard]] T &getAttribute(const Uint64 vertexId,
+                                const SDL_GPUVertexAttribute &attr) {
     SDL_assert(vertexId < m_numVertices);
-    const Uint32 vtxSize = layout.vertexSize();
-    T *ptr = reinterpret_cast<T *>(m_vertexData.data() + vertexId * vtxSize +
-                                   attr.offset);
-    return *ptr;
+    const Uint32 stride = layout.vertexSize();
+    return *reinterpret_cast<T *>(m_vertexData.data() + vertexId * stride +
+                                  attr.offset);
   }
 
   template <typename T>
-  T &getAttribute(const Uint64 vertexId, VertexAttrib loc) {
+  [[nodiscard]] T &getAttribute(const Uint64 vertexId, VertexAttrib loc) {
     auto attr = layout.getAttribute(loc);
     if (!attr) {
       throw std::runtime_error("Vertex attribute " +
@@ -89,11 +91,6 @@ public:
   }
 
   std::span<const char> vertexData() const { return m_vertexData; }
-
-  /// \brief Raw ptr to underlying vertex data.
-  char *data() { return m_vertexData.data(); }
-  /// \copybrief data()
-  const char *data() const { return m_vertexData.data(); }
 
 private:
   MeshData(const MeshData &) = default;
