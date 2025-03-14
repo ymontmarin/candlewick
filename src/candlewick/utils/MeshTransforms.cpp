@@ -48,10 +48,11 @@ MeshData generateIndices(const MeshData &meshData) {
   SDL_assert(meshData.primitiveType == SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP);
   SDL_assert(!meshData.isIndexed());
   std::vector<Uint32> indices;
-  Uint32 vertexCount = Uint32(meshData.numVertices());
+  Uint32 vertexCount = meshData.numVertices();
   triangleStripGenerateIndices(vertexCount, indices);
-  std::vector<char> vertexData{meshData.data(),
-                               meshData.data() + meshData.vertexBytes()};
+  std::vector<char> vertexData{meshData.vertexData().data(),
+                               meshData.vertexData().data() +
+                                   meshData.vertexBytes()};
   return MeshData{SDL_GPU_PRIMITIVETYPE_TRIANGLELIST, meshData.layout,
                   std::move(vertexData), std::move(indices)};
 }
@@ -81,10 +82,11 @@ namespace detail {
 MeshData mergeMeshes(std::span<const MeshData> meshes) {
   SDL_assert(!meshes.empty());
   // 1. check coherence of primitives
-  SDL_GPUPrimitiveType primitive = meshes[0].primitiveType;
+  SDL_GPUPrimitiveType primitiveType = meshes[0].primitiveType;
   auto layout = meshes[0].layout;
   for (const MeshData &m : meshes) {
-    SDL_assert(m.primitiveType == primitive);
+    assert(m.primitiveType == primitiveType);
+    assert(m.layout == layout);
   }
   auto [indexCount, vertexCount] = detail::mergeCalcIndexVertexCount(meshes);
   std::vector<char> vertexData;
@@ -116,13 +118,13 @@ MeshData mergeMeshes(std::span<const MeshData> meshes) {
     }
 
     Uint32 numVtxBytes = mesh.vertexSize() * mesh.numVertices();
-    std::copy_n(mesh.data(), numVtxBytes,
+    std::copy_n(mesh.vertexData().data(), numVtxBytes,
                 vertexData.begin() + vtxOffset * layout.vertexSize());
 
     vtxOffset += mesh.numVertices();
   }
 
-  return MeshData{primitive, meshes[0].layout, std::move(vertexData),
+  return MeshData{primitiveType, meshes[0].layout, std::move(vertexData),
                   std::move(indexData)};
 }
 
