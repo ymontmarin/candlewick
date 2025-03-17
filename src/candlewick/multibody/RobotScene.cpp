@@ -46,10 +46,9 @@ auto RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom)
   case OT_COUNT:
   case OT_OCTREE:
   case OT_UNKNOWN:
-    char errbuf[32];
-    SDL_snprintf(errbuf, sizeof(errbuf), "Unsupported object type %s",
-                 magic_enum::enum_name(objType).data());
-    throw InvalidArgument(errbuf);
+    throw InvalidArgument(std::format("%s: Unsupported object type %s",
+                                      __FUNCTION__,
+                                      magic_enum::enum_name(objType)));
   }
 }
 
@@ -95,12 +94,9 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
            //  PIPELINE_POINTCLOUD
        }) {
     if (!m_config.pipeline_configs.contains(type)) {
-      char errbuf[64];
-      size_t maxlen = sizeof(errbuf);
-      SDL_snprintf(errbuf, maxlen,
-                   "Missing pipeline config for pipeline type %s",
-                   magic_enum::enum_name(type).data());
-      throw InvalidArgument(errbuf);
+      throw InvalidArgument(std::format("%s: missing a pipeline config type %s",
+                                        __FUNCTION__,
+                                        magic_enum::enum_name(type)));
     }
   }
 
