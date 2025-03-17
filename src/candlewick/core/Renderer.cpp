@@ -18,7 +18,10 @@ Renderer::Renderer(Device &&device_, Window &&window_)
 Renderer::Renderer(Device &&device_, Window &&window_,
                    SDL_GPUTextureFormat suggested_depth_format)
     : Renderer(std::move(device_), std::move(window_)) {
+  createDepthTexture(suggested_depth_format);
+}
 
+void Renderer::createDepthTexture(SDL_GPUTextureFormat suggested_depth_format) {
   auto [width, height] = window.size();
 
   SDL_GPUTextureCreateInfo texInfo{
@@ -47,7 +50,7 @@ Renderer::Renderer(Device &&device_, Window &&window_,
     try_idx++;
   }
   depth_texture = Texture(this->device, texInfo);
-  SDL_Log("Created depth texture of format %s (dims (%d, %d))\n",
+  SDL_Log("Created depth texture of format %s, size %d x %d\n",
           magic_enum::enum_name(texInfo.format).data(), width, height);
   SDL_SetGPUTextureName(device, depth_texture, "Main depth texture");
 }

@@ -30,6 +30,10 @@ struct Renderer {
   Renderer(Device &&device, Window &&window,
            SDL_GPUTextureFormat suggested_depth_format);
 
+  /// \brief Add a depth texture to the rendering context.
+  /// \see hasDepthTexture()
+  void createDepthTexture(SDL_GPUTextureFormat suggested_depth_format);
+
   bool initialized() const { return bool(device); }
 
   /// Acquire the command buffer, starting a frame.
@@ -50,7 +54,9 @@ struct Renderer {
     return SDL_GetGPUSwapchainTextureFormat(device, window);
   }
 
+  /// \brief Check if a depth texture was created.
   bool hasDepthTexture() const { return depth_texture.hasValue(); }
+
   SDL_GPUTextureFormat depthFormat() const { return depth_texture.format(); }
 
   void destroy() noexcept;
