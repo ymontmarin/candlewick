@@ -24,7 +24,7 @@ const char *meshFilename = "assets/meshes/teapot.obj";
 const Uint32 wWidth = 1280;
 const Uint32 wHeight = 720;
 const float aspectRatio = float(wWidth) / wHeight;
-static Camera g_camera;
+static CylindricalCamera g_camera;
 
 struct alignas(16) TransformUniformData {
   GpuMat4 mvp;
@@ -128,8 +128,7 @@ int main() {
   Eigen::Affine3f modelMat = Eigen::Affine3f{rot}.scale(0.1f);
   const float pixelDensity = SDL_GetWindowPixelDensity(window);
 
-  g_camera.view = lookAt({0.5, 1., 1.}, Float3::Zero(), {0., 0., 1.});
-  CylinderCameraControl camControl{g_camera};
+  g_camera.camera.view = lookAt({0.5, 1., 1.}, Float3::Zero(), {0., 0., 1.});
 
   while (frameNo < 500 && !quitRequested) {
     SDL_Event event;
@@ -151,10 +150,10 @@ int main() {
         const float step_size = 0.06f;
         switch (event.key.key) {
         case SDLK_UP:
-          camera_util::worldTranslateZ(g_camera, +step_size);
+          camera_util::worldTranslateZ(g_camera.camera, +step_size);
           break;
         case SDLK_DOWN:
-          camera_util::worldTranslateZ(g_camera, -step_size);
+          camera_util::worldTranslateZ(g_camera.camera, -step_size);
           break;
         }
         break;
@@ -164,23 +163,22 @@ int main() {
         bool controlPressed = SDL_GetModState() & SDL_KMOD_CTRL;
         if (mouseButton & SDL_BUTTON_LMASK) {
           if (controlPressed)
-            camControl.moveInOut(0.95f, event.motion.yrel);
+            g_camera.moveInOut(0.95f, event.motion.yrel);
           else
-            camControl.viewportDrag(
-                Float2{event.motion.xrel, event.motion.yrel},
-                5e-3f * pixelDensity, 1e-2f * pixelDensity);
+            g_camera.viewportDrag(Float2{event.motion.xrel, event.motion.yrel},
+                                  5e-3f * pixelDensity, 1e-2f * pixelDensity);
         }
         if (mouseButton & SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01f * pixelDensity;
           camera_util::localRotateXAroundOrigin(
-              g_camera, camXLocRotSpeed * event.motion.yrel);
+              g_camera.camera, camXLocRotSpeed * event.motion.yrel);
         }
         break;
       }
       }
     }
     // model-view matrix
-    const Mat4f modelView = g_camera.view * modelMat.matrix();
+    const Mat4f modelView = g_camera.camera.view * modelMat.matrix();
     // MVP matrix
     const Mat4f projViewMat = projectionMat * modelView;
     const Mat3f normalMatrix =

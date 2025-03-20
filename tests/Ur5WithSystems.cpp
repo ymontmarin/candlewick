@@ -56,12 +56,11 @@ static Radf currentFov = 55.0_degf;
 static float nearZ = 0.01f;
 static float farZ = 10.f;
 static float currentOrthoScale = 1.f;
-static Camera g_camera = {
+static CylindricalCamera g_camera{{
     .projection = perspectiveFromFov(currentFov, aspectRatio, nearZ, farZ),
     .view = Eigen::Isometry3f{lookAt({2.0, 0, 2.}, Float3::Zero())},
-};
+}};
 static CameraProjection g_cameraType = CameraProjection::PERSPECTIVE;
-static CylinderCameraControl g_camControl{g_camera};
 static bool quitRequested = false;
 static bool showFrustum = false;
 enum VizMode {
@@ -75,13 +74,15 @@ static float pixelDensity;
 static float displayScale;
 
 static void updateFov(Radf newFov) {
-  g_camera.projection = perspectiveFromFov(newFov, aspectRatio, nearZ, farZ);
+  g_camera.camera.projection =
+      perspectiveFromFov(newFov, aspectRatio, nearZ, farZ);
   currentFov = newFov;
 }
 
 static void updateOrtho(float zoom) {
   float iz = 1.f / zoom;
-  g_camera.projection = orthographicMatrix({iz * aspectRatio, iz}, -8., 8.);
+  g_camera.camera.projection =
+      orthographicMatrix({iz * aspectRatio, iz}, -8., 8.);
   currentOrthoScale = zoom;
 }
 
@@ -121,16 +122,16 @@ void eventLoop(const Renderer &renderer) {
       const float step_size = 0.06f;
       switch (event.key.key) {
       case SDLK_LEFT:
-        g_camControl.localTranslate({+step_size, 0, 0});
+        g_camera.localTranslate({+step_size, 0, 0});
         break;
       case SDLK_RIGHT:
-        g_camControl.localTranslate({-step_size, 0, 0});
+        g_camera.localTranslate({-step_size, 0, 0});
         break;
       case SDLK_UP:
-        g_camControl.dolly(+step_size);
+        g_camera.dolly(+step_size);
         break;
       case SDLK_DOWN:
-        g_camControl.dolly(-step_size);
+        g_camera.dolly(-step_size);
         break;
       }
       break;
@@ -141,13 +142,13 @@ void eventLoop(const Renderer &renderer) {
       Float2 mvt{event.motion.xrel, event.motion.yrel};
       if (mouseButton & SDL_BUTTON_LMASK) {
         if (controlPressed) {
-          g_camControl.moveInOut(0.95f, event.motion.yrel);
+          g_camera.moveInOut(0.95f, event.motion.yrel);
         } else {
-          g_camControl.viewportDrag(mvt, rotSensitivity, panSensitivity);
+          g_camera.viewportDrag(mvt, rotSensitivity, panSensitivity);
         }
       }
       if (mouseButton & SDL_BUTTON_MMASK) {
-        g_camControl.pan(mvt, 5e-3f);
+        g_camera.pan(mvt, 5e-3f);
       }
       if (mouseButton & SDL_BUTTON_RMASK) {
         float camXLocRotSpeed = 0.01f * pixelDensity;
@@ -396,7 +397,7 @@ int main(int argc, char **argv) {
     CommandBuffer command_buffer = renderer.acquireCommandBuffer();
 
     if (renderer.waitAndAcquireSwapchain(command_buffer)) {
-      const GpuMat4 viewProj = g_camera.viewProj();
+      const GpuMat4 viewProj = g_camera.camera.viewProj();
       robot_scene.updateTransforms();
       robot_scene.collectOpaqueCastables();
       auto &castables = robot_scene.castables();

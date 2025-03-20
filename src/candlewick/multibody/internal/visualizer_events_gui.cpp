@@ -15,7 +15,7 @@ void add_light_gui(DirectionalLight &light) {
   ImGui::ColorEdit3("color", light.color.data());
 }
 
-void camera_params_gui(CylinderCameraControl &controller,
+void camera_params_gui(CylindricalCamera &controller,
                        CameraControlParams &params) {
   if (ImGui::TreeNode("Camera controls")) {
     ImGui::SliderFloat("Rot. sensitivity", &params.rotSensitivity, 0.001f,
@@ -28,8 +28,7 @@ void camera_params_gui(CylinderCameraControl &controller,
                        0.001f, 0.04f);
     ImGui::Checkbox("Invert Y", &params.yInvert);
     if (ImGui::Button("Reset target")) {
-      controller.target.setZero();
-      controller.updateLookAt();
+      controller.lookAt1(Float3::Zero());
     }
     ImGui::TreePop();
   }
@@ -59,13 +58,13 @@ void Visualizer::default_gui_exec(Visualizer &viz) {
   ImGui::End();
 }
 
-void mouse_wheel_handler(CylinderCameraControl &controller,
+void mouse_wheel_handler(CylindricalCamera &controller,
                          const CameraControlParams &params,
                          SDL_MouseWheelEvent event) {
   controller.moveInOut(1.f - params.zoomSensitivity, event.y);
 }
 
-void mouse_motion_handler(CylinderCameraControl &controller,
+void mouse_motion_handler(CylindricalCamera &controller,
                           const CameraControlParams &params,
                           const SDL_MouseMotionEvent &event) {
   Float2 mvt{event.xrel, event.yrel};

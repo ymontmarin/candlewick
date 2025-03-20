@@ -56,8 +56,7 @@ public:
   GuiSystem guiSystem;
   std::optional<RobotScene> robotScene;
   std::optional<DebugScene> debugScene;
-  Camera camera;
-  CylinderCameraControl controller{camera};
+  CylindricalCamera controller;
   CameraControlParams cameraParams;
 
   struct Config {

@@ -130,10 +130,10 @@ int main() {
   SDL_GPUTexture *swapchain;
 
   Rad<float> fov = 55.0_degf;
-  Camera camera{
+  CylindricalCamera camera{Camera{
       .projection = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f),
       .view = Eigen::Isometry3f{lookAt({6.0, 0, 3.}, Float3::Zero())},
-  };
+  }};
 
   Uint32 frameNo = 0;
   bool quitRequested = false;
@@ -159,36 +159,36 @@ int main() {
         // recreate
         fov = std::min(fov * scaleFac, Radf{170.0_degf});
         SDL_Log("Change fov to %f", rad2deg(fov));
-        camera.projection = perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
+        camera.camera.projection =
+            perspectiveFromFov(fov, aspectRatio, 0.01f, 10.0f);
       }
       if (event.type == SDL_EVENT_KEY_DOWN) {
         const float step_size = 0.06f;
         switch (event.key.key) {
         case SDLK_UP:
-          camera_util::worldTranslateZ(camera, +step_size);
+          camera_util::worldTranslateZ(camera.camera, +step_size);
           break;
         case SDLK_DOWN:
-          camera_util::worldTranslateZ(camera, -step_size);
+          camera_util::worldTranslateZ(camera.camera, -step_size);
           break;
         }
       }
       if (event.type == SDL_EVENT_MOUSE_MOTION) {
-        CylinderCameraControl camControl{camera};
         auto mouseButton = event.motion.state;
         if (mouseButton >= SDL_BUTTON_LMASK) {
-          camControl.viewportDrag({event.motion.xrel, event.motion.yrel},
-                                  5e-3f * pixelDensity, 1e-2f * pixelDensity);
+          camera.viewportDrag({event.motion.xrel, event.motion.yrel},
+                              5e-3f * pixelDensity, 1e-2f * pixelDensity);
         }
         if (mouseButton >= SDL_BUTTON_RMASK) {
           float camXLocRotSpeed = 0.01f * pixelDensity;
-          camera_util::localRotateXAroundOrigin(camera, camXLocRotSpeed *
-                                                            event.motion.yrel);
+          camera_util::localRotateXAroundOrigin(
+              camera.camera, camXLocRotSpeed * event.motion.yrel);
         }
       }
     }
     // MVP matrix
-    const Eigen::Affine3f modelView = camera.view * modelMat;
-    const Mat4f mvp = camera.projection * modelView.matrix();
+    const Eigen::Affine3f modelView = camera.camera.view * modelMat;
+    const Mat4f mvp = camera.camera.projection * modelView.matrix();
     const Mat3f normalMatrix = math::computeNormalMatrix(modelView);
 
     // render pass
@@ -226,7 +226,7 @@ int main() {
           .normalMatrix = normalMatrix,
       };
       light_ubo_t lightUbo{
-          camera.transformVector(myLight.direction),
+          camera.camera.transformVector(myLight.direction),
           myLight.color,
           myLight.intensity,
       };

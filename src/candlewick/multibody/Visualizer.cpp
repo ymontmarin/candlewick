@@ -56,23 +56,24 @@ void Visualizer::resetCamera() {
   eye *= radius;
   auto [w, h] = renderer.window.size();
   float aspectRatio = float(w) / float(h);
-  camera.view = lookAt(eye, {0., 0., 0.});
-  camera.projection =
+  controller.lookAt(eye, {0., 0., 0.});
+  controller.camera.projection =
       perspectiveFromFov(DEFAULT_FOV, aspectRatio, 0.01f, 100.f);
 }
 
 void Visualizer::loadViewerModel() {}
 
 void Visualizer::setCameraTarget(const Eigen::Ref<const Vector3> &target) {
-  Float3 eye = this->camera.position();
-  camera.view = lookAt(eye, target.cast<float>());
+  controller.lookAt1(target.cast<float>());
 }
 
 void Visualizer::setCameraPosition(const Eigen::Ref<const Vector3> &position) {
+  auto &camera = controller.camera;
   camera_util::setWorldPosition(camera, position.cast<float>());
 }
 
 void Visualizer::setCameraPose(const Eigen::Ref<const Matrix4> &pose) {
+  auto &camera = controller.camera;
   camera.view = pose.cast<float>().inverse();
 }
 
@@ -102,6 +103,7 @@ void Visualizer::render() {
                              robotScene->directionalLight, castables,
                              robotScene->worldSpaceBounds);
 
+    auto &camera = controller.camera;
     robotScene->render(cmdBuf, camera);
     debugScene->render(cmdBuf, camera);
     guiSystem.render(cmdBuf);

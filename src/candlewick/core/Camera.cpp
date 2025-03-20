@@ -72,8 +72,7 @@ namespace camera_util {
   }
 } // namespace camera_util
 
-CylinderCameraControl &CylinderCameraControl::pan(Float2 step_,
-                                                  float sensitivity) {
+CylindricalCamera &CylindricalCamera::pan(Float2 step_, float sensitivity) {
   step_ = sensitivity * step_;
   step_.y() = -step_.y();
   const Float3 step{step_.x(), step_.y(), 0.f};
@@ -83,8 +82,7 @@ CylinderCameraControl &CylinderCameraControl::pan(Float2 step_,
   return *this;
 }
 
-CylinderCameraControl &CylinderCameraControl::moveInOut(float baseScale,
-                                                        float offset) {
+CylindricalCamera &CylindricalCamera::moveInOut(float baseScale, float offset) {
   const float alpha = std::pow(baseScale, offset);
   Float3 vt = camera.transformPoint(target);
   const float curDist = -vt.z();

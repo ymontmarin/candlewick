@@ -65,49 +65,68 @@ namespace camera_util {
 
 } // namespace camera_util
 
-struct CylinderCameraControl {
-  Camera &camera;
+struct CylindricalCamera {
+  Camera camera;
   Float3 target{0.f, 0.f, 0.f};
 
   static constexpr bool DEFAULT_Y_INVERT = false;
 
-  CylinderCameraControl(Camera &_camera) : camera(_camera) {}
+  operator Camera &() {
+    return camera;
+     
+  }
+  operator const Camera &() const {
+    return camera;
+     
+  }
 
-  auto &updateLookAt() {
-    camera.view = lookAt(camera.position(), target);
+  CylindricalCamera() : camera{} {}
+  /// \brief Constructor which copies a given camera's state.
+  CylindricalCamera(const Camera &cam) : camera{cam} {}
+
+  CylindricalCamera &lookAt(const Float3 &eye, const Float3 &t) {
+    target = t;
+    camera.view = ::candlewick::lookAt(eye, target);
     return *this;
   }
 
-  auto &translate(const Float3 &tr) {
+  CylindricalCamera &lookAt1(const Float3 &t) {
+    target = t;
+    camera.view = ::candlewick::lookAt(camera.position(), target);
+    return *this;
+  }
+
+  CylindricalCamera &translate(const Float3 &tr) {
     target += tr;
     camera_util::worldTranslate(camera, tr);
     return *this;
   }
 
-  auto &localTranslate(const Float3 &tr) {
+  CylindricalCamera &localTranslate(const Float3 &tr) {
     target += camera.transformVector(tr);
     camera_util::localTranslate(camera, tr);
     return *this;
   }
 
-  auto &dolly(float height) { return translate({0, 0, height}); }
+  CylindricalCamera &dolly(float height) { return translate({0, 0, height}); }
 
-  auto &orbit(Radf angle) {
+  CylindricalCamera &orbit(Radf angle) {
     camera_util::rotateZAroundPoint(camera, angle, target);
     return *this;
   }
 
-  auto &viewportDrag(Float2 step, float rotSensitivity, float panSensitivity,
-                     bool yinvert = DEFAULT_Y_INVERT) {
+  CylindricalCamera &viewportDrag(Float2 step, float rotSensitivity,
+                                  float panSensitivity,
+                                  bool yinvert = DEFAULT_Y_INVERT) {
     const float rotStep = step.x() * rotSensitivity;
     const float panStep = step.y() * panSensitivity;
     float ystep = yinvert ? -panStep : panStep;
     return dolly(ystep).orbit(Rad{rotStep});
   }
 
-  CylinderCameraControl &pan(Float2 step, float sensitivity);
+  CylindricalCamera &pan(Float2 step, float sensitivity);
 
-  CylinderCameraControl &moveInOut(float scale, float offset);
+  CylindricalCamera &moveInOut(float scale, float offset);
 };
 
 /// \}
