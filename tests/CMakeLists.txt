@@ -2,7 +2,8 @@ enable_testing()
 find_package(GTest REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
 
-add_subdirectory(robot_descriptions_cpp)
+set(ROBOT_DESCRIPTIONS_CPP_TESTING OFF CACHE BOOL "")
+add_subdirectory(robot_descriptions_cpp EXCLUDE_FROM_ALL)
 
 add_library(Common STATIC lib/Common.cpp lib/PerlinNoise.cpp)
 target_link_libraries(Common PUBLIC candlewick_core)
