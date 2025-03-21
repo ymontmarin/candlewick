@@ -80,6 +80,24 @@ conda install sdl3 eigen magic_enum assimp entt nlohmann_json
 * [CLI11](https://github.com/CLIUtils/CLI11) for the examples and tests | `conda install cli11`
 * The [Pinocchio](https://github.com/stack-of-tasks/pinocchio) rigid-body dynamics library (required for the `candlewick::multibody` classes and functions). Pinocchio must be built with collision support. | [conda-forge](https://anaconda.org/conda-forge/pinocchio)
 
+### Building
+
+For building the library, you will need [CMake](https://cmake.org/) (version at least 3.20) and a C++17-compliant compiler. These can also be obtained through Conda.
+
+In the directory where you have checked out the code, perform the following steps:
+```bash
+# 1. Create a CMake build directory
+cmake -S . -B build/ -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_PINOCCHIO_VISUALIZER:BOOL=ON \  # For Pinocchio support
+  -DBUILD_PYTHON_BINDINGS:BOOL=ON \ # For Python bindings
+  -GNinja \ # or -G"Unix Makefiles" to use Make
+  -DCMAKE_INSTALL_PREFIX=<your-install-prefix> # e.g. ~/.local/, or $CONDA_PREFIX
+# 2. Move into it and build (generator-independent)
+cd build/ && cmake --build . -j<num-parallel-jobs>
+# 3. Install
+cmake --build . --target install
+```
+
 ## Credits
 
 Many of the design choices of this library are heavily inspired by other, more mature work in the open-source 3D graphics middleware space.
