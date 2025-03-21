@@ -9,6 +9,7 @@
 #include "candlewick/core/DepthAndShadowPass.h"
 #include "candlewick/core/LightUniforms.h"
 #include "candlewick/core/CameraControls.h"
+#include "candlewick/core/Components.h"
 
 #include "candlewick/multibody/RobotScene.h"
 #include "candlewick/multibody/RobotDebug.h"
@@ -217,8 +218,7 @@ int main(int argc, char **argv) {
   const Eigen::Affine3f plane_transform{Eigen::UniformScaling<float>(3.0f)};
   entt::entity plane_entity = robot_scene.addEnvironmentObject(
       loadPlaneTiled(0.5f, 20, 20), plane_transform.matrix());
-  auto &plane_obj =
-      registry.get<RobotScene::MeshMaterialComponent>(plane_entity);
+  auto &plane_obj = registry.get<MeshMaterialComponent>(plane_entity);
 
   robot_scene.addEnvironmentObject(loadCube(.33f, {-0.55f, -0.7f}),
                                    Mat4f::Identity());

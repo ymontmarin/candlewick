@@ -7,7 +7,6 @@
 #include "../core/Collision.h"
 #include "../core/DepthAndShadowPass.h"
 #include "../core/Texture.h"
-#include "../core/Components.h"
 #include "../posteffects/SSAO.h"
 #include "../utils/MeshData.h"
 #include <magic_enum/magic_enum.hpp>
@@ -17,6 +16,7 @@
 #include <pinocchio/multibody/fwd.hpp>
 
 namespace candlewick {
+
 namespace multibody {
 
   void updateRobotTransforms(entt::registry &registry,
@@ -51,17 +51,7 @@ namespace multibody {
       }
     }
 
-    struct MeshMaterialComponent {
-      Mesh mesh;
-      std::vector<PbrMaterial> materials;
-      PipelineType pipeline_type;
-      MeshMaterialComponent(Mesh &&mesh, std::vector<PbrMaterial> &&materials,
-                            PipelineType pipelineType)
-          : mesh(std::move(mesh)), materials(std::move(materials)),
-            pipeline_type(pipelineType) {
-        assert(mesh.numViews() == materials.size());
-      }
-    };
+    template <PipelineType t> struct pipeline_tag_component {};
 
     struct PipelineConfig {
       // shader set

@@ -4,6 +4,7 @@
 #include "../core/Components.h"
 #include "../core/errors.h"
 #include "../core/Shader.h"
+#include "../core/Components.h"
 #include "../core/TransformUniforms.h"
 #include "../core/Camera.h"
 
@@ -11,6 +12,9 @@
 #include <coal/BVH/BVH_model.h>
 #include <pinocchio/multibody/data.hpp>
 #include <pinocchio/multibody/geometry.hpp>
+
+#include <magic_enum/magic_enum_utility.hpp>
+#include <magic_enum/magic_enum_switch.hpp>
 
 namespace candlewick::multibody {
 
@@ -52,6 +56,15 @@ auto RobotScene::pinGeomToPipeline(const coal::CollisionGeometry &geom)
   }
 }
 
+void add_pipeline_tag_component(entt::registry &reg, entt::entity ent,
+                                RobotScene::PipelineType type) {
+  magic_enum::enum_switch(
+      [&reg, ent](auto pt) {
+        reg.emplace<RobotScene::pipeline_tag_component<pt>>(ent);
+      },
+      type);
+}
+
 entt::entity RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
                                               PipelineType pipe_type) {
   Mesh mesh = createMesh(device(), data);
@@ -63,8 +76,8 @@ entt::entity RobotScene::addEnvironmentObject(MeshData &&data, Mat4f placement,
   // add tag type
   m_registry.emplace<EnvironmentTag>(entity);
   m_registry.emplace<MeshMaterialComponent>(
-      entity, std::move(mesh), std::vector{std::move(data.material)},
-      pipe_type);
+      entity, std::move(mesh), std::vector{std::move(data.material)});
+  add_pipeline_tag_component(m_registry, entity, pipe_type);
   return entity;
 }
 
@@ -121,8 +134,9 @@ RobotScene::RobotScene(entt::registry &registry, const Renderer &renderer,
     registry.emplace<TransformComponent>(entity);
     if (pipeline_type != PIPELINE_POINTCLOUD)
       registry.emplace<Opaque>(entity);
-    registry.emplace<MeshMaterialComponent>(
-        entity, std::move(mesh), extractMaterials(meshDatas), pipeline_type);
+    registry.emplace<MeshMaterialComponent>(entity, std::move(mesh),
+                                            extractMaterials(meshDatas));
+    add_pipeline_tag_component(m_registry, entity, pipeline_type);
 
     if (pipeline_type == PIPELINE_TRIANGLEMESH) {
       if (!ssaoPass.pipeline) {
@@ -180,18 +194,16 @@ void RobotScene::updateTransforms() {
 }
 
 void RobotScene::collectOpaqueCastables() {
-  const PipelineType pipeline_type = PIPELINE_TRIANGLEMESH;
   auto all_view =
       m_registry.view<const Opaque, const TransformComponent,
-                      const MeshMaterialComponent>(entt::exclude<Disable>);
+                      const MeshMaterialComponent,
+                      pipeline_tag_component<PIPELINE_TRIANGLEMESH>>(
+          entt::exclude<Disable>);
 
   m_castables.clear();
 
   // collect castable objects
   for (auto [ent, tr, meshMaterial] : all_view.each()) {
-    if (meshMaterial.pipeline_type != pipeline_type)
-      continue;
-
     const Mesh &mesh = meshMaterial.mesh;
     m_castables.emplace_back(ent, mesh, tr);
   }
@@ -303,12 +315,10 @@ void RobotScene::renderPBRTriangleGeometry(CommandBuffer &command_buffer,
   SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
   auto all_view =
-      m_registry.view<const TransformComponent, const MeshMaterialComponent>(
+      m_registry.view<const TransformComponent, const MeshMaterialComponent,
+                      pipeline_tag_component<PIPELINE_TRIANGLEMESH>>(
           entt::exclude<Disable>);
   for (auto [ent, tr, obj] : all_view.each()) {
-    if (obj.pipeline_type != PIPELINE_TRIANGLEMESH)
-      return;
-
     const Mat4f modelView = camera.view * tr;
     const Mesh &mesh = obj.mesh;
     Mat4f mvp = viewProj * tr;
@@ -344,21 +354,18 @@ void RobotScene::renderOtherGeometry(CommandBuffer &command_buffer,
   const Mat4f viewProj = camera.viewProj();
 
   // iterate over primitive types in the keys
-  for (auto current_pipeline_type : magic_enum::enum_values<PipelineType>()) {
+  magic_enum::enum_for_each<PipelineType>([&](auto current_pipeline_type) {
     if (current_pipeline_type == PIPELINE_TRIANGLEMESH)
-      // handled by other function
-      continue;
+      return;
 
     auto *pipeline = renderPipelines[current_pipeline_type];
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
     auto env_view =
-        m_registry.view<const TransformComponent, const MeshMaterialComponent>(
+        m_registry.view<const TransformComponent, const MeshMaterialComponent,
+                        pipeline_tag_component<current_pipeline_type>>(
             entt::exclude<Disable>);
     for (auto [entity, tr, obj] : env_view.each()) {
-      if (obj.pipeline_type != current_pipeline_type)
-        continue;
-
       auto &modelMat = tr;
       const Mesh &mesh = obj.mesh;
       const Mat4f mvp = viewProj * modelMat;
@@ -370,7 +377,7 @@ void RobotScene::renderOtherGeometry(CommandBuffer &command_buffer,
       rend::bindMesh(render_pass, mesh);
       rend::draw(render_pass, mesh);
     }
-  }
+  });
   SDL_EndGPURenderPass(render_pass);
 }
 
