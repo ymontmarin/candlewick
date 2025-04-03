@@ -71,14 +71,9 @@ struct CylindricalCamera {
 
   static constexpr bool DEFAULT_Y_INVERT = false;
 
-  operator Camera &() {
-    return camera;
-     
-  }
-  operator const Camera &() const {
-    return camera;
-     
-  }
+  operator Camera &() { return camera; }
+
+  operator const Camera &() const { return camera; }
 
   CylindricalCamera() : camera{} {}
   /// \brief Constructor which copies a given camera's state.
