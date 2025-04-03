@@ -4,3 +4,7 @@ build*/
 frag.spv
 vert.spv
 compile_commands.json
+
+# pixi environments
+.pixi
+*.egg-info
