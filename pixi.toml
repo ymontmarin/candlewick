@@ -37,6 +37,7 @@ configure = { cmd = [
   "-DBUILD_PYTHON_BINDINGS=$CANDLEWICK_WITH_PYTHON",
   "-DGENERATE_PYTHON_STUBS=$CANDLEWICK_PYTHON_STUBS",
   "-DBUILD_PINOCCHIO_VISUALIZER=$CANDLEWICK_WITH_PINOCCHIO",
+  "-DBUILD_TESTING=$CANDLEWICK_BUILD_TESTS",
 ] }
 build = { cmd = ["cmake --build build --target all"], depends-on = ["configure"]}
 clean = { cmd = ["rm -rf build"] }
@@ -47,5 +48,12 @@ pinocchio = ">=3.5"
 [feature.pinocchio.activation]
 env = { CANDLEWICK_WITH_PINOCCHIO = "ON" }
 
+[feature.test.dependencies]
+gtest = "*"
+
+[feature.test.activation]
+env = { CANDLEWICK_BUILD_TESTS = "ON" }
+
 [environments]
 pinocchio = { features = ["pinocchio"] }
+test = { features = ["test"] }
