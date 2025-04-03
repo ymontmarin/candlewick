@@ -1,12 +1,22 @@
 # Copyright (c) 2024-2025 ManifoldFR
 
-find_package(assimp REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(coal REQUIRED)
-find_package(nlohmann_json 3.11.3 REQUIRED)
-find_package(EnTT REQUIRED)
-find_package(magic_enum 0.9.7 CONFIG REQUIRED)
-find_package(FFmpeg COMPONENTS avformat avcodec swscale)
+ADD_PROJECT_DEPENDENCY(assimp REQUIRED)
+ADD_PROJECT_DEPENDENCY(Eigen3 REQUIRED)
+if(BUILD_PINOCCHIO_VISUALIZER)
+  ADD_PROJECT_DEPENDENCY(hpp-fcl REQUIRED)
+  ADD_PROJECT_DEPENDENCY(pinocchio REQUIRED)
+endif()
+ADD_PROJECT_DEPENDENCY(coal REQUIRED)
+ADD_PROJECT_DEPENDENCY(nlohmann_json 3.11.3 REQUIRED)
+ADD_PROJECT_DEPENDENCY(EnTT REQUIRED)
+ADD_PROJECT_DEPENDENCY(magic_enum 0.9.7 CONFIG REQUIRED)
+ADD_PROJECT_DEPENDENCY(
+  FFmpeg
+  COMPONENTS
+  avformat
+  avcodec
+  swscale
+)
 
 add_library(
   candlewick_core
@@ -97,8 +107,6 @@ add_library(candlewick::candlewick ALIAS candlewick)
 target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_core)
 
 if(BUILD_PINOCCHIO_VISUALIZER)
-  find_package(pinocchio REQUIRED)
-
   file(
     GLOB multibody_sources
     candlewick/multibody/*.cpp

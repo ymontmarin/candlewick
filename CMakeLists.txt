@@ -1,6 +1,6 @@
 # Copyright (c) 2024-2025 ManifoldFR
 
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 set(PROJECT_NAME candlewick)
 set(PROJECT_CUSTOM_HEADER_EXTENSION "h")
@@ -77,7 +77,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   )
 endif()
 
-find_package(SDL3 3.2.4 REQUIRED)
+ADD_PROJECT_DEPENDENCY(SDL3 3.2.4 REQUIRED)
 set(CANDLEWICK_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets)
 set(CANDLEWICK_SHADERS_DIR ${PROJECT_SOURCE_DIR}/shaders)
 set(
