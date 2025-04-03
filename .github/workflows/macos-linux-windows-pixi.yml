@@ -29,7 +29,11 @@ jobs:
       CCACHE_BASEDIR: "${GITHUB_WORKSPACE}"
       CCACHE_DIR: "${GITHUB_WORKSPACE}/.ccache"
       CCACHE_COMPRESS: true
-      CCACHE_COMPRESSLEVEL: 6
+      CCACHE_COMPRESSLEVEL: 5
+      # Since pixi will install a compiler, the compiler mtime will be changed.
+      # This can invalidate the cache (https://ccache.dev/manual/latest.html#config_compiler_check)
+      CCACHE_COMPILERCHECK: content
+      BUILD_ADVANCED_TESTING: ${{ matrix.BUILD_ADVANCED_TESTING }}
 
     strategy:
       fail-fast: false
@@ -56,13 +60,24 @@ jobs:
 
     - name: Build candlewick [macOS/Linux]
       env:
+        CMAKE_BUILD_PARALLEL_LEVEL: 2
         CANDLEWICK_BUILD_TYPE: ${{ matrix.build_type }}
       run: |
+        # Clear ccache statistics
+        pixi run -e ${{ matrix.environment }} ccache -z
+
         pixi run -e ${{ matrix.environment }} build
 
     - name: Test candlewick [macOS/Linux]
       run: |
         pixi run -e ${{ matrix.environment }} ctest --test-dir build --output-on-failure
+        pixi shell -e ${{ matrix.environment }}
+        python -c "import candlewick"
+
+    - name: Display ccache statistics
+      shell: bash -el {0}
+      run: |
+        pixi run -e ${{ matrix.environment }} ccache -sv
 
   check:
     if: always()
