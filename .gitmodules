@@ -7,6 +7,6 @@
 [submodule "doc/doxygen-awesome-css"]
 	path = doc/doxygen-awesome-css
 	url = https://github.com/jothepro/doxygen-awesome-css.git
-[submodule "tests/robot_descriptions_cpp"]
-	path = tests/robot_descriptions_cpp
+[submodule "examples/robot_descriptions_cpp"]
+	path = examples/robot_descriptions_cpp
 	url = https://github.com/ManifoldFR/robot_descriptions_cpp.git
