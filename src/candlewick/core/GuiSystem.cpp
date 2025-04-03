@@ -47,7 +47,7 @@ void GuiSystem::render(CommandBuffer &cmdBuf) {
 
   ImGui::Render();
   ImDrawData *draw_data = ImGui::GetDrawData();
-  Imgui_ImplSDLGPU3_PrepareDrawData(draw_data, cmdBuf);
+  ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, cmdBuf);
 
   SDL_GPUColorTargetInfo info{
       .texture = m_renderer->swapchain,
