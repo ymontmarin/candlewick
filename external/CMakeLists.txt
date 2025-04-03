@@ -13,10 +13,12 @@ set(
 
 set(IMGUI_HEADERS ${IMGUI_DIR}/imconfig.h ${IMGUI_DIR}/imgui.h)
 
-add_library(imgui-headers INTERFACE ${IMGUI_HEADERS})
-target_link_libraries(imgui-headers INTERFACE SDL3::SDL3 SDL3::Headers)
+add_library(imgui_headers INTERFACE)
+target_link_libraries(imgui_headers INTERFACE SDL3::Headers)
 target_include_directories(
-  imgui-headers
-  INTERFACE ${IMGUI_DIR} ${IMGUI_DIR}/backends
+  imgui_headers
+  INTERFACE
+    $<BUILD_INTERFACE:${IMGUI_DIR}>
+    $<BUILD_INTERFACE:${IMGUI_DIR}/backends>
 )
-set_target_properties(imgui-headers PROPERTIES PUBLIC_HEADER "${IMGUI_HEADERS}")
+set_target_properties(imgui_headers PROPERTIES PUBLIC_HEADER "${IMGUI_HEADERS}")

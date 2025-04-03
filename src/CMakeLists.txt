@@ -57,8 +57,7 @@ target_link_libraries(
     coal::coal
     magic_enum::magic_enum
     EnTT::EnTT
-    imgui-headers
-  PRIVATE nlohmann_json::nlohmann_json
+  PRIVATE imgui_headers nlohmann_json::nlohmann_json
 )
 target_compile_definitions(
   candlewick_core
@@ -66,10 +65,15 @@ target_compile_definitions(
     $<BUILD_INTERFACE:CANDLEWICK_SHADER_BIN_DIR="${CANDLEWICK_SHADERS_DIR}/compiled">
     $<INSTALL_INTERFACE:CANDLEWICK_SHADER_BIN_DIR="${CANDLEWICK_SHADER_INSTALL_DIR}/compiled">
 )
-target_include_directories(candlewick_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(
+  candlewick_core
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
 if(FFmpeg_FOUND)
-  message(STATUS "FFmpeg found. Building video module.")
+  message(STATUS "FFmpeg found. Building video module for candlewick_core.")
   target_compile_definitions(
     candlewick_core
     PUBLIC CANDLEWICK_WITH_FFMPEG_SUPPORT
@@ -89,6 +93,7 @@ install(
 )
 
 add_library(${PROJECT_NAME} INTERFACE)
+add_library(candlewick::candlewick ALIAS candlewick)
 target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_core)
 target_include_directories(${PROJECT_NAME} INTERFACE candlewick)
 
@@ -108,6 +113,7 @@ if(BUILD_PINOCCHIO_VISUALIZER)
       candlewick_core
       pinocchio::pinocchio_default
       pinocchio::pinocchio_visualizers
+    PRIVATE imgui_headers
   )
   target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_multibody)
 

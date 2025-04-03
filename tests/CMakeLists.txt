@@ -6,7 +6,7 @@ set(ROBOT_DESCRIPTIONS_CPP_TESTING OFF CACHE BOOL "")
 add_subdirectory(robot_descriptions_cpp EXCLUDE_FROM_ALL)
 
 add_library(Common STATIC lib/Common.cpp lib/PerlinNoise.cpp)
-target_link_libraries(Common PUBLIC candlewick_core)
+target_link_libraries(Common PUBLIC candlewick_core imgui_headers)
 target_include_directories(Common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 if(BUILD_PINOCCHIO_VISUALIZER)
