@@ -92,7 +92,7 @@ cmake -S . -B build/ -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_PINOCCHIO_VISUALIZER:BOOL=ON \  # For Pinocchio support
   -DBUILD_PYTHON_BINDINGS:BOOL=ON \ # For Python bindings
   -GNinja \ # or -G"Unix Makefiles" to use Make
-  -DBUILD_TESTING=ON \  # or OFF to not build the tests
+  -DBUILD_TESTING=OFF \  # or ON not build the tests
   -DCMAKE_INSTALL_PREFIX=<your-install-prefix> # e.g. ~/.local/, or $CONDA_PREFIX
 # 2. Move into it and build (generator-independent)
 cd build/ && cmake --build . -j<num-parallel-jobs>
