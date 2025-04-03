@@ -66,7 +66,7 @@ Candlewick depends mainly on:
 
 These dependencies can be installed from Conda as follows:
 ```bash
-conda install sdl3 eigen magic_enum assimp entt nlohmann_json
+conda install sdl3 eigen coal magic_enum assimp entt nlohmann_json
 ```
 
 #### Optional dependencies
