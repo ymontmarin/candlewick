@@ -19,9 +19,9 @@ scripts = ["scripts/pixi/activation.sh"]
 
 [build-dependencies]
 cmake = ">=3.20"
-ninja = ">=1.12.1,<2"
+ninja = ">=1.12.1"
 cxx-compiler = ">=1.9.0,<2"
-pkg-config = ">=0.29.2,<0.30"
+pkg-config = ">=0.29.2"
 ccache = ">=4.9.1"
 
 [tasks]
@@ -39,8 +39,8 @@ configure = { cmd = [
   "-DBUILD_PINOCCHIO_VISUALIZER=$CANDLEWICK_WITH_PINOCCHIO",
   "-DBUILD_TESTING=$CANDLEWICK_BUILD_TESTS",
 ] }
-build = { cmd = ["cmake --build build --target all"], depends-on = ["configure"]}
-clean = { cmd = ["rm -rf build"] }
+build = { cmd = "cmake --build build --target all", depends-on = ["configure"]}
+clean = { cmd = "rm -rf build" }
 
 [feature.pinocchio.dependencies]
 pinocchio = ">=3.5"
