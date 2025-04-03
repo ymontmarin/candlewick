@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, macos-14-large]
+        os: [ubuntu-latest, macos-latest]
         environment: [default, pinocchio]
         build_type: [Release]
 
