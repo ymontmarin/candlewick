@@ -78,7 +78,8 @@ conda install sdl3 eigen magic_enum assimp entt nlohmann_json
   ```
 * [GoogleTest](https://github.com/google/googletest) for the tests | `conda install gtest`
 * [CLI11](https://github.com/CLIUtils/CLI11) for the examples and tests | `conda install cli11`
-* The [Pinocchio](https://github.com/stack-of-tasks/pinocchio) rigid-body dynamics library (required for the `candlewick::multibody` classes and functions). Pinocchio must be built with collision support. | [conda-forge](https://anaconda.org/conda-forge/pinocchio)
+* The [Pinocchio](https://github.com/stack-of-tasks/pinocchio) rigid-body dynamics library (required for the `candlewick::multibody` classes and functions). Pinocchio must be built with collision support. | `conda install pinocchio`
+  * With Pinocchio support activated, building the tests requires [example-robot-data](https://github.com/Gepetto/example-robot-data) | `conda install example-robot-data`
 
 ### Building
 
@@ -91,6 +92,7 @@ cmake -S . -B build/ -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_PINOCCHIO_VISUALIZER:BOOL=ON \  # For Pinocchio support
   -DBUILD_PYTHON_BINDINGS:BOOL=ON \ # For Python bindings
   -GNinja \ # or -G"Unix Makefiles" to use Make
+  -DBUILD_TESTING=ON \  # or OFF to not build the tests
   -DCMAKE_INSTALL_PREFIX=<your-install-prefix> # e.g. ~/.local/, or $CONDA_PREFIX
 # 2. Move into it and build (generator-independent)
 cd build/ && cmake --build . -j<num-parallel-jobs>
