@@ -97,7 +97,7 @@ cmake -S . -B build/ -DCMAKE_BUILD_TYPE=Release \
 # 2. Move into it and build (generator-independent)
 cd build/ && cmake --build . -j<num-parallel-jobs>
 # 3. Install
-cmake --build . --target install
+cmake --install .
 ```
 
 ## Credits
