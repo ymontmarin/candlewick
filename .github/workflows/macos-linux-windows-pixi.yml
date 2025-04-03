@@ -2,6 +2,8 @@ name: CI - macOS/Linux via Pixi
 
 on:
   push:
+    branches:
+      - main
     paths-ignore:
       - .gitignore
       - '*.md'
