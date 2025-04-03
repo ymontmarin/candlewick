@@ -1,4 +1,4 @@
-name: CI - macOS/Linux via Pixi
+name: CI - macOS/Linux (pixi)
 
 on:
   push:
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   candlewick-pixi:
-    name: ${{ matrix.os }} - Env ${{ matrix.environment }} ${{ matrix.build_type }}
+    name: ${{ matrix.os }} - env ${{ matrix.environment }} (${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     env:
       CCACHE_BASEDIR: "${GITHUB_WORKSPACE}"
@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, macos-13]
+        os: [ubuntu-latest, macos-latest, macos-14-large]
         environment: [default, pinocchio]
         build_type: [Release]
 
