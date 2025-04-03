@@ -4,6 +4,15 @@ channels = ["conda-forge"]
 name = "candlewick"
 platforms = ["osx-64", "osx-arm64", "linux-64"]
 version = "0.1.0"
+license = "BSD-2-Clause"
+license-file = "LICENSE"
+
+[build-dependencies]
+cmake = ">=3.20"
+ninja = ">=1.12.1"
+cxx-compiler = ">=1.9.0"
+pkg-config = ">=0.29.2"
+ccache = ">=4.9.1"
 
 [dependencies]
 sdl3 = ">=3.2.8"
@@ -16,13 +25,6 @@ eigenpy = ">=3.10"
 
 [activation]
 scripts = ["scripts/pixi/activation.sh"]
-
-[build-dependencies]
-cmake = ">=3.20"
-ninja = ">=1.12.1"
-cxx-compiler = ">=1.9.0,<2"
-pkg-config = ">=0.29.2"
-ccache = ">=4.9.1"
 
 [tasks]
 configure = { cmd = [
