@@ -95,7 +95,6 @@ install(
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(candlewick::candlewick ALIAS candlewick)
 target_link_libraries(${PROJECT_NAME} INTERFACE candlewick_core)
-target_include_directories(${PROJECT_NAME} INTERFACE candlewick)
 
 if(BUILD_PINOCCHIO_VISUALIZER)
   find_package(pinocchio REQUIRED)

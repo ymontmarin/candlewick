@@ -1,0 +1,64 @@
+[workspace]
+authors = ["ManifoldFR <wilson.jallet@polytechnique.org>"]
+channels = ["conda-forge"]
+name = "candlewick"
+platforms = ["osx-64", "osx-arm64", "linux-64"]
+version = "0.1.0"
+license = "BSD-2-Clause"
+license-file = "LICENSE"
+
+[build-dependencies]
+cmake = ">=3.20"
+ninja = ">=1.12.1"
+cxx-compiler = ">=1.9.0"
+pkg-config = ">=0.29.2"
+ccache = ">=4.9.1"
+
+[dependencies]
+sdl3 = ">=3.2.8"
+magic_enum = ">=0.9.7,<0.10"
+entt = ">=3.15.0,<4"
+nlohmann_json = ">=3.10"
+coal = ">=3.0.1"
+assimp = ">=5.3.0"
+eigenpy = ">=3.10"
+
+[activation]
+scripts = ["scripts/pixi/activation.sh"]
+
+[tasks]
+configure = { cmd = [
+  "cmake",
+  "-GNinja",
+  "-B",
+  "build",
+  "-S",
+  ".",
+  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_BUILD_TYPE=$CANDLEWICK_BUILD_TYPE",
+  "-DBUILD_PYTHON_BINDINGS=$CANDLEWICK_WITH_PYTHON",
+  "-DGENERATE_PYTHON_STUBS=OFF",
+  "-DBUILD_PINOCCHIO_VISUALIZER=$CANDLEWICK_WITH_PINOCCHIO",
+  "-DBUILD_TESTING=$CANDLEWICK_BUILD_TESTS",
+] }
+build = { cmd = "cmake --build build --target all", depends-on = ["configure"]}
+clean = { cmd = "rm -rf build" }
+
+[feature.pinocchio.dependencies]
+pinocchio = ">=3.5"
+
+[feature.pinocchio.activation]
+env = { CANDLEWICK_WITH_PINOCCHIO = "ON" }
+
+[feature.test.dependencies]
+gtest = "*"
+
+[feature.test.activation]
+env = { CANDLEWICK_BUILD_TESTS = "ON" }
+
+[environments]
+pinocchio = { features = ["pinocchio"] }
+# test core
+test = { features = ["test"] }
+# test all (pinocchio)
+all-test = { features = ["pinocchio", "test"]}

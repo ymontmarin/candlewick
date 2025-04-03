@@ -42,6 +42,7 @@ set(CMAKE_VERBOSE_MAKEFILE False)
 
 set(AWESOME_CSS_DIR ${PROJECT_SOURCE_DIR}/doc/doxygen-awesome-css)
 
+option(BUILD_EXAMPLES "Build examples." OFF)
 option(BUILD_PINOCCHIO_VISUALIZER "Build the Pinocchio visualizer." ON)
 
 option(BUILD_PYTHON_BINDINGS "Build Python bindings." OFF)
@@ -83,6 +84,9 @@ message(STATUS "Shader install dir: ${CANDLEWICK_SHADER_INSTALL_DIR}")
 
 add_subdirectory(external)
 add_subdirectory(src)
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
 if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
