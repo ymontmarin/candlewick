@@ -71,8 +71,7 @@ jobs:
     - name: Test candlewick [macOS/Linux]
       run: |
         pixi run -e ${{ matrix.environment }} ctest --test-dir build --output-on-failure
-        pixi shell -e ${{ matrix.environment }}
-        python -c "import candlewick"
+        PYTHONPATH=$PWD/build/python pixi run -e ${{ matrix.environment }} python -c "import candlewick"
 
     - name: Display ccache statistics
       shell: bash -el {0}
