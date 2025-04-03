@@ -39,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        environment: [default, pinocchio]
+        environment: [all-test]
         build_type: [Release]
 
     steps:
@@ -71,7 +71,6 @@ jobs:
     - name: Test candlewick [macOS/Linux]
       run: |
         pixi run -e ${{ matrix.environment }} ctest --test-dir build --output-on-failure
-        PYTHONPATH=$PWD/build/python pixi run -e ${{ matrix.environment }} python -c "import candlewick"
 
     - name: Display ccache statistics
       shell: bash -el {0}

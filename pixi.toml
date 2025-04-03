@@ -58,4 +58,7 @@ env = { CANDLEWICK_BUILD_TESTS = "ON" }
 
 [environments]
 pinocchio = { features = ["pinocchio"] }
+# test core
 test = { features = ["test"] }
+# test all (pinocchio)
+all-test = { features = ["pinocchio", "test"]}
