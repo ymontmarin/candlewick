@@ -83,7 +83,7 @@ conda install sdl3 eigen coal magic_enum assimp entt nlohmann_json
 
 ### Building
 
-For building the library, you will need [CMake](https://cmake.org/) (version at least 3.20) and a C++17-compliant compiler. These can also be obtained through Conda.
+For building the library, you will need [CMake](https://cmake.org/) (version at least 3.20) and a C++20-compliant compiler. These can also be obtained through Conda.
 
 In the directory where you have checked out the code, perform the following steps:
 ```bash
