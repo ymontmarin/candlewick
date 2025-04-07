@@ -38,6 +38,7 @@ project(${PROJECT_NAME} ${PROJECT_ARGS})
 
 include(cmake/ide.cmake)
 include(cmake/apple.cmake)
+include(cmake/boost.cmake)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/lib)
