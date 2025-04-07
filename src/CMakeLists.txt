@@ -17,6 +17,7 @@ ADD_PROJECT_DEPENDENCY(
   avcodec
   swscale
 )
+find_package(Boost COMPONENTS bzip2)
 
 add_library(
   candlewick_core
